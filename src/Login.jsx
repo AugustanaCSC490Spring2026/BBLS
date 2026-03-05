@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import './App.css'
+import './Login.css'
 import logo from './assets/logo.png';
 import { auth, provider,githubProvider } from './Firebase.js'
 import { signInWithPopup } from 'firebase/auth';
 
 
-function App() {
+function Login() {
   const [formData, setFormData] = useState({
     email: "",
     password: ""
@@ -46,12 +46,12 @@ function App() {
     <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '30px' }}>
       <img src={logo} alt="Logo" width="200" height="200"/>
       <button onClick={handleGithubLogin}>Sign in with GitHub</button>
-      <button class="gsi-material-button"
+      <button className="gsi-material-button"
         onClick={handleGoogleLogin}
         >
-        <div class="gsi-material-button-state"></div>
-        <div class="gsi-material-button-content-wrapper">
-          <div class="gsi-material-button-icon">
+        <div className="gsi-material-button-state"></div>
+        <div className="gsi-material-button-content-wrapper">
+          <div className="gsi-material-button-icon">
             <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" xmlnsXlink="http://www.w3.org/1999/xlink" style= {{display : "block"}}>
               <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
               <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
@@ -60,7 +60,7 @@ function App() {
               <path fill="none" d="M0 0h48v48H0z"></path>
             </svg>
           </div>
-          <span class="gsi-material-button-contents">Sign in with Google</span>
+          <span className="gsi-material-button-contents">Sign in with Google</span>
           <span style= {{display : "none" }}>Sign in with Google</span>
         </div>
       </button>
@@ -68,4 +68,4 @@ function App() {
   )
 }
 
-export default App
+export default Login
