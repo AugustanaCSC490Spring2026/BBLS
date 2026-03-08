@@ -1,38 +1,41 @@
 import { useState } from 'react'
 import './Login.css'
 import logo from './assets/logo.png';
-import { auth, provider,githubProvider } from './Firebase.js'
-import { signInWithPopup } from 'firebase/auth';
-
+import { auth, provider } from './Firebase.js'
+import { signInWithPopup, signOut } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
 
 function Login() {
-
+  const navigate = useNavigate();
   const [error, setError] = useState("")
 
+  const allowedUsers = [
+  "tsujayman123@gmail.com",
+  "bengeorgia23@augustana.edu",
+  "sujaytuladhar23@augustana.edu"
+];
+
   const handleGoogleLogin = async () => {
-    try {
-        const result = await signInWithPopup(auth, provider);
-        alert("Welcome " + result.user.displayName);
-
-    } catch(error) {
-        setError("Sign in did not work. Please try again.")
-    }
-  }
-
-  const handleGithubLogin = async () => {
   try {
-    const result = await signInWithPopup(auth, githubProvider);
-        alert("Welcome " + result.user.displayName);
+    const result = await signInWithPopup(auth, provider);
+    const email = result.user.email;
 
+    if (email && allowedUsers.includes(email)) {
+      navigate("/dashboard");
+    } else {
+      alert("Unauthorized user. Please use an allowed email address.");
+      await signOut(auth);
+    }
   } catch (error) {
-    setError("Sign in did not work. Please try again.")
+    setError("Login failed. Please try again.");
+    console.error("Error during login:", error);
   }
-}
+};
+
 
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '30px' }}>
       <img src={logo} alt="Logo" width="200" height="200"/>
-      <button onClick={handleGithubLogin}>Sign in with GitHub</button>
       <button className="gsi-material-button"
         onClick={handleGoogleLogin}
         >
