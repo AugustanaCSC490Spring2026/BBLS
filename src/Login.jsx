@@ -6,20 +6,8 @@ import { signInWithPopup } from 'firebase/auth';
 
 
 function Login() {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: ""
-  })
 
   const [error, setError] = useState("")
-
-  function handleChange(e) {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
-  }
 
   const handleGoogleLogin = async () => {
     try {
@@ -40,7 +28,6 @@ function Login() {
     setError("Sign in did not work. Please try again.")
   }
 }
-  
 
   return (
     <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '30px' }}>
