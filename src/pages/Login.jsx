@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import './Login.css'
-import logo from './assets/logo.png';
-import { auth, provider } from './Firebase.js'
+import logo from '../assets/logo.png';
+import { auth, provider } from '../Firebase.js'
 import { signInWithPopup, signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 
