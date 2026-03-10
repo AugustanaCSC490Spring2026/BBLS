@@ -38,13 +38,12 @@ useEffect(() => {
   const handleEnter = () => {
     console.log("Entered ID:", entry);
     let timeStamp = new Date();
-    let dayStamp = timeStamp.toLocaleDateString();
-    timeStamp = timeStamp.toLocaleTimeString();
+    timeStamp = timeStamp.toLocaleString();
+    console.log(new Date("3/10/2026, 11:52:35 AM"));
     setEntry('');
     inputRef.current?.focus();
     addDoc(swipeInRef, {
       ID: entry,
-      swipeInDate: dayStamp,
       swipeInTime: timeStamp,
     })
 
