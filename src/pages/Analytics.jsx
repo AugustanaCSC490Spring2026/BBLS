@@ -1,3 +1,5 @@
+// This entire file was written with help from ChatGPT
+
 import React, { useState, useEffect } from "react";
 import { Bar } from "react-chartjs-2";
 import {
@@ -70,8 +72,18 @@ function Analytics() {
         break;
 
       case "custom":
-        start = new Date(startDate);
-        end = new Date(endDate);
+        if (startDate) {
+          const [y, m, d] = startDate.split("-");
+          start = new Date(y, m - 1, d);
+          start.setHours(0,0,0,0);
+        }
+
+        if (endDate) {
+          const [y2, m2, d2] = endDate.split("-");
+          end = new Date(y2, m2 - 1, d2);
+          end.setHours(23,59,59,999);
+        }
+
         break;
 
       default:
@@ -180,6 +192,49 @@ function Analytics() {
     plugins: {
       legend: {
         display: true
+      },
+      tooltip: {
+        callbacks: {
+          title: function(context) {
+
+            const index = context[0].dataIndex;
+            const { start } = getDateRange();
+            const date = new Date(start);
+
+            if (interval === "hours") {
+              date.setHours(date.getHours() + index);
+              return date.toLocaleString();
+            }
+
+            if (interval === "days") {
+              date.setDate(date.getDate() + index);
+              return date.toLocaleDateString(undefined, {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric"
+              });
+            }
+
+            if (interval === "months") {
+              date.setMonth(date.getMonth() + index);
+              return date.toLocaleDateString(undefined, {
+                year: "numeric",
+                month: "long"
+              });
+            }
+
+            if (interval === "years") {
+              date.setFullYear(date.getFullYear() + index);
+              return date.getFullYear().toString();
+            }
+
+          },
+
+          label: function(context) {
+            return `Swipes: ${context.raw}`;
+          }
+        }
       }
     }
   };
