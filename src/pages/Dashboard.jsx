@@ -35,9 +35,16 @@ useEffect(() => {
     setEntry(e.target.value);
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault(); // Prevent form submission
+      handleEnter();
+    }
+  };
+
   const handleEnter = () => {
-    const verified_data = entry.slice(3, 10);
-    console.log("Entered ID:", verified_data);
+    const verified_data = entry.slice(3, 10); 
+    alert("Entered ID: " + verified_data);
     let timeStamp = new Date();
     timeStamp = timeStamp.toLocaleString();
     console.log(new Date("3/10/2026, 11:52:35 AM"));
