@@ -13,7 +13,8 @@ function Login() {
   "tsujayman123@gmail.com",
   "bengeorgia23@augustana.edu",
   "sujaytuladhar23@augustana.edu", 
-  "lucasclayton22@augustana.edu"
+  "lucasclayton22@augustana.edu",
+  "benaumuller22@augustana.edu"
 ];
 
   const handleGoogleLogin = async () => {

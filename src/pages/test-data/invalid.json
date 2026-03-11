@@ -1,0 +1,5 @@
+[
+  { "studentId": 1234, "time": "not-a-date" },
+  { "studentId": "ABCDE", "time": "2026-03-08T02:00:00" },
+  { "studentId": 98765, "time": "" }
+]

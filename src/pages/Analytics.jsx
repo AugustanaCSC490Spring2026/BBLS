@@ -1,5 +1,4 @@
-// This entire file was written with help from ChatGPT
-
+// Analytics.jsx
 import React, { useState, useEffect } from "react";
 import { Bar } from "react-chartjs-2";
 import {
@@ -11,159 +10,189 @@ import {
   Legend
 } from "chart.js";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Tooltip,
-  Legend
-);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+
+// JSON test datasets
+import midnightEdge from "./test-data/midnight-edge.json";
+import leapYear from "./test-data/leap-year.json";
+import duplicates from "./test-data/duplicates.json";
+import future from "./test-data/future.json";
+import invalid from "./test-data/invalid.json";
+import timezone from "./test-data/timezone.json";
+import empty from "./test-data/empty.json";
 
 function Analytics() {
-
   const [timeRange, setTimeRange] = useState("today");
   const [interval, setInterval] = useState("hours");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-
   const [chartData, setChartData] = useState([]);
+  const [swipeData, setSwipeData] = useState([]);
+  const [dataFile, setDataFile] = useState("normal");
 
-  const swipeData = [
-    { time: "2026-03-08T00:10:00" },
-    { time: "2026-03-08T00:35:00" },
-    { time: "2026-03-08T01:15:00" },
-    { time: "2026-03-08T03:42:00" },
-    { time: "2026-03-08T03:55:00" },
-    { time: "2026-03-08T05:01:00" }
-  ];
+  // Generate normal dataset
+  function generateNormalDataset() {
+    const startDate = new Date();
+    startDate.setMonth(startDate.getMonth() - 3);
+    const endDate = new Date();
+
+    const data = [];
+    function randomStudent() {
+      return Math.floor(10000 + Math.random() * 90000);
+    }
+
+    function getHoursForDay(day) {
+      switch (day) {
+        case 0:
+          return [10, 22]; // Sunday
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+          return [7, 22]; // Mon-Thu
+        case 5:
+          return [7, 20]; // Friday
+        case 6:
+          return [9, 18]; // Saturday
+        default:
+          return [7, 22];
+      }
+    }
+
+    let cursor = new Date(startDate);
+    while (cursor <= endDate) {
+      const day = cursor.getDay();
+      const [open, close] = getHoursForDay(day);
+      const swipes = Math.floor(Math.random() * 40) + 20;
+
+      for (let i = 0; i < swipes; i++) {
+        const hour = Math.floor(Math.random() * (close - open)) + open;
+        const d = new Date(cursor);
+        d.setHours(hour);
+        d.setMinutes(Math.floor(Math.random() * 60));
+        d.setSeconds(Math.floor(Math.random() * 60));
+        data.push({ studentId: randomStudent(), time: d.toISOString().slice(0, 19) });
+      }
+
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return data;
+  }
+
+  const datasets = {
+    normal: generateNormalDataset,
+    midnightEdge,
+    leapYear,
+    duplicates,
+    future,
+    invalid,
+    timezone,
+    empty
+  };
+
+  useEffect(() => {
+    if (dataFile === "normal") setSwipeData(generateNormalDataset());
+    else setSwipeData(datasets[dataFile] || []);
+  }, [dataFile]);
 
   function getDateRange() {
-
     const now = new Date();
     let start = new Date();
     let end = new Date();
 
     switch (timeRange) {
-
       case "today":
-        start.setHours(0,0,0,0);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
         break;
 
       case "yesterday":
         start.setDate(now.getDate() - 1);
-        start.setHours(0,0,0,0);
-
+        start.setHours(0, 0, 0, 0);
         end.setDate(now.getDate() - 1);
-        end.setHours(23,59,59,999);
+        end.setHours(23, 59, 59, 999);
         break;
 
       case "week":
-        const day = now.getDay();
-        start.setDate(now.getDate() - day);
-        start.setHours(0,0,0,0);
+        start.setDate(now.getDate() - now.getDay()); // Sunday
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
         break;
 
       case "month":
         start = new Date(now.getFullYear(), now.getMonth(), 1);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
         break;
 
       case "year":
         start = new Date(now.getFullYear(), 0, 1);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
         break;
 
       case "custom":
         if (startDate) {
           const [y, m, d] = startDate.split("-");
           start = new Date(y, m - 1, d);
-          start.setHours(0,0,0,0);
+          start.setHours(0, 0, 0, 0);
         }
-
         if (endDate) {
           const [y2, m2, d2] = endDate.split("-");
           end = new Date(y2, m2 - 1, d2);
-          end.setHours(23,59,59,999);
+          end.setHours(23, 59, 59, 999);
         }
-
         break;
 
       default:
         break;
     }
-
     return { start, end };
   }
 
   function generateIntervals(start, end) {
-
     let buckets = {};
-    let cursor = new Date(start);
+    const cursor = new Date(start);
 
     while (cursor <= end) {
-
-      let label;
-
+      let label = "";
       if (interval === "hours") {
-        label = cursor.getHours() + ":00";
+        label = `${cursor.getMonth() + 1}/${cursor.getDate()} ${cursor.getHours()}:00`;
         cursor.setHours(cursor.getHours() + 1);
-      }
-
-      else if (interval === "days") {
-        label = `${cursor.getMonth()+1}/${cursor.getDate()}`;
+      } else if (interval === "days") {
+        label = `${cursor.getMonth() + 1}/${cursor.getDate()}`;
         cursor.setDate(cursor.getDate() + 1);
-      }
-
-      else if (interval === "months") {
-        label = `${cursor.getMonth()+1}/${cursor.getFullYear()}`;
+      } else if (interval === "months") {
+        label = `${cursor.getMonth() + 1}/${cursor.getFullYear()}`;
         cursor.setMonth(cursor.getMonth() + 1);
-      }
-
-      else if (interval === "years") {
+      } else if (interval === "years") {
         label = `${cursor.getFullYear()}`;
         cursor.setFullYear(cursor.getFullYear() + 1);
       }
-
       buckets[label] = 0;
     }
-
     return buckets;
   }
 
   function processData() {
-
     const { start, end } = getDateRange();
     const buckets = generateIntervals(start, end);
 
-    swipeData.forEach(swipe => {
-
+    swipeData.forEach((swipe) => {
       const date = new Date(swipe.time);
-
+      if (isNaN(date)) return;
       if (date < start || date > end) return;
 
-      let label;
+      let label = "";
+      if (interval === "hours") label = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:00`;
+      else if (interval === "days") label = `${date.getMonth() + 1}/${date.getDate()}`;
+      else if (interval === "months") label = `${date.getMonth() + 1}/${date.getFullYear()}`;
+      else if (interval === "years") label = `${date.getFullYear()}`;
 
-      if (interval === "hours") {
-        label = date.getHours() + ":00";
-      }
-
-      else if (interval === "days") {
-        label = `${date.getMonth()+1}/${date.getDate()}`;
-      }
-
-      else if (interval === "months") {
-        label = `${date.getMonth()+1}/${date.getFullYear()}`;
-      }
-
-      else if (interval === "years") {
-        label = `${date.getFullYear()}`;
-      }
-
-      if (buckets[label] !== undefined) {
-        buckets[label] += 1;
-      }
-
+      if (buckets[label] !== undefined) buckets[label] += 1;
     });
 
-    const formatted = Object.keys(buckets).map(key => ({
+    const formatted = Object.keys(buckets).map((key) => ({
       interval: key,
       swipes: buckets[key]
     }));
@@ -173,14 +202,14 @@ function Analytics() {
 
   useEffect(() => {
     processData();
-  }, [timeRange, interval, startDate, endDate]);
+  }, [timeRange, interval, startDate, endDate, swipeData]);
 
   const data = {
-    labels: chartData.map(d => d.interval),
+    labels: chartData.map((d) => d.interval),
     datasets: [
       {
         label: "Swipes",
-        data: chartData.map(d => d.swipes),
+        data: chartData.map((d) => d.swipes),
         backgroundColor: "#8884d8"
       }
     ]
@@ -190,49 +219,28 @@ function Analytics() {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        display: true
-      },
       tooltip: {
         callbacks: {
-          title: function(context) {
+          label: function (context) {
+            const idx = context.dataIndex;
+            const intervalData = context.chart.data.labels[idx];
+            const dataPoint = chartData[idx];
+            if (!dataPoint) return "";
 
-            const index = context[0].dataIndex;
-            const { start } = getDateRange();
-            const date = new Date(start);
+            let fullDateStr = intervalData;
 
             if (interval === "hours") {
-              date.setHours(date.getHours() + index);
-              return date.toLocaleString();
+              fullDateStr = intervalData.replace(" ", " at ") + ":00";
+            } else if (interval === "days") {
+              fullDateStr = new Date(`${intervalData}/${new Date().getFullYear()}`).toLocaleDateString();
+            } else if (interval === "months") {
+              const [m, y] = intervalData.split("/");
+              fullDateStr = new Date(y, m - 1, 1).toLocaleDateString(undefined, { year: "numeric", month: "long" });
+            } else if (interval === "years") {
+              fullDateStr = intervalData;
             }
 
-            if (interval === "days") {
-              date.setDate(date.getDate() + index);
-              return date.toLocaleDateString(undefined, {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric"
-              });
-            }
-
-            if (interval === "months") {
-              date.setMonth(date.getMonth() + index);
-              return date.toLocaleDateString(undefined, {
-                year: "numeric",
-                month: "long"
-              });
-            }
-
-            if (interval === "years") {
-              date.setFullYear(date.getFullYear() + index);
-              return date.getFullYear().toString();
-            }
-
-          },
-
-          label: function(context) {
-            return `Swipes: ${context.raw}`;
+            return `Date: ${fullDateStr}, Swipes: ${dataPoint.swipes}`;
           }
         }
       }
@@ -240,14 +248,23 @@ function Analytics() {
   };
 
   return (
-
-    <div style={{padding:"20px"}}>
-
+    <div style={{ padding: "20px" }}>
       <h1>Analytics Page</h1>
 
-      <h3>Choose Time Range</h3>
+      <h3>Test Dataset</h3>
+      <select value={dataFile} onChange={(e) => setDataFile(e.target.value)}>
+        <option value="normal">Normal (generated thousands)</option>
+        <option value="midnightEdge">Midnight Edge</option>
+        <option value="leapYear">Leap Year</option>
+        <option value="duplicates">Duplicates</option>
+        <option value="future">Future Dates</option>
+        <option value="invalid">Invalid Data</option>
+        <option value="timezone">Timezone</option>
+        <option value="empty">Empty</option>
+      </select>
 
-      <select value={timeRange} onChange={(e)=>setTimeRange(e.target.value)}>
+      <h3>Choose Time Range</h3>
+      <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)}>
         <option value="today">Today</option>
         <option value="yesterday">Yesterday</option>
         <option value="week">This Week</option>
@@ -258,24 +275,22 @@ function Analytics() {
 
       {timeRange === "custom" && (
         <div>
-          <input type="date" onChange={(e)=>setStartDate(e.target.value)} />
-          <input type="date" onChange={(e)=>setEndDate(e.target.value)} />
+          <input type="date" onChange={(e) => setStartDate(e.target.value)} />
+          <input type="date" onChange={(e) => setEndDate(e.target.value)} />
         </div>
       )}
 
       <h3>Interval</h3>
-
-      <select value={interval} onChange={(e)=>setInterval(e.target.value)}>
+      <select value={interval} onChange={(e) => setInterval(e.target.value)}>
         <option value="hours">Hours</option>
         <option value="days">Days</option>
         <option value="months">Months</option>
         <option value="years">Years</option>
       </select>
 
-      <div style={{width:"100%", height:400, marginTop:40}}>
+      <div style={{ width: "100%", height: 400, marginTop: 40 }}>
         <Bar data={data} options={options} />
       </div>
-
     </div>
   );
 }
