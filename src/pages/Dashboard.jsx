@@ -32,27 +32,31 @@ useEffect(() => {
   };
 
   const handleEnter = () => {
-    console.log("Entered ID:", entry);
+    const verified_data = entry.slice(3, 10);
+    alert("Entered ID: " + verified_data);
     setEntry('');
     inputRef.current?.focus();
   }
 
+
   return (
     <div>
       <h1>Dashboard Page</h1>
-      <input
-        ref = {inputRef}
-        id="user-entry"
-        type="text"
-        value={entry}
-        onChange={handleChange}
-        placeholder="ID Number"
-        style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-      />
-      <p/>
-      <button onClick={handleEnter} style={{ marginRight: '10px' }}>
-          Enter
-      </button>
+      <form>
+        <input
+          ref = {inputRef}
+          id="user-entry"
+          type="password"
+          value={entry}
+          onChange={handleChange}
+          placeholder="ID Number"
+          style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+        />
+        <p/>
+        <button onClick={handleEnter} style={{ marginRight: '10px' }}>
+            Enter
+        </button>
+      </form>
       <p/>
       <button onClick={goToAnalytics}>Go to Analytics</button>
     </div>
