@@ -1,24 +1,20 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // React Router v6
-import Analytics from "./Analytics";
-import firebase from "firebase/compat/app";
 import {db} from '../Firebase.js'
 import { addDoc, collection } from "firebase/firestore";
+import Navbar from "./Navigation.jsx";
+import "../components/Dashboard.css";
 
 const swipeInRef = collection(db, 'Swipe-Ins');
 
 function Dashboard() {
-  const navigate = useNavigate();
-  const [entry, setEntry] = useState('');
+  const [studentId, setStudentId] = useState('');
   const inputRef = useRef(null);
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  const goToAnalytics = () => {
-    navigate("/analytics"); // route path to Analytics.jsx
-  };
   
+
 useEffect(() => {
     const focusInterval = setInterval(() => {
       // If the current focused element is NOT our input, focus it!
@@ -31,16 +27,17 @@ useEffect(() => {
     // Cleanup: Stop the interval if the user navigates away from this page
     return () => clearInterval(focusInterval);
   }, []);
+
   const handleChange = (e) => {
-    setEntry(e.target.value);
+    setStudentId(e.target.value);
   };
 
-  const handleEnter = () => {
-    console.log("Entered ID:", entry);
+  const handleSwipe = () => {
+    console.log("Entered ID:", studentId);
     let timeStamp = new Date();
     timeStamp = timeStamp.toLocaleString();
     console.log(new Date("3/10/2026, 11:52:35 AM"));
-    setEntry('');
+    setStudentId('');
     inputRef.current?.focus();
     addDoc(swipeInRef, {
       ID: entry,
@@ -50,24 +47,30 @@ useEffect(() => {
   }
 
   return (
-    <div>
-      <h1>Dashboard Page</h1>
-      <input
-        ref = {inputRef}
-        id="user-entry"
-        type="text"
-        value={entry}
-        onChange={handleChange}
-        placeholder="ID Number"
-        style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-      />
-      <p/>
-      <button onClick={handleEnter} style={{ marginRight: '10px' }}>
-          Enter
-      </button>
-      <p/>
-      <button onClick={goToAnalytics}>Go to Analytics</button>
-    </div>
+    <>
+      <Navbar />
+      <div className="Dashboard">
+          <div className="swipe-card">
+            <h2>Swipe In</h2>
+
+            <form onSubmit={handleSwipe}>
+
+              <label>Student ID</label>
+              <input
+                type="text"
+                placeholder="Enter Student ID"
+                value={studentId}
+                onChange={(e) => setStudentId(e.target.value)}
+              />
+
+              <button type="submit" className="swipe-button">
+                Check In
+              </button>
+
+            </form>
+          </div>
+        </div>
+    </>
   );
 }
 

@@ -5,7 +5,6 @@
 }
 
 body {
-  font-family: Arial, sans-serif;
   color: #000000;
 }
 
@@ -61,21 +60,20 @@ body {
 
 
 .gsi-material-button {
-  background-color: #f2f2f2;
-  border-radius: 20px;;
+  background-color: #dbdbd7;
+  border-radius: 100px;
+  border: black 0.5px;
   background-image: none;
   -webkit-border-radius: 4px;
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
   cursor: pointer;
-  font-family: 'Roboto', arial, sans-serif;
   font-size: 14px;
   height: 40px;
   letter-spacing: 0.25px;
   position: relative;
   text-align: center;
   width: auto;
-  max-width: 400px;
   min-width: min-content;
   transition: background-color 0.2s ease;
 }
@@ -107,7 +105,6 @@ body {
 .gsi-material-button .gsi-material-button-contents {
   -webkit-flex-grow: 1;
   flex-grow: 1;
-  font-family: 'Roboto', arial, sans-serif;
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
