@@ -10,12 +10,13 @@ function Dashboard() {
   const [studentId, setStudentId] = useState('');
   const inputRef = useRef(null);
   useEffect(() => {
-    inputRef.current?.focus();
+    
   }, []);
 
   
 
 useEffect(() => {
+
     const focusInterval = setInterval(() => {
       // If the current focused element is NOT our input, focus it!
       if (document.activeElement !== inputRef.current) {
@@ -28,36 +29,50 @@ useEffect(() => {
     return () => clearInterval(focusInterval);
   }, []);
 
-  const handleChange = (e) => {
-    setStudentId(e.target.value);
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault(); // Prevent form submission
-      handleEnter();
+  const handleKeyDown = (input) => {
+    if (input.key === "Enter") {
+      input.preventDefault(); // Prevent form submission
+      handleSubmission();
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault(); // Prevent form submission
-      handleEnter();
+  const handleSubmission = (event) => { 
+    // to not let the page refresh
+    if (event) {
+      event.preventDefault();
     }
-  };
 
-  const handleEnter = () => {
-    const verified_data = entry.slice(3, 10); 
-    alert("Entered ID: " + verified_data);
+    const temp_input = studentId.trim();
+    setStudentId(temp_input);
+    
+    console.log(temp_input.length);
+    let verified_data;
+    if (temp_input.length != 7 && temp_input.length != 16) {
+      alert("Invalid ID: " + temp_input);
+      console.log("Invalid ID: " + temp_input);
+      return;
+    } else if (temp_input.length == 7) {
+      verified_data = temp_input;
+      console.log("Accepted, Entered ID: " + verified_data);
+    } else {
+      verified_data = temp_input.slice(3, 10);
+      console.log("Accepted, Entered ID: " + verified_data);
+    }
+    // vars for data entry
     let timeStamp = new Date();
     timeStamp = timeStamp.toLocaleString();
-    console.log(new Date("3/10/2026, 11:52:35 AM"));
-    setStudentId('');
-    inputRef.current?.focus();
+
+    //saves data to firebase
     addDoc(swipeInRef, {
-      ID: entry,
+      ID: verified_data,
       swipeInTime: timeStamp,
     })
+    // resets data of student ID and the textField
+    setStudentId('');
+    //focuses the text field
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
 
   }
 
@@ -69,17 +84,18 @@ useEffect(() => {
           <div className="swipe-card">
             <h2>Swipe In</h2>
 
-            <form onSubmit={handleSwipe}>
+            <form>
 
               <label>Student ID</label>
               <input
-                type="text"
+                type="password"
+                ref={inputRef}
                 placeholder="Enter Student ID"
                 value={studentId}
                 onChange={(e) => setStudentId(e.target.value)}
               />
 
-              <button type="submit" className="swipe-button">
+              <button type="submit" onClick={handleSubmission} className="swipe-button">
                 Check In
               </button>
 
