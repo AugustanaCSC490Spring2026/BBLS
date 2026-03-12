@@ -3,8 +3,9 @@ import {db} from '../Firebase.js'
 import { addDoc, collection } from "firebase/firestore";
 import Navbar from "./Navigation.jsx";
 import "../components/Dashboard.css";
+import { collection, addDoc, getDoc } from "firebase/firestore";
 
-const swipeInRef = collection(db, 'Swipe-Ins');
+const swipeInRef = collection(db, 'swipeIns')
 
 function Dashboard() {
   const [studentId, setStudentId] = useState('');
