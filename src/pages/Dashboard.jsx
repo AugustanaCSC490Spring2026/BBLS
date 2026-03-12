@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom"; // React Router v6
 import Analytics from "./Analytics";
 import firebase from "firebase/compat/app";
 import {db} from '../Firebase.js'
-import { addDoc, collection } from "firebase/firestore";
+import { collection, addDoc, getDoc } from "firebase/firestore";
 
-const swipeInRef = collection(db, 'Swipe-Ins');
+const swipeInRef = collection(db, 'swipeIns')
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -47,7 +47,6 @@ useEffect(() => {
     alert("Entered ID: " + verified_data);
     let timeStamp = new Date();
     timeStamp = timeStamp.toLocaleString();
-    console.log(new Date("3/10/2026, 11:52:35 AM"));
     setEntry('');
     inputRef.current?.focus();
     addDoc(swipeInRef, {
