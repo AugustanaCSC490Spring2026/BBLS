@@ -1,4 +1,4 @@
-// Analytics.jsx
+// This entire file was generated with help from ChatGPT
 import React, { useState, useEffect } from "react";
 import { Bar } from "react-chartjs-2";
 import {
@@ -30,13 +30,13 @@ function Analytics() {
   const [swipeData, setSwipeData] = useState([]);
   const [dataFile, setDataFile] = useState("normal");
 
-  // Generate normal dataset
   function generateNormalDataset() {
     const startDate = new Date();
-    startDate.setMonth(startDate.getMonth() - 3);
+    startDate.setMonth(startDate.getMonth() - 12);
     const endDate = new Date();
 
     const data = [];
+
     function randomStudent() {
       return Math.floor(10000 + Math.random() * 90000);
     }
@@ -44,22 +44,23 @@ function Analytics() {
     function getHoursForDay(day) {
       switch (day) {
         case 0:
-          return [10, 22]; // Sunday
+          return [10, 22];
         case 1:
         case 2:
         case 3:
         case 4:
-          return [7, 22]; // Mon-Thu
+          return [7, 22];
         case 5:
-          return [7, 20]; // Friday
+          return [7, 20];
         case 6:
-          return [9, 18]; // Saturday
+          return [9, 18];
         default:
           return [7, 22];
       }
     }
 
     let cursor = new Date(startDate);
+
     while (cursor <= endDate) {
       const day = cursor.getDay();
       const [open, close] = getHoursForDay(day);
@@ -67,15 +68,21 @@ function Analytics() {
 
       for (let i = 0; i < swipes; i++) {
         const hour = Math.floor(Math.random() * (close - open)) + open;
+
         const d = new Date(cursor);
         d.setHours(hour);
         d.setMinutes(Math.floor(Math.random() * 60));
         d.setSeconds(Math.floor(Math.random() * 60));
-        data.push({ studentId: randomStudent(), time: d.toISOString().slice(0, 19) });
+
+        data.push({
+          studentId: randomStudent(),
+          time: d.toISOString().slice(0, 19)
+        });
       }
 
       cursor.setDate(cursor.getDate() + 1);
     }
+
     return data;
   }
 
@@ -114,7 +121,7 @@ function Analytics() {
         break;
 
       case "week":
-        start.setDate(now.getDate() - now.getDay()); // Sunday
+        start.setDate(now.getDate() - now.getDay());
         start.setHours(0, 0, 0, 0);
         end.setHours(23, 59, 59, 999);
         break;
@@ -137,6 +144,7 @@ function Analytics() {
           start = new Date(y, m - 1, d);
           start.setHours(0, 0, 0, 0);
         }
+
         if (endDate) {
           const [y2, m2, d2] = endDate.split("-");
           end = new Date(y2, m2 - 1, d2);
@@ -147,6 +155,7 @@ function Analytics() {
       default:
         break;
     }
+
     return { start, end };
   }
 
@@ -154,23 +163,45 @@ function Analytics() {
     let buckets = {};
     const cursor = new Date(start);
 
+    // Align cursor to start of interval
+    if (interval === "hours") {
+      cursor.setMinutes(0, 0, 0);
+
+    } else if (interval === "days") {
+      cursor.setHours(0, 0, 0, 0);
+
+    } else if (interval === "months") {
+      cursor.setDate(1);
+      cursor.setHours(0, 0, 0, 0);
+
+    } else if (interval === "years") {
+      cursor.setMonth(0, 1);
+      cursor.setHours(0, 0, 0, 0);
+    }
+
     while (cursor <= end) {
       let label = "";
+
       if (interval === "hours") {
-        label = `${cursor.getMonth() + 1}/${cursor.getDate()} ${cursor.getHours()}:00`;
+        label = `${cursor.getMonth() + 1}/${cursor.getDate()}/${cursor.getFullYear()} ${cursor.getHours()}:00`;
         cursor.setHours(cursor.getHours() + 1);
+
       } else if (interval === "days") {
-        label = `${cursor.getMonth() + 1}/${cursor.getDate()}`;
+        label = `${cursor.getMonth() + 1}/${cursor.getDate()}/${cursor.getFullYear()}`;
         cursor.setDate(cursor.getDate() + 1);
+
       } else if (interval === "months") {
         label = `${cursor.getMonth() + 1}/${cursor.getFullYear()}`;
         cursor.setMonth(cursor.getMonth() + 1);
+
       } else if (interval === "years") {
         label = `${cursor.getFullYear()}`;
         cursor.setFullYear(cursor.getFullYear() + 1);
       }
+
       buckets[label] = 0;
     }
+
     return buckets;
   }
 
@@ -184,10 +215,18 @@ function Analytics() {
       if (date < start || date > end) return;
 
       let label = "";
-      if (interval === "hours") label = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:00`;
-      else if (interval === "days") label = `${date.getMonth() + 1}/${date.getDate()}`;
-      else if (interval === "months") label = `${date.getMonth() + 1}/${date.getFullYear()}`;
-      else if (interval === "years") label = `${date.getFullYear()}`;
+
+      if (interval === "hours")
+        label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()} ${date.getHours()}:00`;
+
+      else if (interval === "days")
+        label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+
+      else if (interval === "months")
+        label = `${date.getMonth() + 1}/${date.getFullYear()}`;
+
+      else if (interval === "years")
+        label = `${date.getFullYear()}`;
 
       if (buckets[label] !== undefined) buckets[label] += 1;
     });
@@ -232,10 +271,13 @@ function Analytics() {
             if (interval === "hours") {
               fullDateStr = intervalData.replace(" ", " at ") + ":00";
             } else if (interval === "days") {
-              fullDateStr = new Date(`${intervalData}/${new Date().getFullYear()}`).toLocaleDateString();
+              fullDateStr = new Date(intervalData).toLocaleDateString();
             } else if (interval === "months") {
               const [m, y] = intervalData.split("/");
-              fullDateStr = new Date(y, m - 1, 1).toLocaleDateString(undefined, { year: "numeric", month: "long" });
+              fullDateStr = new Date(y, m - 1, 1).toLocaleDateString(undefined, {
+                year: "numeric",
+                month: "long"
+              });
             } else if (interval === "years") {
               fullDateStr = intervalData;
             }
