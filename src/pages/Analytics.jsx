@@ -1,6 +1,7 @@
 // This entire file was generated with help from ChatGPT 
 import React, { useState, useEffect } from "react";
 import { Bar } from "react-chartjs-2";
+import Navbar from "./Navigation.jsx";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -337,51 +338,54 @@ function Analytics() {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Analytics Page</h1>
+    <div>
+      <Navbar />
+      <div style={{ padding: "20px" }}>
+        <h1>Analytics Page</h1>
 
-      <h3>Test Dataset</h3>
-      <select value={dataFile} onChange={(e) => setDataFile(e.target.value)}>
-        <option value="normal">Normal (generated thousands)</option>
-        <option value="midnightEdge">Midnight Edge</option>
-        <option value="leapYear">Leap Year</option>
-        <option value="duplicates">Duplicates</option>
-        <option value="future">Future Dates</option>
-        <option value="invalid">Invalid Data</option>
-        <option value="timezone">Timezone</option>
-        <option value="empty">Empty</option>
+        <h3>Test Dataset</h3>
+        <select value={dataFile} onChange={(e) => setDataFile(e.target.value)}>
+          <option value="normal">Normal (generated thousands)</option>
+          <option value="midnightEdge">Midnight Edge</option>
+          <option value="leapYear">Leap Year</option>
+          <option value="duplicates">Duplicates</option>
+          <option value="future">Future Dates</option>
+          <option value="invalid">Invalid Data</option>
+          <option value="timezone">Timezone</option>
+          <option value="empty">Empty</option>
 
-        {/* NEW: Firebase option */}
-        <option value="firebase">Firebase Data</option>
-      </select>
+          {/* NEW: Firebase option */}
+          <option value="firebase">Firebase Data</option>
+        </select>
 
-      <h3>Choose Time Range</h3>
-      <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)}>
-        <option value="today">Today</option>
-        <option value="yesterday">Yesterday</option>
-        <option value="week">This Week</option>
-        <option value="month">This Month</option>
-        <option value="year">This Year</option>
-        <option value="custom">Date Range</option>
-      </select>
+        <h3>Choose Time Range</h3>
+        <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)}>
+          <option value="today">Today</option>
+          <option value="yesterday">Yesterday</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="year">This Year</option>
+          <option value="custom">Date Range</option>
+        </select>
 
-      {timeRange === "custom" && (
-        <div>
-          <input type="date" onChange={(e) => setStartDate(e.target.value)} />
-          <input type="date" onChange={(e) => setEndDate(e.target.value)} />
+        {timeRange === "custom" && (
+          <div>
+            <input type="date" onChange={(e) => setStartDate(e.target.value)} />
+            <input type="date" onChange={(e) => setEndDate(e.target.value)} />
+          </div>
+        )}
+
+        <h3>Interval</h3>
+        <select value={interval} onChange={(e) => setInterval(e.target.value)}>
+          <option value="hours">Hours</option>
+          <option value="days">Days</option>
+          <option value="months">Months</option>
+          <option value="years">Years</option>
+        </select>
+
+        <div style={{ width: "100%", height: 400, marginTop: 40 }}>
+          <Bar data={data} options={options} />
         </div>
-      )}
-
-      <h3>Interval</h3>
-      <select value={interval} onChange={(e) => setInterval(e.target.value)}>
-        <option value="hours">Hours</option>
-        <option value="days">Days</option>
-        <option value="months">Months</option>
-        <option value="years">Years</option>
-      </select>
-
-      <div style={{ width: "100%", height: 400, marginTop: 40 }}>
-        <Bar data={data} options={options} />
       </div>
     </div>
   );
