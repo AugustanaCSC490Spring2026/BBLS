@@ -1,4 +1,4 @@
-// This entire file was generated with help from ChatGPT
+// This entire file was generated with help from ChatGPT 
 import React, { useState, useEffect } from "react";
 import { Bar } from "react-chartjs-2";
 import {
@@ -20,6 +20,10 @@ import future from "./test-data/future.json";
 import invalid from "./test-data/invalid.json";
 import timezone from "./test-data/timezone.json";
 import empty from "./test-data/empty.json";
+
+// NEW: Firebase imports
+import { db } from "../Firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
 function Analytics() {
   const [timeRange, setTimeRange] = useState("today");
@@ -97,10 +101,24 @@ function Analytics() {
     empty
   };
 
+  // CHANGED: added Firebase option handling
   useEffect(() => {
-    if (dataFile === "normal") setSwipeData(generateNormalDataset());
-    else setSwipeData(datasets[dataFile] || []);
-  }, [dataFile]);
+    async function loadData() {
+
+      if (dataFile === "firebase") {
+        await fetchFirebaseData(); // NEW
+      } 
+      else if (dataFile === "normal") {
+        setSwipeData(generateNormalDataset());
+      } 
+      else {
+        setSwipeData(datasets[dataFile] || []);
+      }
+
+    }
+
+    loadData();
+  }, [dataFile, timeRange, startDate, endDate]); // added date deps so Firebase updates
 
   function getDateRange() {
     const now = new Date();
@@ -159,11 +177,40 @@ function Analytics() {
     return { start, end };
   }
 
+  // NEW: Firebase fetch function (ONLY addition)
+  async function fetchFirebaseData() {
+    const { start, end } = getDateRange();
+
+    const swipeRef = collection(db, "swipeIns");
+
+    const q = query(
+      swipeRef,
+      where("swipeInTime", ">=", start),
+      where("swipeInTime", "<=", end)
+    );
+
+    const snapshot = await getDocs(q);
+
+    const data = [];
+
+    snapshot.forEach((doc) => {
+      const d = doc.data();
+
+      if (!d.swipeInTime) return;
+
+      data.push({
+        studentId: d.ID,
+        time: d.swipeInTime.toDate().toISOString().slice(0, 19) // match your format
+      });
+    });
+
+    setSwipeData(data);
+  }
+
   function generateIntervals(start, end) {
     let buckets = {};
     const cursor = new Date(start);
 
-    // Align cursor to start of interval
     if (interval === "hours") {
       cursor.setMinutes(0, 0, 0);
 
@@ -303,6 +350,9 @@ function Analytics() {
         <option value="invalid">Invalid Data</option>
         <option value="timezone">Timezone</option>
         <option value="empty">Empty</option>
+
+        {/* NEW: Firebase option */}
+        <option value="firebase">Firebase Data</option>
       </select>
 
       <h3>Choose Time Range</h3>
