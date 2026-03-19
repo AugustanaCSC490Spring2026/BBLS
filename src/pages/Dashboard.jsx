@@ -3,8 +3,10 @@ import {db} from '../Firebase.js'
 import { addDoc, collection } from "firebase/firestore";
 import Navbar from "./Navigation.jsx";
 import "../components/Dashboard.css";
+import { FunnelChart } from "recharts";
 
-const swipeInRef = collection(db, 'swipeIns')
+const validSwipeInRef = collection(db, 'swipeIns')
+const invalidSwipeInRef = collection(db, 'invalidSwipeIns')
 
 function Dashboard() {
   const [studentId, setStudentId] = useState('');
@@ -41,32 +43,35 @@ useEffect(() => {
     if (event) {
       event.preventDefault();
     }
+    let swipeValid = false;
 
     const temp_input = studentId.trim();
     setStudentId(temp_input);
+
+        // vars for data entry
+    let timeStamp = new Date();
+    timeStamp = timeStamp.toLocaleString();
+
     
     console.log(temp_input.length);
     let verified_data;
     if (temp_input.length != 7 && temp_input.length != 16) {
       alert("Invalid ID: " + temp_input);
       console.log("Invalid ID: " + temp_input);
-      return;
+      verified_data = temp_input;
+      swipeValid = false;
     } else if (temp_input.length == 7) {
       verified_data = temp_input;
       console.log("Accepted, Entered ID: " + verified_data);
+      swipeValid = true;
     } else {
       verified_data = temp_input.slice(3, 10);
       console.log("Accepted, Entered ID: " + verified_data);
+      swipeValid = true;
     }
-    // vars for data entry
-    let timeStamp = new Date();
-    timeStamp = timeStamp.toLocaleString();
+    
+    storeSwipeIn(swipeValid, verified_data, timeStamp);
 
-    //saves data to firebase
-    addDoc(swipeInRef, {
-      ID: verified_data,
-      swipeInTime: timeStamp,
-    })
     // resets data of student ID and the textField
     setStudentId('');
     //focuses the text field
@@ -74,6 +79,24 @@ useEffect(() => {
       inputRef.current?.focus();
     });
 
+  }
+    //saves data to firebase
+  function storeSwipeIn(swipeValid, verified_data, timeStamp){
+    if (swipeValid){
+    console.log("this is true");
+    addDoc(validSwipeInRef, {
+      ID: verified_data,
+      swipeInTime: timeStamp,
+    })
+  }
+    if (!swipeValid){
+          console.log("This is false");
+          console.log(verified_data, timeStamp);
+      addDoc(invalidSwipeInRef, {
+      ID: verified_data,
+      swipeInTime: timeStamp,
+    })
+    }
   }
 
 
