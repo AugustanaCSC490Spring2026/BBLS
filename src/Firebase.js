@@ -11,8 +11,8 @@ import { getFirestore, collection, addDoc } from "firebase/firestore";
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyB4sXzsI7557-6gX5lH_mrCIdr50Mbl2U4",
-  authDomain: "rec-center-swipe-ins.firebaseapp.com",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: "rec-center-swipe-ins",
   storageBucket: "rec-center-swipe-ins.firebasestorage.app",
   messagingSenderId: "169837336350",
