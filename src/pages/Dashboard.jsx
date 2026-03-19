@@ -6,9 +6,10 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 
 import Navbar from "./Navigation.jsx";
 import "../components/Dashboard.css";
+import { FunnelChart } from "recharts";
 
-// Firebase collection reference
-const swipeInRef = collection(db, "swipeIns");
+const validSwipeInRef = collection(db, 'swipeIns')
+const invalidSwipeInRef = collection(db, 'invalidSwipeIns')
 
 function Dashboard() {
   const [studentId, setStudentId] = useState("");
@@ -44,27 +45,28 @@ function Dashboard() {
     setStudentId(temp_input);
 
     let verified_data;
+    let swipeValid = false;
 
     // Validate ID
     if (temp_input.length !== 7 && temp_input.length !== 16) {
       alert("Invalid ID: " + temp_input);
-      return;
-    } 
-    else if (temp_input.length === 7) {
+      console.log("Invalid ID: " + temp_input);
       verified_data = temp_input;
-    } 
-    else {
+      swipeValid = false;
+    } else if (temp_input.length == 7) {
+      verified_data = temp_input;
+      console.log("Accepted, Entered ID: " + verified_data);
+      swipeValid = true;
+    } else {
       verified_data = temp_input.slice(3, 10);
+      console.log("Accepted, Entered ID: " + verified_data);
+      swipeValid = true;
     }
 
     try {
       // CHANGED: using serverTimestamp instead of string date
       // This allows Firebase to store a real timestamp, so we can filter in analytics.jsx (written with ChatGPT)
-      await addDoc(swipeInRef, {
-        ID: verified_data,
-        swipeInTime: serverTimestamp()
-      });
-
+      storeSwipeIn(swipeValid, verified_data, serverTimestamp());
     } catch (err) {
       console.error("Error saving swipe:", err);
     }
@@ -74,7 +76,27 @@ function Dashboard() {
     requestAnimationFrame(() => {
       inputRef.current?.focus();
     });
-  };
+
+  }
+    //saves data to firebase
+  function storeSwipeIn(swipeValid, verified_data, timeStamp){
+    if (swipeValid){
+    console.log("this is true");
+    addDoc(validSwipeInRef, {
+      ID: verified_data,
+      swipeInTime: timeStamp,
+    })
+  }
+    if (!swipeValid){
+          console.log("This is false");
+          console.log(verified_data, timeStamp);
+      addDoc(invalidSwipeInRef, {
+      ID: verified_data,
+      swipeInTime: timeStamp,
+    })
+    }
+  }
+
 
   return (
     <>
