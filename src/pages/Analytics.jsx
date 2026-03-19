@@ -1,6 +1,7 @@
-// This entire file was generated with help from ChatGPT
+// This entire file was generated with help from ChatGPT 
 import React, { useState, useEffect } from "react";
 import { Bar } from "react-chartjs-2";
+import Navbar from "./Navigation.jsx";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -20,6 +21,10 @@ import future from "./test-data/future.json";
 import invalid from "./test-data/invalid.json";
 import timezone from "./test-data/timezone.json";
 import empty from "./test-data/empty.json";
+
+// NEW: Firebase imports
+import { db } from "../Firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
 function Analytics() {
   const [timeRange, setTimeRange] = useState("today");
@@ -97,10 +102,24 @@ function Analytics() {
     empty
   };
 
+  // CHANGED: added Firebase option handling
   useEffect(() => {
-    if (dataFile === "normal") setSwipeData(generateNormalDataset());
-    else setSwipeData(datasets[dataFile] || []);
-  }, [dataFile]);
+    async function loadData() {
+
+      if (dataFile === "firebase") {
+        await fetchFirebaseData(); // NEW
+      } 
+      else if (dataFile === "normal") {
+        setSwipeData(generateNormalDataset());
+      } 
+      else {
+        setSwipeData(datasets[dataFile] || []);
+      }
+
+    }
+
+    loadData();
+  }, [dataFile, timeRange, startDate, endDate]); // added date deps so Firebase updates
 
   function getDateRange() {
     const now = new Date();
@@ -159,11 +178,40 @@ function Analytics() {
     return { start, end };
   }
 
+  // NEW: Firebase fetch function (ONLY addition)
+  async function fetchFirebaseData() {
+    const { start, end } = getDateRange();
+
+    const swipeRef = collection(db, "swipeIns");
+
+    const q = query(
+      swipeRef,
+      where("swipeInTime", ">=", start),
+      where("swipeInTime", "<=", end)
+    );
+
+    const snapshot = await getDocs(q);
+
+    const data = [];
+
+    snapshot.forEach((doc) => {
+      const d = doc.data();
+
+      if (!d.swipeInTime) return;
+
+      data.push({
+        studentId: d.ID,
+        time: d.swipeInTime.toDate().toISOString().slice(0, 19) // match your format
+      });
+    });
+
+    setSwipeData(data);
+  }
+
   function generateIntervals(start, end) {
     let buckets = {};
     const cursor = new Date(start);
 
-    // Align cursor to start of interval
     if (interval === "hours") {
       cursor.setMinutes(0, 0, 0);
 
@@ -290,48 +338,54 @@ function Analytics() {
   };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Analytics Page</h1>
+    <div>
+      <Navbar />
+      <div style={{ padding: "20px" }}>
+        <h1>Analytics Page</h1>
 
-      <h3>Test Dataset</h3>
-      <select value={dataFile} onChange={(e) => setDataFile(e.target.value)}>
-        <option value="normal">Normal (generated thousands)</option>
-        <option value="midnightEdge">Midnight Edge</option>
-        <option value="leapYear">Leap Year</option>
-        <option value="duplicates">Duplicates</option>
-        <option value="future">Future Dates</option>
-        <option value="invalid">Invalid Data</option>
-        <option value="timezone">Timezone</option>
-        <option value="empty">Empty</option>
-      </select>
+        <h3>Test Dataset</h3>
+        <select value={dataFile} onChange={(e) => setDataFile(e.target.value)}>
+          <option value="normal">Normal (generated thousands)</option>
+          <option value="midnightEdge">Midnight Edge</option>
+          <option value="leapYear">Leap Year</option>
+          <option value="duplicates">Duplicates</option>
+          <option value="future">Future Dates</option>
+          <option value="invalid">Invalid Data</option>
+          <option value="timezone">Timezone</option>
+          <option value="empty">Empty</option>
 
-      <h3>Choose Time Range</h3>
-      <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)}>
-        <option value="today">Today</option>
-        <option value="yesterday">Yesterday</option>
-        <option value="week">This Week</option>
-        <option value="month">This Month</option>
-        <option value="year">This Year</option>
-        <option value="custom">Date Range</option>
-      </select>
+          {/* NEW: Firebase option */}
+          <option value="firebase">Firebase Data</option>
+        </select>
 
-      {timeRange === "custom" && (
-        <div>
-          <input type="date" onChange={(e) => setStartDate(e.target.value)} />
-          <input type="date" onChange={(e) => setEndDate(e.target.value)} />
+        <h3>Choose Time Range</h3>
+        <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)}>
+          <option value="today">Today</option>
+          <option value="yesterday">Yesterday</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="year">This Year</option>
+          <option value="custom">Date Range</option>
+        </select>
+
+        {timeRange === "custom" && (
+          <div>
+            <input type="date" onChange={(e) => setStartDate(e.target.value)} />
+            <input type="date" onChange={(e) => setEndDate(e.target.value)} />
+          </div>
+        )}
+
+        <h3>Interval</h3>
+        <select value={interval} onChange={(e) => setInterval(e.target.value)}>
+          <option value="hours">Hours</option>
+          <option value="days">Days</option>
+          <option value="months">Months</option>
+          <option value="years">Years</option>
+        </select>
+
+        <div style={{ width: "100%", height: 400, marginTop: 40 }}>
+          <Bar data={data} options={options} />
         </div>
-      )}
-
-      <h3>Interval</h3>
-      <select value={interval} onChange={(e) => setInterval(e.target.value)}>
-        <option value="hours">Hours</option>
-        <option value="days">Days</option>
-        <option value="months">Months</option>
-        <option value="years">Years</option>
-      </select>
-
-      <div style={{ width: "100%", height: 400, marginTop: 40 }}>
-        <Bar data={data} options={options} />
       </div>
     </div>
   );
