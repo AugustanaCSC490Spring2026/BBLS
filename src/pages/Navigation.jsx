@@ -2,8 +2,11 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from 'react-router-dom';
 import "../components/Navbar.css";
 import logo from '../assets/logo.png';
+import { useAuth } from "../AuthContext.jsx";
+
 
 function Navbar() {
+const { isAdmin } = useAuth();
   const [role, setRole] = useState("");
   const location = useLocation();
   const isLoginPage = location.pathname === '/';
@@ -28,9 +31,11 @@ function Navbar() {
             <Link to="/dashboard" className="nav-item">
                 Equipment Checkout
             </Link>
-            <Link to="/analytics" className="nav-item">
-                Analytics
-            </Link>
+           {isAdmin && (
+                <Link to="/analytics">
+                    Analytics
+                </Link>
+            )}
           </div>
         )}
       </div>
