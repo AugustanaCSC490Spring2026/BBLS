@@ -4,7 +4,6 @@
   box-sizing: border-box;
 }
 
-
 .Dashboard {
   display: flex;
   justify-content: center;
@@ -32,13 +31,20 @@
 }
 
 .swipe-card input {
+  color: black;
   width: 100%;
   padding: 10px;
   margin-top: 5px;
   border-radius: 6px;
   border: 1px solid #ccc;
-  background-color: aliceblue;
+  background-color: white;
   font: inherit;
+}
+
+.swipe-card input:focus {
+  border-color: none;
+  outline: none;
+  color: none;
 }
 
 .swipe-button {

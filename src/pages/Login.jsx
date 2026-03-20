@@ -4,6 +4,7 @@ import logo from '../assets/logo.png';
 import { auth, provider } from '../Firebase.js'
 import { signInWithPopup, signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
+import Navbar from './Navigation.jsx';
 
 function Login() {
   const navigate = useNavigate();
@@ -37,13 +38,7 @@ function Login() {
 
   return (
     <>
-    <nav class="navbar">
-    <div class="nav-content">
-      <h1 class="logo">Augustana Recreation</h1>
-      <div class="nav-right">
-      </div>
-    </div>
-  </nav> 
+    <Navbar />
   <main class="main">
     <div class="card">
       <div class="card-header">

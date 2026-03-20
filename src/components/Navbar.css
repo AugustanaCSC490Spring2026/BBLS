@@ -1,8 +1,17 @@
 
 .navbar{
-background:white;
-color:black;
+color: white;
+background:#002F6C;
 width:100%;
+border-bottom: 10px solid #FFDD00;
+padding: 16px 24px;
+}
+
+
+.nav-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .nav-container{
@@ -33,7 +42,7 @@ padding:0;
 }
 
 .nav-links a{
-color:black;
+color:white;
 text-decoration:none;
 font-weight:500;
 }
