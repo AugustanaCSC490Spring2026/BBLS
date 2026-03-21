@@ -2,14 +2,15 @@ import React, { useState, useRef, useEffect } from "react";
 import { db } from "../Firebase.js";
 
 // NEW: added serverTimestamp for accurate backend time
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { addDoc, collection, serverTimestamp, getDoc, doc} from "firebase/firestore";
 
 import Navbar from "./Navigation.jsx";
 import "../components/Dashboard.css";
 import { FunnelChart } from "recharts";
 
-const validSwipeInRef = collection(db, 'swipeIns')
-const invalidSwipeInRef = collection(db, 'invalidSwipeIns')
+const validSwipeInRef = collection(db, 'swipeIns');
+const invalidSwipeInRef = collection(db, 'invalidSwipeIns');
+const currentStudentsRef = collection(db, "currentStudents");
 
 function Dashboard() {
   const [studentId, setStudentId] = useState("");
@@ -49,18 +50,26 @@ function Dashboard() {
 
     // Validate ID
     if (temp_input.length !== 7 && temp_input.length !== 16) {
-      alert("Invalid ID: " + temp_input);
-      console.log("Invalid ID: " + temp_input);
       verified_data = temp_input;
       swipeValid = false;
     } else if (temp_input.length == 7) {
       verified_data = temp_input;
-      console.log("Accepted, Entered ID: " + verified_data);
-      swipeValid = true;
+      const docRef = await doc(db, "currentStudents", verified_data);
+      await getDoc(docRef).then((docSnap) =>{
+        if(docSnap.exists()){
+          console.log("valid ID");
+          swipeValid = true;
+        }
+      })
     } else {
       verified_data = temp_input.slice(3, 10);
-      console.log("Accepted, Entered ID: " + verified_data);
-      swipeValid = true;
+      const docRef = await doc(db, "currentStudents", verified_data);
+      await getDoc(docRef).then((docSnap) =>{
+        if(docSnap.exists()){
+          console.log("valid ID");
+          swipeValid = true;
+        }
+      })
     }
 
     try {
@@ -81,17 +90,18 @@ function Dashboard() {
     //saves data to firebase
   function storeSwipeIn(swipeValid, verified_data, timeStamp){
     if (swipeValid){
-    console.log("this is true");
+      console.log("Accepted, Entered ID: " + verified_data);
     addDoc(validSwipeInRef, {
       ID: verified_data,
       swipeInTime: timeStamp,
     })
   }
     if (!swipeValid){
-          console.log("This is false");
-          console.log(verified_data, timeStamp);
+      alert("Invalid ID: " + verified_data);
+      console.log("Invalid ID: " + verified_data);
       addDoc(invalidSwipeInRef, {
       ID: verified_data,
+      reasonSwipeDenied: "ID not in database",
       swipeInTime: timeStamp,
     })
     }
