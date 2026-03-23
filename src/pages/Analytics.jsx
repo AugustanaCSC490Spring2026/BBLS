@@ -35,6 +35,8 @@ function Analytics() {
   const [swipeData, setSwipeData] = useState([]);
   const [dataFile, setDataFile] = useState("normal");
 
+  const [normalData, setNormalData] = useState([]); // NEW
+
   function generateNormalDataset() {
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - 12);
@@ -102,15 +104,19 @@ function Analytics() {
     empty
   };
 
-  // CHANGED: added Firebase option handling
+  // NEW: generate once
+  useEffect(() => {
+    setNormalData(generateNormalDataset());
+  }, []);
+
   useEffect(() => {
     async function loadData() {
 
       if (dataFile === "firebase") {
-        await fetchFirebaseData(); // NEW
+        await fetchFirebaseData();
       } 
       else if (dataFile === "normal") {
-        setSwipeData(generateNormalDataset());
+        setSwipeData(normalData); // NEW
       } 
       else {
         setSwipeData(datasets[dataFile] || []);
@@ -119,7 +125,7 @@ function Analytics() {
     }
 
     loadData();
-  }, [dataFile, timeRange, startDate, endDate]); // added date deps so Firebase updates
+  }, [dataFile, timeRange, startDate, endDate, normalData]); // NEW
 
   function getDateRange() {
     const now = new Date();
@@ -178,7 +184,6 @@ function Analytics() {
     return { start, end };
   }
 
-  // NEW: Firebase fetch function (ONLY addition)
   async function fetchFirebaseData() {
     const { start, end } = getDateRange();
 
@@ -201,7 +206,7 @@ function Analytics() {
 
       data.push({
         studentId: d.ID,
-        time: d.swipeInTime.toDate().toISOString().slice(0, 19) // match your format
+        time: d.swipeInTime.toDate().toISOString().slice(0, 19)
       });
     });
 
@@ -216,6 +221,10 @@ function Analytics() {
       cursor.setMinutes(0, 0, 0);
 
     } else if (interval === "days") {
+      cursor.setHours(0, 0, 0, 0);
+
+    } else if (interval === "weeks") { // NEW
+      cursor.setDate(cursor.getDate() - cursor.getDay());
       cursor.setHours(0, 0, 0, 0);
 
     } else if (interval === "months") {
@@ -237,6 +246,10 @@ function Analytics() {
       } else if (interval === "days") {
         label = `${cursor.getMonth() + 1}/${cursor.getDate()}/${cursor.getFullYear()}`;
         cursor.setDate(cursor.getDate() + 1);
+
+      } else if (interval === "weeks") { // NEW
+        label = `${cursor.getMonth() + 1}/${cursor.getDate()}/${cursor.getFullYear()}`;
+        cursor.setDate(cursor.getDate() + 7);
 
       } else if (interval === "months") {
         label = `${cursor.getMonth() + 1}/${cursor.getFullYear()}`;
@@ -269,6 +282,13 @@ function Analytics() {
 
       else if (interval === "days")
         label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+
+      else if (interval === "weeks") { // NEW
+        const weekStart = new Date(date);
+        weekStart.setDate(date.getDate() - date.getDay());
+        weekStart.setHours(0, 0, 0, 0);
+        label = `${weekStart.getMonth() + 1}/${weekStart.getDate()}/${weekStart.getFullYear()}`;
+      }
 
       else if (interval === "months")
         label = `${date.getMonth() + 1}/${date.getFullYear()}`;
@@ -320,6 +340,8 @@ function Analytics() {
               fullDateStr = intervalData.replace(" ", " at ") + ":00";
             } else if (interval === "days") {
               fullDateStr = new Date(intervalData).toLocaleDateString();
+            } else if (interval === "weeks") { // NEW
+              fullDateStr = `Week of ${new Date(intervalData).toLocaleDateString()}`;
             } else if (interval === "months") {
               const [m, y] = intervalData.split("/");
               fullDateStr = new Date(y, m - 1, 1).toLocaleDateString(undefined, {
@@ -353,8 +375,6 @@ function Analytics() {
           <option value="invalid">Invalid Data</option>
           <option value="timezone">Timezone</option>
           <option value="empty">Empty</option>
-
-          {/* NEW: Firebase option */}
           <option value="firebase">Firebase Data</option>
         </select>
 
@@ -379,6 +399,7 @@ function Analytics() {
         <select value={interval} onChange={(e) => setInterval(e.target.value)}>
           <option value="hours">Hours</option>
           <option value="days">Days</option>
+          <option value="weeks">Weeks</option> {/* NEW */}
           <option value="months">Months</option>
           <option value="years">Years</option>
         </select>
