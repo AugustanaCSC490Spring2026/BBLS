@@ -1,9 +1,3 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 body {
   color: #000000;
 }
@@ -20,7 +14,7 @@ body {
 }
 
 .card {
-  border: 3px solid #FFDD00;
+  border: 3px solid #002F6C;
   width: 100%;
   max-width: 420px;
   background-color: #ffffff;

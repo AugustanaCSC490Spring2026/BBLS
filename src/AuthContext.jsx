@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { auth } from "./Firebase";
+import { auth, db } from "./Firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { db } from "./Firebase";
 import { doc, getDoc } from "firebase/firestore";
 
 const AuthContext = createContext();
@@ -13,15 +12,32 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
+      if (!currentUser) {
+        setUser(null);
+        setIsAdmin(false);
+        setLoading(false);
+        return;
+      }
+
+      try {
         const email = currentUser.email.toLowerCase();
-        const snap = await getDoc(doc(db, "authorized_users", email));
+        const userRef = doc(db, "authorized_users", email);
+        const snap = await getDoc(userRef);
 
         if (snap.exists()) {
           setUser(currentUser);
-          setIsAdmin(snap.data().isAdmin);
+
+          // Safe admin check
+          const data = snap.data();
+          setIsAdmin(data?.isAdmin === true);
+        } else {
+          // Not authorized → force logout
+          setUser(null);
+          setIsAdmin(false);
+          await auth.signOut();
         }
-      } else {
+      } catch (err) {
+        console.error("Auth check error:", err);
         setUser(null);
         setIsAdmin(false);
       }
@@ -39,4 +55,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext); 
+export const useAuth = () => useContext(AuthContext);

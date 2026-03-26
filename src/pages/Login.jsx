@@ -37,10 +37,10 @@ function Login() {
   return (
     <>
       <Navbar />
-      <main class="main">
-        <div class="card">
-          <div class="card-header">
-            <img src={logo} alt="Logo" class="logo-image" width={200} height={200}/>
+      <main className="main">
+        <div className="card">
+          <div className="card-header">
+            <img src={logo} alt="Logo" className="logo-image" width={200} height={200}/>
             <h1>Sign In</h1><br/>
             <button className="gsi-material-button"
               onClick={handleGoogleLogin}>

@@ -12,6 +12,7 @@
 }
 
 .swipe-card {
+  border: 3px solid #002F6C;
   background: white;
   padding: 30px;
   width: 350px;
@@ -20,6 +21,7 @@
 }
 
 .swipe-card h2 {
+  width: 100%;
   text-align: center;
   margin-bottom: 20px;
 }
