@@ -3,7 +3,9 @@ import { useState, useEffect } from "react";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
-import Location from "./pages/Location";
+import Equipment from "./pages/Equipment";
+import { AuthProvider } from "./AuthContext";
+import ProtectedRoute from "./ProtectedRoute";
 
 function App() {
   const [selectedGym, setSelectedGym] = useState(
@@ -14,25 +16,40 @@ function App() {
     localStorage.setItem("selectedGym", newGym);
   };
   return (
-    <>
-      <head>
-            <link rel="preconnect" href="https://fonts.googleapis.com" />
-            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-            <link
-            href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
-            rel="stylesheet"
-            />
-        </head>
+    <AuthProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Login />} />
-          <Route path="/Location" element={<Location onSelectGym={handleGymChange} />} />
-          <Route path="/dashboard" element={<Dashboard gym={selectedGym} updateGym={handleGymChange} />} />
-          <Route path="/analytics" element={<Analytics gym={selectedGym} updateGym={handleGymChange} />} />
+
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute requireAdmin={true}>
+                <Analytics />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/equipment"
+            element={
+              <ProtectedRoute>
+                <Equipment />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
-  </>
+    </AuthProvider>
   );
 }
-
 export default App;

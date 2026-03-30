@@ -1,26 +1,6 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 body {
   color: #000000;
 }
-
-.navbar {
-  width: 100%;
-  background-color: #ffffff;
-  border-bottom: 10px solid #FFDD00;
-  padding: 16px 24px;
-}
-
-.nav-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
 .logo {
   font-size: 24px;
 }
@@ -34,7 +14,7 @@ body {
 }
 
 .card {
-  border: 3px solid #FFDD00;
+  border: 1px solid #002F6C;
   width: 100%;
   max-width: 420px;
   background-color: #ffffff;

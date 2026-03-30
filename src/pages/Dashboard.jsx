@@ -3,16 +3,17 @@ import { db } from "../Firebase.js";
 import { useLocation } from 'react-router-dom';
 
 // NEW: added serverTimestamp for accurate backend time
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { addDoc, collection, serverTimestamp, getDoc, doc } from "firebase/firestore";
 
 import Navbar from "./Navigation.jsx";
 import "../components/Dashboard.css";
 import { FunnelChart } from "recharts";
 
-const validSwipeInRef = collection(db, 'swipeIns')
+const validSwipeInRef = collection(db, 'swipeIns');
 const pepsicoCenterRef = collection(db, 'pepsicoCenter')
 const westerlinGymRef = collection(db, 'westerlinGym')
-const invalidSwipeInRef = collection(db, 'invalidSwipeIns')
+const invalidSwipeInRef = collection(db, 'invalidSwipeIns');
+const currentStudentsRef = collection(db, "currentStudents");
 
 function Dashboard( {gym, updateGym } ) {
   const [studentId, setStudentId] = useState("");
@@ -54,18 +55,26 @@ function Dashboard( {gym, updateGym } ) {
 
     // Validate ID
     if (temp_input.length !== 7 && temp_input.length !== 16) {
-      alert("Invalid ID: " + temp_input);
-      console.log("Invalid ID: " + temp_input);
       verified_data = temp_input;
       swipeValid = false;
     } else if (temp_input.length == 7) {
       verified_data = temp_input;
-      console.log("Accepted, Entered ID: " + verified_data);
-      swipeValid = true;
+      const docRef = await doc(db, "currentStudents", verified_data);
+      await getDoc(docRef).then((docSnap) => {
+        if (docSnap.exists()) {
+          console.log("valid ID");
+          swipeValid = true;
+        }
+      })
     } else {
       verified_data = temp_input.slice(3, 10);
-      console.log("Accepted, Entered ID: " + verified_data);
-      swipeValid = true;
+      const docRef = await doc(db, "currentStudents", verified_data);
+      await getDoc(docRef).then((docSnap) => {
+        if (docSnap.exists()) {
+          console.log("valid ID");
+          swipeValid = true;
+        }
+      })
     }
 
     try {
