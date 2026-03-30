@@ -1,0 +1,45 @@
+/* GEMINI HELPED ME MAKE THIS CODE 
+
+/* This is the magic part for centering */
+.selection-container {
+  display: flex;               /* Enables Flexbox */
+  justify-content: center;     /* Centers horizontally */
+  align-items: center;         /* Centers vertically */
+  gap: 2rem;                   /* Puts space between the buttons */
+  
+  /* These two lines are likely what was missing */
+  height: 100vh;               /* Makes the container 100% of the screen height */
+  width: 100vw;                /* Makes the container 100% of the screen width */
+  
+  background-color: white;     /* Ensures the background is white */
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Button styles */
+.gym-button {
+  width: 200px;
+  height: 200px;
+  font-size: 1.25rem;
+  font-weight: bold;
+  border-radius: 24px;
+  border: none;
+  cursor: pointer;
+  color: white;
+  transition: transform 0.2s ease;
+}
+
+.gym-button:hover {
+  transform: scale(1.1);       /* Makes button slightly bigger on hover */
+}
+
+/* Color overrides */
+.pepsi-color {
+  background-color: #002F6C !important; /* Deep Blue */
+}
+
+.westerlin-color {
+  background-color: #FFDD00 !important; /* Bright Yellow */
+  color: #002F6C;                       /* Dark text for yellow background */
+}

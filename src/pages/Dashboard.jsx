@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { db } from "../Firebase.js";
+import { useLocation } from 'react-router-dom';
 
 // NEW: added serverTimestamp for accurate backend time
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
@@ -11,9 +12,11 @@ import { FunnelChart } from "recharts";
 const validSwipeInRef = collection(db, 'swipeIns')
 const invalidSwipeInRef = collection(db, 'invalidSwipeIns')
 
-function Dashboard() {
+function Dashboard( {gym, updateGym } ) {
   const [studentId, setStudentId] = useState("");
   const inputRef = useRef(null);
+  const locationState = useLocation();
+  const pickedGym = locationState.state?.gym || "None Selected";
 
   // Auto-focus on load
   useEffect(() => {
@@ -100,7 +103,7 @@ function Dashboard() {
 
   return (
     <>
-      <Navbar />
+      <Navbar currentGym={gym} onGymChange={updateGym} />
       <div className="Dashboard">
         <div className="swipe-card">
           <h2>Swipe In</h2>

@@ -23,7 +23,7 @@ function Login() {
     const email = result.user.email;
 
     if (email && allowedUsers.includes(email)) {
-      navigate("/dashboard");
+      navigate("/Location");
     } else {
       alert("Unauthorized user. Please use an allowed email address.");
       await signOut(auth);

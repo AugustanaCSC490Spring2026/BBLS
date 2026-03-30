@@ -1,9 +1,18 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useState, useEffect } from "react";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
+import Location from "./pages/Location";
 
 function App() {
+  const [selectedGym, setSelectedGym] = useState(
+    localStorage.getItem("selectedGym") || "Pepsi-Co Center"
+  );
+  const handleGymChange = (newGym) => {
+    setSelectedGym(newGym);
+    localStorage.setItem("selectedGym", newGym);
+  };
   return (
     <>
       <head>
@@ -17,8 +26,9 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/Location" element={<Location onSelectGym={handleGymChange} />} />
+          <Route path="/dashboard" element={<Dashboard gym={selectedGym} updateGym={handleGymChange} />} />
+          <Route path="/analytics" element={<Analytics gym={selectedGym} updateGym={handleGymChange} />} />
         </Routes>
       </BrowserRouter>
   </>
