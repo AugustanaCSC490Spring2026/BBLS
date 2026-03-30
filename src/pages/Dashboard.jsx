@@ -10,6 +10,8 @@ import "../components/Dashboard.css";
 import { FunnelChart } from "recharts";
 
 const validSwipeInRef = collection(db, 'swipeIns')
+const pepsicoCenterRef = collection(db, 'pepsicoCenter')
+const westerlinGymRef = collection(db, 'westerlinGym')
 const invalidSwipeInRef = collection(db, 'invalidSwipeIns')
 
 function Dashboard( {gym, updateGym } ) {
@@ -69,7 +71,7 @@ function Dashboard( {gym, updateGym } ) {
     try {
       // CHANGED: using serverTimestamp instead of string date
       // This allows Firebase to store a real timestamp, so we can filter in analytics.jsx (written with ChatGPT)
-      storeSwipeIn(swipeValid, verified_data, serverTimestamp());
+      storeSwipeIn(gym, swipeValid, verified_data, serverTimestamp());
     } catch (err) {
       console.error("Error saving swipe:", err);
     }
@@ -82,18 +84,25 @@ function Dashboard( {gym, updateGym } ) {
 
   }
     //saves data to firebase
-  function storeSwipeIn(swipeValid, verified_data, timeStamp){
-    if (swipeValid){
-    console.log("this is true");
-    addDoc(validSwipeInRef, {
-      ID: verified_data,
-      swipeInTime: timeStamp,
-    })
-  }
+  function storeSwipeIn(gym, swipeValid, verified_data, timeStamp){
+    if (swipeValid && gym !== "None Selected"){
+      if(gym === "Pepsi-Co Center"){
+        addDoc(pepsicoCenterRef, {
+        ID: verified_data,
+        swipeInTime: timeStamp,
+      })
+      } else if (gym === "Westerlin Gym"){
+        addDoc(westerlinGymRef, {
+        ID: verified_data,
+        swipeInTime: timeStamp,
+      })
+      }
+    }
     if (!swipeValid){
-          console.log("This is false");
-          console.log(verified_data, timeStamp);
+      console.log("This is false");
+      console.log(verified_data, timeStamp);
       addDoc(invalidSwipeInRef, {
+      gym: gym,
       ID: verified_data,
       swipeInTime: timeStamp,
     })
@@ -106,6 +115,7 @@ function Dashboard( {gym, updateGym } ) {
       <Navbar currentGym={gym} onGymChange={updateGym} />
       <div className="Dashboard">
         <div className="swipe-card">
+          <h1>{gym}</h1>
           <h2>Swipe In</h2>
 
           <form onSubmit={handleSubmission}>
