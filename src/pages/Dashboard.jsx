@@ -124,7 +124,7 @@ function Dashboard( {gym, updateGym } ) {
       <Navbar currentGym={gym} onGymChange={updateGym} />
       <div className="Dashboard">
         <div className="swipe-card">
-          <h1>{gym}</h1>
+          {/* <h1>{gym}</h1> */}
           <h2>Swipe In</h2>
 
           <form onSubmit={handleSubmission}>

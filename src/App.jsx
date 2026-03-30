@@ -6,6 +6,7 @@ import Analytics from "./pages/Analytics";
 import Equipment from "./pages/Equipment";
 import { AuthProvider } from "./AuthContext";
 import ProtectedRoute from "./ProtectedRoute";
+import Location from "./pages/Location";
 
 function App() {
   const [selectedGym, setSelectedGym] = useState(
@@ -16,40 +17,49 @@ function App() {
     localStorage.setItem("selectedGym", newGym);
   };
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Login />} />
+  <AuthProvider>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Login />} />
 
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/location"
+          element={
+            <ProtectedRoute>
+              <Location onSelectGym={handleGymChange} />
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard gym={selectedGym} updateGym={handleGymChange} />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/analytics"
-            element={
-              <ProtectedRoute requireAdmin={true}>
-                <Analytics />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <Analytics gym={selectedGym} updateGym={handleGymChange} />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/equipment"
-            element={
-              <ProtectedRoute>
-                <Equipment />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
-  );
+        <Route
+          path="/equipment"
+          element={
+            <ProtectedRoute>
+              <Equipment gym={selectedGym} updateGym={handleGymChange} />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </BrowserRouter>
+  </AuthProvider>
+);
 }
 export default App;
