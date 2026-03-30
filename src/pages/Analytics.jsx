@@ -114,10 +114,10 @@ function Analytics() {
 
       if (dataFile === "firebase") {
         await fetchFirebaseData();
-      } 
+      }
       else if (dataFile === "normal") {
         setSwipeData(normalData); // NEW
-      } 
+      }
       else {
         setSwipeData(datasets[dataFile] || []);
       }

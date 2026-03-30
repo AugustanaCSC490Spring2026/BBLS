@@ -1,0 +1,52 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Montserrat", sans-serif;
+}
+
+.page {
+    padding: 20px;
+    background: white;
+    min-height: 100vh;
+}
+
+.layout {
+    display: flex;
+    gap: 20px;
+}
+
+.card {
+    margin-top: 50px;
+    max-height: 70vh;
+    height: fit-content;
+    min-width: 31.5vw;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    flex: 1;
+}
+
+input,
+select {
+    width: 100%;
+    margin: 10px 0;
+    padding: 8px;
+    color: black;
+    background-color: white;
+}
+
+.checkout {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #ccc;
+}
+
+.inventory-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+}

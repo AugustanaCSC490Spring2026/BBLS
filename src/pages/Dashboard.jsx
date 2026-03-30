@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { db } from "../Firebase.js";
 
 // NEW: added serverTimestamp for accurate backend time
-import { addDoc, collection, serverTimestamp, getDoc, doc} from "firebase/firestore";
+import { addDoc, collection, serverTimestamp, getDoc, doc } from "firebase/firestore";
 
 import Navbar from "./Navigation.jsx";
 import "../components/Dashboard.css";
@@ -55,8 +55,8 @@ function Dashboard() {
     } else if (temp_input.length == 7) {
       verified_data = temp_input;
       const docRef = await doc(db, "currentStudents", verified_data);
-      await getDoc(docRef).then((docSnap) =>{
-        if(docSnap.exists()){
+      await getDoc(docRef).then((docSnap) => {
+        if (docSnap.exists()) {
           console.log("valid ID");
           swipeValid = true;
         }
@@ -64,8 +64,8 @@ function Dashboard() {
     } else {
       verified_data = temp_input.slice(3, 10);
       const docRef = await doc(db, "currentStudents", verified_data);
-      await getDoc(docRef).then((docSnap) =>{
-        if(docSnap.exists()){
+      await getDoc(docRef).then((docSnap) => {
+        if (docSnap.exists()) {
           console.log("valid ID");
           swipeValid = true;
         }
@@ -87,23 +87,23 @@ function Dashboard() {
     });
 
   }
-    //saves data to firebase
-  function storeSwipeIn(swipeValid, verified_data, timeStamp){
-    if (swipeValid){
+  //saves data to firebase
+  function storeSwipeIn(swipeValid, verified_data, timeStamp) {
+    if (swipeValid) {
       console.log("Accepted, Entered ID: " + verified_data);
-    addDoc(validSwipeInRef, {
-      ID: verified_data,
-      swipeInTime: timeStamp,
-    })
-  }
-    if (!swipeValid){
+      addDoc(validSwipeInRef, {
+        ID: verified_data,
+        swipeInTime: timeStamp,
+      })
+    }
+    if (!swipeValid) {
       alert("Invalid ID: " + verified_data);
       console.log("Invalid ID: " + verified_data);
       addDoc(invalidSwipeInRef, {
-      ID: verified_data,
-      reasonSwipeDenied: "ID not in database",
-      swipeInTime: timeStamp,
-    })
+        ID: verified_data,
+        reasonSwipeDenied: "ID not in database",
+        swipeInTime: timeStamp,
+      })
     }
   }
 
