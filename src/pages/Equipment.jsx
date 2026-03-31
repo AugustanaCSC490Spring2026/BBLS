@@ -23,11 +23,25 @@ export default function Equipment() {
         alert(`Feature to be Added`);
     };
 
+    const handleImportCSV = () => {
+        
+    }
+    const handleExportCSV = () => {
+        
+    }
+
     return (
         <>
             <Navbar />
             <div className="page">
-                <h1>Equipment Checkout</h1>
+                <div className = "page-header">
+                <div className = "left"><h2>Equipment Checkout</h2></div>
+                
+                <div className = "right">
+                    <button>Import CSV</button>
+                    <button>Export CSV</button>
+                </div>
+                </div>
 
                 <div className="layout">
                     <div className="card">
