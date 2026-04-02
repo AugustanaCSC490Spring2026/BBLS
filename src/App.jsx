@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
 import Equipment from "./pages/Equipment";
+import Settings from "./pages/Settings";
 import { AuthProvider } from "./AuthContext";
 import ProtectedRoute from "./ProtectedRoute";
 import Location from "./pages/Location";
@@ -54,6 +55,15 @@ function App() {
           element={
             <ProtectedRoute>
               <Equipment gym={selectedGym} updateGym={handleGymChange} />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Settings />
             </ProtectedRoute>
           }
         />

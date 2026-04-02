@@ -68,6 +68,11 @@ function Navbar({ currentGym, onGymChange }) {
                                     Analytics
                                 </Link>
                             )}
+                            {isAdmin && (
+                                <Link to="/settings">
+                                    Settings
+                                </Link>
+                            )}
                         </div>
                         <button className="sign-out-button" onClick={handleSignOut}>
                             Sign Out
