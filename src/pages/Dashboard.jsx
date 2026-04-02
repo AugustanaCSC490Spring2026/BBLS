@@ -14,6 +14,7 @@ const pepsicoCenterRef = collection(db, 'pepsicoCenter')
 const westerlinGymRef = collection(db, 'westerlinGym')
 const invalidSwipeInRef = collection(db, 'invalidSwipeIns');
 const currentStudentsRef = collection(db, "currentStudents");
+const guestEntranceRef = collection(db, "guestEntrance");
 
 function Dashboard( {gym, updateGym } ) {
   const [studentId, setStudentId] = useState("");
@@ -91,6 +92,15 @@ function Dashboard( {gym, updateGym } ) {
       inputRef.current?.focus();
     });
 
+  }
+
+  function storeGuestSwipeIn(gym, name, visitReason, timeStamp){
+    addDoc(guestEntranceRef, {
+        location: gym,
+        name: name,
+        reasonForVisit: visitReason,
+        timestamp: timeStamp
+    })
   }
     //saves data to firebase
   function storeSwipeIn(gym, swipeValid, verified_data, timeStamp){
