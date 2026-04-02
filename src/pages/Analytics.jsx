@@ -35,7 +35,7 @@ function Analytics() {
   const [swipeData, setSwipeData] = useState([]);
   const [dataFile, setDataFile] = useState("normal");
 
-  const [normalData, setNormalData] = useState([]); // NEW
+  const [normalData, setNormalData] = useState([]);
 
   function generateNormalDataset() {
     const startDate = new Date();
@@ -50,19 +50,14 @@ function Analytics() {
 
     function getHoursForDay(day) {
       switch (day) {
-        case 0:
-          return [10, 22];
+        case 0: return [10, 22];
         case 1:
         case 2:
         case 3:
-        case 4:
-          return [7, 22];
-        case 5:
-          return [7, 20];
-        case 6:
-          return [9, 18];
-        default:
-          return [7, 22];
+        case 4: return [7, 22];
+        case 5: return [7, 20];
+        case 6: return [9, 18];
+        default: return [7, 22];
       }
     }
 
@@ -104,7 +99,6 @@ function Analytics() {
     empty
   };
 
-  // NEW: generate once
   useEffect(() => {
     setNormalData(generateNormalDataset());
   }, []);
@@ -112,11 +106,21 @@ function Analytics() {
   useEffect(() => {
     async function loadData() {
 
-      if (dataFile === "firebase") {
+      // ✅ NEW: handle new firebase dropdown options
+      if (dataFile === "pepsico") { // NEW
+        await fetchSpecificCollection("pepsicoCenter"); // NEW
+      }
+      else if (dataFile === "westerlin") { // NEW
+        await fetchSpecificCollection("westerlinGym"); // NEW
+      }
+      else if (dataFile === "combined") { // NEW
+        await fetchCombinedCollections(); // NEW
+      }
+      else if (dataFile === "firebase") {
         await fetchFirebaseData();
       }
       else if (dataFile === "normal") {
-        setSwipeData(normalData); // NEW
+        setSwipeData(normalData);
       }
       else {
         setSwipeData(datasets[dataFile] || []);
@@ -125,7 +129,7 @@ function Analytics() {
     }
 
     loadData();
-  }, [dataFile, timeRange, startDate, endDate, normalData]); // NEW
+  }, [dataFile, timeRange, startDate, endDate, normalData]);
 
   function getDateRange() {
     const now = new Date();
@@ -137,46 +141,39 @@ function Analytics() {
         start.setHours(0, 0, 0, 0);
         end.setHours(23, 59, 59, 999);
         break;
-
       case "yesterday":
         start.setDate(now.getDate() - 1);
         start.setHours(0, 0, 0, 0);
         end.setDate(now.getDate() - 1);
         end.setHours(23, 59, 59, 999);
         break;
-
       case "week":
         start.setDate(now.getDate() - now.getDay());
         start.setHours(0, 0, 0, 0);
         end.setHours(23, 59, 59, 999);
         break;
-
       case "month":
         start = new Date(now.getFullYear(), now.getMonth(), 1);
         start.setHours(0, 0, 0, 0);
         end.setHours(23, 59, 59, 999);
         break;
-
       case "year":
         start = new Date(now.getFullYear(), 0, 1);
         start.setHours(0, 0, 0, 0);
         end.setHours(23, 59, 59, 999);
         break;
-
       case "custom":
         if (startDate) {
           const [y, m, d] = startDate.split("-");
           start = new Date(y, m - 1, d);
           start.setHours(0, 0, 0, 0);
         }
-
         if (endDate) {
           const [y2, m2, d2] = endDate.split("-");
           end = new Date(y2, m2 - 1, d2);
           end.setHours(23, 59, 59, 999);
         }
         break;
-
       default:
         break;
     }
@@ -184,9 +181,70 @@ function Analytics() {
     return { start, end };
   }
 
+  // ✅ NEW: fetch from a specific collection
+  async function fetchSpecificCollection(collectionName) { // NEW
+    const { start, end } = getDateRange(); // NEW
+
+    const ref = collection(db, collectionName); // NEW
+
+    const q = query( // NEW
+      ref,
+      where("swipeInTime", ">=", start),
+      where("swipeInTime", "<=", end)
+    );
+
+    const snapshot = await getDocs(q); // NEW
+
+    const data = []; // NEW
+
+    snapshot.forEach((doc) => { // NEW
+      const d = doc.data();
+      if (!d.swipeInTime) return;
+
+      data.push({
+        studentId: d.ID,
+        time: d.swipeInTime.toDate().toISOString().slice(0, 19)
+      });
+    });
+
+    setSwipeData(data); // NEW
+  }
+
+  // ✅ NEW: fetch and combine both gyms
+  async function fetchCombinedCollections() { // NEW
+    const { start, end } = getDateRange(); // NEW
+
+    const collections = ["pepsicoCenter", "westerlinGym"]; // NEW
+
+    let combined = []; // NEW
+
+    for (let name of collections) { // NEW
+      const ref = collection(db, name); // NEW
+
+      const q = query( // NEW
+        ref,
+        where("swipeInTime", ">=", start),
+        where("swipeInTime", "<=", end)
+      );
+
+      const snapshot = await getDocs(q); // NEW
+
+      snapshot.forEach((doc) => { // NEW
+        const d = doc.data();
+        if (!d.swipeInTime) return;
+
+        combined.push({
+          studentId: d.ID,
+          time: d.swipeInTime.toDate().toISOString().slice(0, 19)
+        });
+      });
+    }
+
+    setSwipeData(combined); // NEW
+  }
+
   async function fetchFirebaseData() {
     const { start, end } = getDateRange();
-
     const swipeRef = collection(db, "swipeIns");
 
     const q = query(
@@ -201,7 +259,6 @@ function Analytics() {
 
     snapshot.forEach((doc) => {
       const d = doc.data();
-
       if (!d.swipeInTime) return;
 
       data.push({
@@ -217,21 +274,17 @@ function Analytics() {
     let buckets = {};
     const cursor = new Date(start);
 
-    if (interval === "hours") {
-      cursor.setMinutes(0, 0, 0);
-
-    } else if (interval === "days") {
-      cursor.setHours(0, 0, 0, 0);
-
-    } else if (interval === "weeks") { // NEW
+    if (interval === "hours") cursor.setMinutes(0, 0, 0);
+    else if (interval === "days") cursor.setHours(0, 0, 0, 0);
+    else if (interval === "weeks") {
       cursor.setDate(cursor.getDate() - cursor.getDay());
       cursor.setHours(0, 0, 0, 0);
-
-    } else if (interval === "months") {
+    }
+    else if (interval === "months") {
       cursor.setDate(1);
       cursor.setHours(0, 0, 0, 0);
-
-    } else if (interval === "years") {
+    }
+    else if (interval === "years") {
       cursor.setMonth(0, 1);
       cursor.setHours(0, 0, 0, 0);
     }
@@ -242,20 +295,20 @@ function Analytics() {
       if (interval === "hours") {
         label = `${cursor.getMonth() + 1}/${cursor.getDate()}/${cursor.getFullYear()} ${cursor.getHours()}:00`;
         cursor.setHours(cursor.getHours() + 1);
-
-      } else if (interval === "days") {
+      }
+      else if (interval === "days") {
         label = `${cursor.getMonth() + 1}/${cursor.getDate()}/${cursor.getFullYear()}`;
         cursor.setDate(cursor.getDate() + 1);
-
-      } else if (interval === "weeks") { // NEW
+      }
+      else if (interval === "weeks") {
         label = `${cursor.getMonth() + 1}/${cursor.getDate()}/${cursor.getFullYear()}`;
         cursor.setDate(cursor.getDate() + 7);
-
-      } else if (interval === "months") {
+      }
+      else if (interval === "months") {
         label = `${cursor.getMonth() + 1}/${cursor.getFullYear()}`;
         cursor.setMonth(cursor.getMonth() + 1);
-
-      } else if (interval === "years") {
+      }
+      else if (interval === "years") {
         label = `${cursor.getFullYear()}`;
         cursor.setFullYear(cursor.getFullYear() + 1);
       }
@@ -279,20 +332,16 @@ function Analytics() {
 
       if (interval === "hours")
         label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()} ${date.getHours()}:00`;
-
       else if (interval === "days")
         label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
-
-      else if (interval === "weeks") { // NEW
+      else if (interval === "weeks") {
         const weekStart = new Date(date);
         weekStart.setDate(date.getDate() - date.getDay());
         weekStart.setHours(0, 0, 0, 0);
         label = `${weekStart.getMonth() + 1}/${weekStart.getDate()}/${weekStart.getFullYear()}`;
       }
-
       else if (interval === "months")
         label = `${date.getMonth() + 1}/${date.getFullYear()}`;
-
       else if (interval === "years")
         label = `${date.getFullYear()}`;
 
@@ -340,7 +389,7 @@ function Analytics() {
               fullDateStr = intervalData.replace(" ", " at ") + ":00";
             } else if (interval === "days") {
               fullDateStr = new Date(intervalData).toLocaleDateString();
-            } else if (interval === "weeks") { // NEW
+            } else if (interval === "weeks") {
               fullDateStr = `Week of ${new Date(intervalData).toLocaleDateString()}`;
             } else if (interval === "months") {
               const [m, y] = intervalData.split("/");
@@ -348,8 +397,6 @@ function Analytics() {
                 year: "numeric",
                 month: "long"
               });
-            } else if (interval === "years") {
-              fullDateStr = intervalData;
             }
 
             return `Date: ${fullDateStr}, Swipes: ${dataPoint.swipes}`;
@@ -376,6 +423,11 @@ function Analytics() {
           <option value="timezone">Timezone</option>
           <option value="empty">Empty</option>
           <option value="firebase">Firebase Data</option>
+
+          {/* ✅ NEW dropdown options */}
+          <option value="pepsico">PepsiCo Center (Firebase)</option> {/* NEW */}
+          <option value="westerlin">Westerlin Gym (Firebase)</option> {/* NEW */}
+          <option value="combined">Combined Gyms (Firebase)</option> {/* NEW */}
         </select>
 
         <h3>Choose Time Range</h3>
@@ -399,7 +451,7 @@ function Analytics() {
         <select value={interval} onChange={(e) => setInterval(e.target.value)}>
           <option value="hours">Hours</option>
           <option value="days">Days</option>
-          <option value="weeks">Weeks</option> {/* NEW */}
+          <option value="weeks">Weeks</option>
           <option value="months">Months</option>
           <option value="years">Years</option>
         </select>
