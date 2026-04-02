@@ -50,11 +50,13 @@ function Navbar({ currentGym, onGymChange }) {
                 {shouldShowNavbar && (
                     <>
                         <div className="nav-links">
-                            <NavDropdown
-                                options={["Pepsi-Co Center", "Westerlin Gym"]}
-                                defaultOption={currentGym}
-                                onChange={onGymChange}
-                            />
+                            {location.pathname !== "/analytics" && (
+                                <NavDropdown
+                                    options={["Pepsi-Co Center", "Westerlin Gym"]}
+                                    defaultOption={currentGym}
+                                    onChange={onGymChange}
+                                />
+                            )}
                             <Link to="/dashboard" className="nav-item">
                                 Swipe In
                             </Link>
