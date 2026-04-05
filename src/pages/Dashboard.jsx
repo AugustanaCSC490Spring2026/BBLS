@@ -9,11 +9,11 @@ import Navbar from "./Navigation.jsx";
 import "../components/Dashboard.css";
 import { FunnelChart } from "recharts";
 
-const validSwipeInRef = collection(db, 'swipeIns');
 const pepsicoCenterRef = collection(db, 'pepsicoCenter')
 const westerlinGymRef = collection(db, 'westerlinGym')
 const invalidSwipeInRef = collection(db, 'invalidSwipeIns');
 const currentStudentsRef = collection(db, "currentStudents");
+const bannedStudentsRef = collection(db, "bannedStudents");
 
 
 
@@ -54,27 +54,55 @@ function Dashboard( {gym, updateGym } ) {
 
     let verified_data;
     let swipeValid = false;
+    let reasonsSwipeDenied;
+    let docRef;
+
 
     // Validate ID
     if (temp_input.length !== 7 && temp_input.length !== 16) {
       verified_data = temp_input;
       swipeValid = false;
+      reasonsSwipeDenied = "invalid ID format";
     } else if (temp_input.length == 7) {
       verified_data = temp_input;
-      const docRef = await doc(db, "currentStudents", verified_data);
+      docRef = await doc(db, "currentStudents", verified_data);
       await getDoc(docRef).then((docSnap) => {
         if (docSnap.exists()) {
           console.log("valid ID");
           swipeValid = true;
         }
+        else{
+          swipeValid = false;
+          reasonsSwipeDenied = "ID entered does not exist";
+        }
+      })
+      docRef = doc(db, "bannedStudents", verified_data);
+      await getDoc(docRef).then((docSnap) =>{
+        if (docSnap.exists()){
+          console.log("banned user");
+          swipeValid = false;
+          reasonsSwipeDenied = "this student is currently banned from entering Augustan Rec Facilities";
+        }
       })
     } else {
       verified_data = temp_input.slice(3, 10);
-      const docRef = await doc(db, "currentStudents", verified_data);
+      docRef = await doc(db, "currentStudents", verified_data);
       await getDoc(docRef).then((docSnap) => {
         if (docSnap.exists()) {
           console.log("valid ID");
           swipeValid = true;
+        }
+        else{
+          swipeValid = false;
+          reasonsSwipeDenied = "ID entered does not exist";
+        }
+      })
+      docRef = doc(db, "bannedStudents", verified_data);
+      await getDoc(docRef).then((docSnap) =>{
+        if (docSnap.exists()){
+          console.log("banned user");
+          swipeValid = false;
+          reasonsSwipeDenied = "this student is currently banned from entering Augustan Rec Facilities";
         }
       })
     }
@@ -82,7 +110,7 @@ function Dashboard( {gym, updateGym } ) {
     try {
       // CHANGED: using serverTimestamp instead of string date
       // This allows Firebase to store a real timestamp, so we can filter in analytics.jsx (written with ChatGPT)
-      storeSwipeIn(gym, swipeValid, verified_data, serverTimestamp());
+      storeSwipeIn(gym, swipeValid, verified_data, serverTimestamp(), reasonsSwipeDenied);
     } catch (err) {
       console.error("Error saving swipe:", err);
     }
@@ -95,14 +123,17 @@ function Dashboard( {gym, updateGym } ) {
 
   }
     //saves data to firebase
-  function storeSwipeIn(gym, swipeValid, verified_data, timeStamp){
+  function storeSwipeIn(gym, swipeValid, verified_data, timeStamp, reasonsSwipeDenied){
+    
     const customAlert = document.getElementById("customAlert");
     const alertContent = document.getElementById("alertContent");
     const alertHeading = document.getElementById("alertHeading");
     const alertText = document.getElementById("alertText");
-        alertHeading.innerHTML = "test content";
 
       if (swipeValid && gym !== "None Selected"){
+        alertHeading.textContent = "Swipe in Accepted";
+        alertHeading.style.color = "#14AB00";
+        alertText.textContent = "welcome";
         if(gym === "Pepsi-Co Center"){
           addDoc(pepsicoCenterRef, {
           ID: verified_data,
@@ -115,7 +146,10 @@ function Dashboard( {gym, updateGym } ) {
         })
         }
     }
-    if (!swipeValid){
+    else if (!swipeValid){
+        alertHeading.textContent = "Swipe in Denied";
+        alertHeading.style.color = "#E80000";
+        alertText.textContent = reasonsSwipeDenied;
       console.log("invalid swipe");
       console.log(verified_data, timeStamp);
       addDoc(invalidSwipeInRef, {
@@ -125,7 +159,7 @@ function Dashboard( {gym, updateGym } ) {
     })
     }
       customAlert.style.display = 'flex';
-      setTimeout(() => {customAlert.style.display = 'none';}, 3000);
+      setTimeout(() => {customAlert.style.display = 'none';}, 5000);
   }
 
 
@@ -136,7 +170,7 @@ function Dashboard( {gym, updateGym } ) {
           <div className="customAlert" id="customAlert">
             <div className="alertContent" id="alertContent">
               <h2 id="alertHeading"> Test Text</h2>
-              <p id="alertText">more test texters</p>
+              <p id="alertText"></p>
             </div>
           </div>
         <div className="swipe-card">
