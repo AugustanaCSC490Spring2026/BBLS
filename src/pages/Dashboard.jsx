@@ -15,6 +15,8 @@ const westerlinGymRef = collection(db, 'westerlinGym')
 const invalidSwipeInRef = collection(db, 'invalidSwipeIns');
 const currentStudentsRef = collection(db, "currentStudents");
 
+
+
 function Dashboard( {gym, updateGym } ) {
   const [studentId, setStudentId] = useState("");
   const inputRef = useRef(null);
@@ -94,21 +96,27 @@ function Dashboard( {gym, updateGym } ) {
   }
     //saves data to firebase
   function storeSwipeIn(gym, swipeValid, verified_data, timeStamp){
-    if (swipeValid && gym !== "None Selected"){
-      if(gym === "Pepsi-Co Center"){
-        addDoc(pepsicoCenterRef, {
-        ID: verified_data,
-        swipeInTime: timeStamp,
-      })
-      } else if (gym === "Westerlin Gym"){
-        addDoc(westerlinGymRef, {
-        ID: verified_data,
-        swipeInTime: timeStamp,
-      })
-      }
+    const customAlert = document.getElementById("customAlert");
+    const alertContent = document.getElementById("alertContent");
+    const alertHeading = document.getElementById("alertHeading");
+    const alertText = document.getElementById("alertText");
+        alertHeading.innerHTML = "test content";
+
+      if (swipeValid && gym !== "None Selected"){
+        if(gym === "Pepsi-Co Center"){
+          addDoc(pepsicoCenterRef, {
+          ID: verified_data,
+          swipeInTime: timeStamp,
+        })
+        } else if (gym === "Westerlin Gym"){
+          addDoc(westerlinGymRef, {
+          ID: verified_data,
+          swipeInTime: timeStamp,
+        })
+        }
     }
     if (!swipeValid){
-      console.log("This is false");
+      console.log("invalid swipe");
       console.log(verified_data, timeStamp);
       addDoc(invalidSwipeInRef, {
       gym: gym,
@@ -116,6 +124,8 @@ function Dashboard( {gym, updateGym } ) {
       swipeInTime: timeStamp,
     })
     }
+      customAlert.style.display = 'flex';
+      setTimeout(() => {customAlert.style.display = 'none';}, 3000);
   }
 
 
@@ -123,6 +133,12 @@ function Dashboard( {gym, updateGym } ) {
     <>
       <Navbar currentGym={gym} onGymChange={updateGym} />
       <div className="Dashboard">
+          <div className="customAlert" id="customAlert">
+            <div className="alertContent" id="alertContent">
+              <h2 id="alertHeading"> Test Text</h2>
+              <p id="alertText">more test texters</p>
+            </div>
+          </div>
         <div className="swipe-card">
           {/* <h1>{gym}</h1> */}
           <h2>Swipe In</h2>
@@ -146,6 +162,7 @@ function Dashboard( {gym, updateGym } ) {
           </form>
         </div>
       </div>
+
     </>
   );
 }
