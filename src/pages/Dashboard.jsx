@@ -56,6 +56,7 @@ function Dashboard( {gym, updateGym } ) {
     let swipeValid = false;
     let reasonsSwipeDenied;
     let docRef;
+    let studentName;
 
 
     // Validate ID
@@ -69,6 +70,7 @@ function Dashboard( {gym, updateGym } ) {
       await getDoc(docRef).then((docSnap) => {
         if (docSnap.exists()) {
           console.log("valid ID");
+          studentName = docSnap.data().Name;
           swipeValid = true;
         }
         else{
@@ -79,9 +81,10 @@ function Dashboard( {gym, updateGym } ) {
       docRef = doc(db, "bannedStudents", verified_data);
       await getDoc(docRef).then((docSnap) =>{
         if (docSnap.exists()){
+          studentName = docSnap.data().Name;
           console.log("banned user");
           swipeValid = false;
-          reasonsSwipeDenied = "this student is currently banned from entering Augustan Rec Facilities";
+          reasonsSwipeDenied = studentName + " is currently banned from entering Augustan Rec Facilities";
         }
       })
     } else {
@@ -89,6 +92,7 @@ function Dashboard( {gym, updateGym } ) {
       docRef = await doc(db, "currentStudents", verified_data);
       await getDoc(docRef).then((docSnap) => {
         if (docSnap.exists()) {
+          studentName = docSnap.data().Name;
           console.log("valid ID");
           swipeValid = true;
         }
@@ -100,9 +104,10 @@ function Dashboard( {gym, updateGym } ) {
       docRef = doc(db, "bannedStudents", verified_data);
       await getDoc(docRef).then((docSnap) =>{
         if (docSnap.exists()){
+          studentName = docSnap.data().Name;
           console.log("banned user");
           swipeValid = false;
-          reasonsSwipeDenied = "this student is currently banned from entering Augustan Rec Facilities";
+          reasonsSwipeDenied = studentName + " is currently banned from entering Augustan Rec Facilities";
         }
       })
     }
@@ -110,7 +115,7 @@ function Dashboard( {gym, updateGym } ) {
     try {
       // CHANGED: using serverTimestamp instead of string date
       // This allows Firebase to store a real timestamp, so we can filter in analytics.jsx (written with ChatGPT)
-      storeSwipeIn(gym, swipeValid, verified_data, serverTimestamp(), reasonsSwipeDenied);
+      storeSwipeIn(gym, swipeValid, verified_data, serverTimestamp(), reasonsSwipeDenied, studentName);
     } catch (err) {
       console.error("Error saving swipe:", err);
     }
@@ -123,7 +128,7 @@ function Dashboard( {gym, updateGym } ) {
 
   }
     //saves data to firebase
-  function storeSwipeIn(gym, swipeValid, verified_data, timeStamp, reasonsSwipeDenied){
+  function storeSwipeIn(gym, swipeValid, verified_data, timeStamp, reasonsSwipeDenied, studentName){
     
     const customAlert = document.getElementById("customAlert");
     const alertContent = document.getElementById("alertContent");
@@ -133,7 +138,7 @@ function Dashboard( {gym, updateGym } ) {
       if (swipeValid && gym !== "None Selected"){
         alertHeading.textContent = "Swipe in Accepted";
         alertHeading.style.color = "#14AB00";
-        alertText.textContent = "welcome";
+        alertText.textContent = "welcome " + studentName;
         if(gym === "Pepsi-Co Center"){
           addDoc(pepsicoCenterRef, {
           ID: verified_data,
@@ -159,7 +164,7 @@ function Dashboard( {gym, updateGym } ) {
     })
     }
       customAlert.style.display = 'flex';
-      setTimeout(() => {customAlert.style.display = 'none';}, 5000);
+      setTimeout(() => {customAlert.style.display = 'none';}, 6000);
   }
 
 
