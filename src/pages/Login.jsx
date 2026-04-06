@@ -11,7 +11,7 @@ import { doc, getDoc } from "firebase/firestore";
 function Login() {
   const navigate = useNavigate();
   const [error, setError] = useState("")
-
+  // handleGoogleLogin will sign the user in with Google and check if their email is authorized
   const handleGoogleLogin = async () => {
     try {
       const result = await signInWithPopup(auth, provider);

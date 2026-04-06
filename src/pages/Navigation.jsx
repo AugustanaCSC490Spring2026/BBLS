@@ -7,11 +7,10 @@ import { useAuth } from "../AuthContext.jsx";
 import { useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from "firebase/auth";
 import Login from "./Login.jsx";
-import Location from "./Location.jsx";
 
 function Navbar({ currentGym, onGymChange }) {
     const auth = getAuth();
-
+    // handleSignOut will sign the user out and navigate them back to the login page
     const handleSignOut = () => {
         signOut(auth)
             .then(() => {
@@ -22,6 +21,7 @@ function Navbar({ currentGym, onGymChange }) {
                 console.error("Error signing out: ", error);
             });
     }
+    // isAdmin is a boolean that indicates whether the current user is an admin or not
     const { isAdmin } = useAuth();
     const [role, setRole] = useState("");
     const location = useLocation();
@@ -33,12 +33,6 @@ function Navbar({ currentGym, onGymChange }) {
         const storedRole = localStorage.getItem("role");
         setRole(storedRole);
     }, []);
-
-    const handleRoleChange = (newRole) => {
-        setRole(newRole);
-        localStorage.setItem("role", newRole);
-        console.log("Role changed to:", newRole);
-    };
 
     return (
         <nav className="navbar">
