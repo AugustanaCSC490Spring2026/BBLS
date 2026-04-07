@@ -1,7 +1,12 @@
 import Navbar from "./Navigation.jsx";
 import { useState } from "react";
 import "../components/Equipment.css";
+import Papa from "papaparse";
+import { collection, doc, setDoc } from "firebase/firestore";
+import { getDocs } from "firebase/firestore";
+import { useEffect } from "react";
 import { db } from "../Firebase.js";
+
 
 export default function Equipment() {
     const [studentId, setStudentId] = useState("");
@@ -10,11 +15,10 @@ export default function Equipment() {
 
     const [activeCheckouts, setActiveCheckouts] = useState([]);
 
-    const availableEquipment = [
-        { name: "Basketball", available: 12, total: 15 },
-        { name: "Volleyball", available: 8, total: 10 },
-        { name: "Soccer Ball", available: 5, total: 8 },
-    ];
+    const [availableEquipment, setAvailableEquipment] = useState([]);
+    useEffect(() => {
+        fetchInventory();
+    }, []);
     //handleCheckout will validate the input and create a new checkout record in Firestore
     const handleCheckout = () => {
         alert(`Feature to be Added`);
@@ -23,31 +27,78 @@ export default function Equipment() {
     const handleReturn = (id) => {
         alert(`Feature to be Added`);
     };
+
+    const fetchInventory = async () => {
+
+        const snapshot = await getDocs(
+            collection(db, "equipmentInventory")
+        );
+
+        const equipmentList = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        setAvailableEquipment(equipmentList);
+
+    };
     //handleImportCSV will allow the user to import checkout data from a CSV file
-    const handleImportCSV = () => {
-        
-    }
+    const handleImportCSV = (event) => {
+        const file = event.target.files[0];
+
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: async (results) => {
+
+                const inventoryRef = collection(db, "equipmentInventory");
+
+                for (const row of results.data) {
+
+                    const docRef = doc(
+                        inventoryRef,
+                        row.name
+                    );
+
+                    await setDoc(docRef, {
+                        name: row.name,
+                        total: Number(row.total),
+                        available: Number(row.available)
+                    });
+
+                }
+
+                alert("Inventory Imported Successfully");
+
+                fetchInventory(); // refresh UI
+            }
+        });
+    };
     //handleExportCSV will allow the user to export checkout data to a CSV file
     const handleExportCSV = () => {
-        
+
     }
 
     return (
         <>
             <Navbar />
             <div className="page">
-                <div className = "page-header">
-                <div className = "left"><h2>Equipment Checkout</h2></div>
-                
-                <div className = "right">
-                    <button>Import CSV</button>
-                    <button>Export CSV</button>
-                </div>
+                <div className="page-header">
+                    <div className="left"><h2>Equipment Checkout</h2></div>
+
+                    <div className="right">
+                        <input
+                            type="file"
+                            accept=".csv"
+                            onChange={handleImportCSV}
+                        />
+                        <button>Export CSV</button>
+                    </div>
                 </div>
 
                 <div className="layout">
                     <div className="card">
-                        <div className = "card-header">
+                        <div className="card-header">
                             <h2>New Checkout</h2>
                         </div>
 
@@ -77,8 +128,8 @@ export default function Equipment() {
                         <button onClick={handleCheckout}>Checkout</button>
                     </div>
                     <div className="card">
-                        <div className = "card-header">
-                        <h2>Inventory Status</h2>
+                        <div className="card-header">
+                            <h2>Inventory Status</h2>
                         </div>
 
                         {availableEquipment.map((item) => (
@@ -91,24 +142,24 @@ export default function Equipment() {
                         ))}
                     </div>
                     <div className="card">
-                    <div className = "card-header">    
-                    <h2>Active Checkouts</h2>
-                    </div>
-
-                    {activeCheckouts.map((item) => (
-                        <div key={item.id} className="checkout">
-                            <div>
-                                <strong>{item.studentId}</strong>
-                                <p>{item.equipment} x{item.quantity}</p>
-                                <p>{item.checkoutTime} → {item.dueTime}</p>
-                            </div>
-
-                            <button onClick={() => handleReturn(item.id)}>
-                                Return
-                            </button>
+                        <div className="card-header">
+                            <h2>Active Checkouts</h2>
                         </div>
-                    ))}
-                </div>
+
+                        {activeCheckouts.map((item) => (
+                            <div key={item.id} className="checkout">
+                                <div>
+                                    <strong>{item.studentId}</strong>
+                                    <p>{item.equipment} x{item.quantity}</p>
+                                    <p>{item.checkoutTime} → {item.dueTime}</p>
+                                </div>
+
+                                <button onClick={() => handleReturn(item.id)}>
+                                    Return
+                                </button>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
         </>
