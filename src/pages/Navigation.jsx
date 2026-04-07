@@ -7,16 +7,17 @@ import { useAuth } from "../AuthContext.jsx";
 import { useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from "firebase/auth";
 import Login from "./Login.jsx";
+import Location from "./Location.jsx";
 
 function Navbar({ currentGym, onGymChange }) {
     const auth = getAuth();
 
     const handleSignOut = () => {
         signOut(auth)
-        then(() => {
-            console.log("User signed out successfully");
-            navigate(Login);
-        })
+            .then(() => {
+                console.log("User signed out successfully");
+                navigate(Login);
+            })
             .catch((error) => {
                 console.error("Error signing out: ", error);
             });
@@ -25,18 +26,19 @@ function Navbar({ currentGym, onGymChange }) {
     const [role, setRole] = useState("");
     const location = useLocation();
     const navigate = useNavigate();
-    const isLoginPage = location.pathname === '/';
+    const hideNavbarRoutes = ["/", "/Location"];
+    const shouldShowNavbar = !hideNavbarRoutes.includes(location.pathname);
 
     useEffect(() => {
         const storedRole = localStorage.getItem("role");
         setRole(storedRole);
     }, []);
 
-  const handleRoleChange = (newRole) => {
-    setRole(newRole);
-    localStorage.setItem("role", newRole);
-    console.log("Role changed to:", newRole);
-  };
+    const handleRoleChange = (newRole) => {
+        setRole(newRole);
+        localStorage.setItem("role", newRole);
+        console.log("Role changed to:", newRole);
+    };
 
     return (
         <nav className="navbar">
@@ -45,14 +47,16 @@ function Navbar({ currentGym, onGymChange }) {
                     <img src={logo} alt="Logo" width={60} height={60} />
                     <h1>Augustana Campus Recreation</h1>
                 </div>
-                {!isLoginPage && (
+                {shouldShowNavbar && (
                     <>
                         <div className="nav-links">
-            <NavDropdown 
-              options={["Pepsi-Co Center", "Westerlin Gym"]} 
-              defaultOption={currentGym} 
-              onChange={onGymChange} 
-            />
+                            {location.pathname !== "/analytics" && (
+                                <NavDropdown
+                                    options={["Pepsi-Co Center", "Westerlin Gym"]}
+                                    defaultOption={currentGym}
+                                    onChange={onGymChange}
+                                />
+                            )}
                             <Link to="/dashboard" className="nav-item">
                                 Swipe In
                             </Link>
@@ -62,6 +66,11 @@ function Navbar({ currentGym, onGymChange }) {
                             {isAdmin && (
                                 <Link to="/analytics">
                                     Analytics
+                                </Link>
+                            )}
+                            {isAdmin && (
+                                <Link to="/settings">
+                                    Settings
                                 </Link>
                             )}
                         </div>

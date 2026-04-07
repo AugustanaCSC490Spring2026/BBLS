@@ -10,11 +10,13 @@ import "../components/Dashboard.css";
 import { FunnelChart } from "recharts";
 import GuestPopup from "../components/GuestTab.jsx";
 
-const validSwipeInRef = collection(db, 'swipeIns');
 const pepsicoCenterRef = collection(db, 'pepsicoCenter')
 const westerlinGymRef = collection(db, 'westerlinGym')
 const invalidSwipeInRef = collection(db, 'invalidSwipeIns');
 const currentStudentsRef = collection(db, "currentStudents");
+const bannedStudentsRef = collection(db, "bannedStudents");
+
+
 const guestEntranceRef = collection(db, "guestEntrance");
 
 function Dashboard( {gym, updateGym } ) {
@@ -59,27 +61,60 @@ function Dashboard( {gym, updateGym } ) {
 
     let verified_data;
     let swipeValid = false;
+    let reasonsSwipeDenied;
+    let docRef;
+    let studentName;
+
 
     // Validate ID
     if (temp_input.length !== 7 && temp_input.length !== 16) {
       verified_data = temp_input;
       swipeValid = false;
+      reasonsSwipeDenied = "invalid ID format";
     } else if (temp_input.length == 7) {
       verified_data = temp_input;
-      const docRef = await doc(db, "currentStudents", verified_data);
+      docRef = await doc(db, "currentStudents", verified_data);
       await getDoc(docRef).then((docSnap) => {
         if (docSnap.exists()) {
           console.log("valid ID");
+          studentName = docSnap.data().Name;
           swipeValid = true;
+        }
+        else{
+          swipeValid = false;
+          reasonsSwipeDenied = "ID entered does not exist";
+        }
+      })
+      docRef = doc(db, "bannedStudents", verified_data);
+      await getDoc(docRef).then((docSnap) =>{
+        if (docSnap.exists()){
+          studentName = docSnap.data().Name;
+          console.log("banned user");
+          swipeValid = false;
+          reasonsSwipeDenied = studentName + " is currently banned from entering Augustan Rec Facilities";
         }
       })
     } else {
       verified_data = temp_input.slice(3, 10);
-      const docRef = await doc(db, "currentStudents", verified_data);
+      docRef = await doc(db, "currentStudents", verified_data);
       await getDoc(docRef).then((docSnap) => {
         if (docSnap.exists()) {
+          studentName = docSnap.data().Name;
           console.log("valid ID");
           swipeValid = true;
+        }
+        else{
+          swipeValid = false;
+          reasonsSwipeDenied = "ID entered does not exist";
+        }
+      })
+      docRef = doc(db, "bannedStudents", verified_data);
+      await getDoc(docRef).then((docSnap) =>{
+        if (docSnap.exists()){
+          studentName = docSnap.data().Name;
+          console.log("banned user");
+          swipeValid = false;
+          reasonsSwipeDenied = studentName + " is currently banned from entering Augustan Rec Facilities";
         }
       })
     }
@@ -87,7 +122,7 @@ function Dashboard( {gym, updateGym } ) {
     try {
       // CHANGED: using serverTimestamp instead of string date
       // This allows Firebase to store a real timestamp, so we can filter in analytics.jsx (written with ChatGPT)
-      storeSwipeIn(gym, swipeValid, verified_data, serverTimestamp());
+      storeSwipeIn(gym, swipeValid, verified_data, serverTimestamp(), reasonsSwipeDenied, studentName);
     } catch (err) {
       console.error("Error saving swipe:", err);
     }
@@ -113,22 +148,34 @@ function Dashboard( {gym, updateGym } ) {
   });
 }
     //saves data to firebase
-  function storeSwipeIn(gym, swipeValid, verified_data, timeStamp){
-    if (swipeValid && gym !== "None Selected"){
-      if(gym === "Pepsi-Co Center"){
-        addDoc(pepsicoCenterRef, {
-        ID: verified_data,
-        swipeInTime: timeStamp,
-      })
-      } else if (gym === "Westerlin Gym"){
-        addDoc(westerlinGymRef, {
-        ID: verified_data,
-        swipeInTime: timeStamp,
-      })
-      }
+  function storeSwipeIn(gym, swipeValid, verified_data, timeStamp, reasonsSwipeDenied, studentName){
+    
+    const customAlert = document.getElementById("customAlert");
+    const alertContent = document.getElementById("alertContent");
+    const alertHeading = document.getElementById("alertHeading");
+    const alertText = document.getElementById("alertText");
+
+      if (swipeValid && gym !== "None Selected"){
+        alertHeading.textContent = "Swipe in Accepted";
+        alertHeading.style.color = "#14AB00";
+        alertText.textContent = "welcome " + studentName;
+        if(gym === "Pepsi-Co Center"){
+          addDoc(pepsicoCenterRef, {
+          ID: verified_data,
+          swipeInTime: timeStamp,
+        })
+        } else if (gym === "Westerlin Gym"){
+          addDoc(westerlinGymRef, {
+          ID: verified_data,
+          swipeInTime: timeStamp,
+        })
+        }
     }
-    if (!swipeValid){
-      console.log("This is false");
+    else if (!swipeValid){
+        alertHeading.textContent = "Swipe in Denied";
+        alertHeading.style.color = "#E80000";
+        alertText.textContent = reasonsSwipeDenied;
+      console.log("invalid swipe");
       console.log(verified_data, timeStamp);
       addDoc(invalidSwipeInRef, {
       gym: gym,
@@ -136,6 +183,8 @@ function Dashboard( {gym, updateGym } ) {
       swipeInTime: timeStamp,
     })
     }
+      customAlert.style.display = 'flex';
+      setTimeout(() => {customAlert.style.display = 'none';}, 6000);
   }
 
 
@@ -143,6 +192,12 @@ function Dashboard( {gym, updateGym } ) {
     <>
       <Navbar currentGym={gym} onGymChange={updateGym} />
       <div className="Dashboard">
+          <div className="customAlert" id="customAlert">
+            <div className="alertContent" id="alertContent">
+              <h2 id="alertHeading"> Test Text</h2>
+              <p id="alertText"></p>
+            </div>
+          </div>
         <div className="swipe-card">
           {/* <h1>{gym}</h1> */}
           <h2>Swipe In</h2>
@@ -179,6 +234,7 @@ function Dashboard( {gym, updateGym } ) {
         onClose={() => setIsGuestPopupOpen(false)}
         onSubmitGuest={processGuestEntry} // Pass the new bridge function
       />
+
     </>
   );
 }

@@ -15,7 +15,19 @@
     display: flex;
     gap: 20px;
 }
-
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: right;
+    margin-bottom: 20px;
+}
+.right{
+    display: flex;
+    gap: 10px;
+}
+.left h2{
+    align-self: left;
+}
 .card {
     margin-top: 50px;
     max-height: 70vh;

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../components/Location.css';
+import Navbar from './Navigation.jsx';
 
 
 
@@ -16,6 +17,8 @@ function Location( { onSelectGym } ) {
   };
 
   return (
+    <>
+    <Navbar />
     <div className="selection-container">
       <button 
         onClick={() => handleSelection("Pepsi-Co Center")}
@@ -31,6 +34,7 @@ function Location( { onSelectGym } ) {
         Westerlin Gym
       </button>
     </div>
+    </>
   );
 }
 
