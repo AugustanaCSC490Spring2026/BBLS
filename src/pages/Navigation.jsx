@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from 'react-router-dom';
 import "../components/Navbar.css";
 import logo from '../assets/logo.png';
-import { NavDropdown } from "../components/dropDown.jsx";
+import { NavDropdown } from "../components/NavDropdown.jsx";
 import { useAuth } from "../AuthContext.jsx";
 import { useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from "firebase/auth";

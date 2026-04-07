@@ -8,6 +8,7 @@ import { addDoc, collection, serverTimestamp, getDoc, doc } from "firebase/fires
 import Navbar from "./Navigation.jsx";
 import "../components/Dashboard.css";
 import { FunnelChart } from "recharts";
+import GuestPopup from "../components/GuestTab.jsx";
 
 const validSwipeInRef = collection(db, 'swipeIns');
 const pepsicoCenterRef = collection(db, 'pepsicoCenter')
@@ -17,10 +18,6 @@ const currentStudentsRef = collection(db, "currentStudents");
 const guestEntranceRef = collection(db, "guestEntrance");
 
 function Dashboard( {gym, updateGym } ) {
-  const [guestCategory, setGuestCategory] = useState(""); // Holds dropdown value
-  const [otherReason, setOtherReason] = useState("");     // Holds "Other" text
-  const [guestName, setGuestName] = useState("");
-  const [guestPurpose, setGuestPurpose] = useState("");
   const [isGuestPopupOpen, setIsGuestPopupOpen] = useState(false);
   const [studentId, setStudentId] = useState("");
   const inputRef = useRef(null);
@@ -46,23 +43,6 @@ function Dashboard( {gym, updateGym } ) {
 
     return () => clearInterval(focusInterval);
   }, [isGuestPopupOpen]); 
-
-  const handleGuestSubmit = (e) => {
-  e.preventDefault();
-
-  // If they picked "Other", use the text box value; otherwise use the dropdown value
-  const finalReason = guestCategory === "Other" ? otherReason : guestCategory;
-
-  if (guestName.trim() && finalReason) {
-    storeGuestSwipeIn(gym, guestName, finalReason, serverTimestamp());
-    
-    // Reset everything
-    setGuestName("");
-    setGuestCategory("");
-    setOtherReason("");
-    setIsGuestPopupOpen(false);
-  }
-};
 
   const handleKeyDown = (input) => {
     if (input.key === "Enter") {
@@ -119,15 +99,19 @@ function Dashboard( {gym, updateGym } ) {
     });
 
   }
+  const processGuestEntry = (guestData) => {
+  // guestData is now the object { name, category, gradYear, etc. }
+  storeGuestSwipeIn(gym, guestData, serverTimestamp());
+  setIsGuestPopupOpen(false);
+};
 
-  function storeGuestSwipeIn(gym, name, visitReason, timeStamp){
-    addDoc(guestEntranceRef, {
-        location: gym,
-        name: name,
-        reasonForVisit: visitReason,
-        timestamp: timeStamp
-    })
-  }
+  function storeGuestSwipeIn(gym, guestData, timeStamp) {
+  addDoc(guestEntranceRef, {
+    location: gym,
+    timestamp: timeStamp,
+    ...guestData // This "spreads" the object into separate Firestore fields
+  });
+}
     //saves data to firebase
   function storeSwipeIn(gym, swipeValid, verified_data, timeStamp){
     if (swipeValid && gym !== "None Selected"){
@@ -182,63 +166,19 @@ function Dashboard( {gym, updateGym } ) {
           </form>
         </div>
       </div>
-      
-<button 
-  className="guest-trigger-btn" 
-  onClick={() => setIsGuestPopupOpen(!isGuestPopupOpen)} // This toggles it
->
-  {isGuestPopupOpen ? "Close Form" : "Guest Sign-In"}
-</button>
-    {isGuestPopupOpen && (
-  <div className="guest-popup-container">
-    <div className="guest-popup-header">
-      <h3>Guest Sign-In</h3>
-    </div>
-    
-    <form onSubmit={handleGuestSubmit}>
-      <div className="input-group">
-        <label>Full Name</label>
-        <input 
-          type="text" 
-          value={guestName} 
-          onChange={(e) => setGuestName(e.target.value)} 
-          placeholder="Enter guest name"
-          required 
-        />
-      </div>
-      
-      <div className="input-group">
-  <label>Reason for Visit</label>
-  <select 
-    value={guestCategory} 
-    onChange={(e) => setGuestCategory(e.target.value)}
-    required
-  >
-    <option value="" disabled>Select a reason</option>
-    <option value="Physical Therapy">Physical Therapy</option>
-    <option value="Other">Other</option>
-  </select>
-</div>
+      <button 
+        className="guest-trigger-btn" 
+        onClick={() => setIsGuestPopupOpen(!isGuestPopupOpen)}
+      >
+        {isGuestPopupOpen ? "Close Form" : "Guest Sign-In"}
+      </button>
 
-{/* CONDITIONAL TEXT BOX: Only shows if "Other" is selected */}
-{guestCategory === "Other" && (
-  <div className="input-group">
-    <label>Please Specify</label>
-    <input 
-      type="text"
-      value={otherReason}
-      onChange={(e) => setOtherReason(e.target.value)}
-      placeholder="Why are you visiting?"
-      required
-      autoFocus
-    />
-  </div>
-)}
-      
-      <button type="submit" className="guest-submit-btn">Sign In Guest</button>
-    </form>
-  </div>
-)}
+      {/* NEW CLEAN COMPONENT */}
+      <GuestPopup 
+        isOpen={isGuestPopupOpen} 
+        onClose={() => setIsGuestPopupOpen(false)}
+        onSubmitGuest={processGuestEntry} // Pass the new bridge function
+      />
     </>
   );
 }

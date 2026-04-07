@@ -105,6 +105,10 @@
   
   /* Animation feels better sliding up from the button */
   animation: slideUp 0.3s ease-out;
+
+  transition: all 0.3s ease-in-out;
+  max-height: 500px; /* Ensure it has room to grow */
+  overflow: hidden;
 }
 
 @keyframes slideUp {
@@ -123,20 +127,18 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
-}
-
-.guest-popup-header h3 {
   margin: 0;
   font-size: 1.2rem;
   color: #333;
+  margin-bottom: 20px;
 }
 
 .close-btn {
   background: none;
   border: none;
-  font-size: 1.5rem;
+  font-size: 2rem;
   cursor: pointer;
-  color: #999;
+  color: #1558b0;
 }
 
 .input-group {
@@ -198,4 +200,19 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.guest-details-animation {
+  animation: slideDownFade 0.3s ease-out;
+}
+
+@keyframes slideDownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
