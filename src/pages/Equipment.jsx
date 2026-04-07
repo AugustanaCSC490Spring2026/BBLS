@@ -1,6 +1,7 @@
 import Navbar from "./Navigation.jsx";
 import { useState } from "react";
 import "../components/Equipment.css";
+import { db } from "../Firebase.js";
 
 export default function Equipment() {
     const [studentId, setStudentId] = useState("");
@@ -14,18 +15,19 @@ export default function Equipment() {
         { name: "Volleyball", available: 8, total: 10 },
         { name: "Soccer Ball", available: 5, total: 8 },
     ];
-
+    //handleCheckout will validate the input and create a new checkout record in Firestore
     const handleCheckout = () => {
         alert(`Feature to be Added`);
     };
-
+    //handleReturn will mark a checkout as returned in Firestore
     const handleReturn = (id) => {
         alert(`Feature to be Added`);
     };
-
+    //handleImportCSV will allow the user to import checkout data from a CSV file
     const handleImportCSV = () => {
         
     }
+    //handleExportCSV will allow the user to export checkout data to a CSV file
     const handleExportCSV = () => {
         
     }
