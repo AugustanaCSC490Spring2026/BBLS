@@ -8,6 +8,7 @@ import { addDoc, collection, serverTimestamp, getDoc, doc } from "firebase/fires
 import Navbar from "./Navigation.jsx";
 import "../components/Dashboard.css";
 import { FunnelChart } from "recharts";
+import GuestPopup from "../components/GuestTab.jsx";
 
 const pepsicoCenterRef = collection(db, 'pepsicoCenter')
 const westerlinGymRef = collection(db, 'westerlinGym')
@@ -16,8 +17,10 @@ const currentStudentsRef = collection(db, "currentStudents");
 const bannedStudentsRef = collection(db, "bannedStudents");
 
 
+const guestEntranceRef = collection(db, "guestEntrance");
 
 function Dashboard( {gym, updateGym } ) {
+  const [isGuestPopupOpen, setIsGuestPopupOpen] = useState(false);
   const [studentId, setStudentId] = useState("");
   const inputRef = useRef(null);
   const locationState = useLocation();
@@ -27,9 +30,13 @@ function Dashboard( {gym, updateGym } ) {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+  
 
   // Keeps input focused every 5 seconds
   useEffect(() => {
+    // If the guest popup is open, don't start the interval
+    if (isGuestPopupOpen) return;
+
     const focusInterval = setInterval(() => {
       if (document.activeElement !== inputRef.current) {
         inputRef.current?.focus();
@@ -37,7 +44,7 @@ function Dashboard( {gym, updateGym } ) {
     }, 5000);
 
     return () => clearInterval(focusInterval);
-  }, []);
+  }, [isGuestPopupOpen]); 
 
   const handleKeyDown = (input) => {
     if (input.key === "Enter") {
@@ -127,6 +134,19 @@ function Dashboard( {gym, updateGym } ) {
     });
 
   }
+  const processGuestEntry = (guestData) => {
+  // guestData is now the object { name, category, gradYear, etc. }
+  storeGuestSwipeIn(gym, guestData, serverTimestamp());
+  setIsGuestPopupOpen(false);
+};
+
+  function storeGuestSwipeIn(gym, guestData, timeStamp) {
+  addDoc(guestEntranceRef, {
+    location: gym,
+    timestamp: timeStamp,
+    ...guestData // This "spreads" the object into separate Firestore fields
+  });
+}
     //saves data to firebase
   function storeSwipeIn(gym, swipeValid, verified_data, timeStamp, reasonsSwipeDenied, studentName){
     
@@ -200,6 +220,19 @@ function Dashboard( {gym, updateGym } ) {
           </form>
         </div>
       </div>
+      <button 
+        className="guest-trigger-btn" 
+        onClick={() => setIsGuestPopupOpen(!isGuestPopupOpen)}
+      >
+        {isGuestPopupOpen ? "Close Form" : "Guest Sign-In"}
+      </button>
+
+      {/* NEW CLEAN COMPONENT */}
+      <GuestPopup 
+        isOpen={isGuestPopupOpen} 
+        onClose={() => setIsGuestPopupOpen(false)}
+        onSubmitGuest={processGuestEntry} // Pass the new bridge function
+      />
 
     </>
   );
