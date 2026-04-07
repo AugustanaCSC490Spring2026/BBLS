@@ -106,15 +106,14 @@ function Analytics() {
   useEffect(() => {
     async function loadData() {
 
-      // ✅ NEW: handle new firebase dropdown options
-      if (dataFile === "pepsico") { // NEW
-        await fetchSpecificCollection("pepsicoCenter"); // NEW
+      if (dataFile === "pepsico") {
+        await fetchSpecificCollection("pepsicoCenter");
       }
-      else if (dataFile === "westerlin") { // NEW
-        await fetchSpecificCollection("westerlinGym"); // NEW
+      else if (dataFile === "westerlin") {
+        await fetchSpecificCollection("westerlinGym");
       }
-      else if (dataFile === "combined") { // NEW
-        await fetchCombinedCollections(); // NEW
+      else if (dataFile === "combined") {
+        await fetchCombinedCollections();
       }
       else if (dataFile === "firebase") {
         await fetchFirebaseData();
@@ -181,68 +180,66 @@ function Analytics() {
     return { start, end };
   }
 
-  // ✅ NEW: fetch from a specific collection
-  async function fetchSpecificCollection(collectionName) { // NEW
-    const { start, end } = getDateRange(); // NEW
+  // ✅ FIX: Store Date object directly instead of ISO string
+  async function fetchSpecificCollection(collectionName) {
+    const { start, end } = getDateRange();
+    const ref = collection(db, collectionName);
 
-    const ref = collection(db, collectionName); // NEW
-
-    const q = query( // NEW
+    const q = query(
       ref,
       where("swipeInTime", ">=", start),
       where("swipeInTime", "<=", end)
     );
 
-    const snapshot = await getDocs(q); // NEW
+    const snapshot = await getDocs(q);
+    const data = [];
 
-    const data = []; // NEW
-
-    snapshot.forEach((doc) => { // NEW
+    snapshot.forEach((doc) => {
       const d = doc.data();
       if (!d.swipeInTime) return;
 
       data.push({
         studentId: d.ID,
-        time: d.swipeInTime.toDate().toISOString().slice(0, 19)
+        time: d.swipeInTime.toDate() // ✅ FIX
       });
     });
 
-    setSwipeData(data); // NEW
+    setSwipeData(data);
   }
 
-  // ✅ NEW: fetch and combine both gyms
-  async function fetchCombinedCollections() { // NEW
-    const { start, end } = getDateRange(); // NEW
+  // ✅ FIX: Store Date object directly
+  async function fetchCombinedCollections() {
+    const { start, end } = getDateRange();
+    const collections = ["pepsicoCenter", "westerlinGym"];
 
-    const collections = ["pepsicoCenter", "westerlinGym"]; // NEW
+    let combined = [];
 
-    let combined = []; // NEW
+    for (let name of collections) {
+      const ref = collection(db, name);
 
-    for (let name of collections) { // NEW
-      const ref = collection(db, name); // NEW
-
-      const q = query( // NEW
+      const q = query(
         ref,
         where("swipeInTime", ">=", start),
         where("swipeInTime", "<=", end)
       );
 
-      const snapshot = await getDocs(q); // NEW
+      const snapshot = await getDocs(q);
 
-      snapshot.forEach((doc) => { // NEW
+      snapshot.forEach((doc) => {
         const d = doc.data();
         if (!d.swipeInTime) return;
 
         combined.push({
           studentId: d.ID,
-          time: d.swipeInTime.toDate().toISOString().slice(0, 19)
+          time: d.swipeInTime.toDate() // ✅ FIX
         });
       });
     }
 
-    setSwipeData(combined); // NEW
+    setSwipeData(combined);
   }
 
+  // ✅ FIX: Store Date object directly
   async function fetchFirebaseData() {
     const { start, end } = getDateRange();
     const swipeRef = collection(db, "swipeIns");
@@ -254,7 +251,6 @@ function Analytics() {
     );
 
     const snapshot = await getDocs(q);
-
     const data = [];
 
     snapshot.forEach((doc) => {
@@ -263,7 +259,7 @@ function Analytics() {
 
       data.push({
         studentId: d.ID,
-        time: d.swipeInTime.toDate().toISOString().slice(0, 19)
+        time: d.swipeInTime.toDate() // ✅ FIX
       });
     });
 
@@ -324,7 +320,9 @@ function Analytics() {
     const buckets = generateIntervals(start, end);
 
     swipeData.forEach((swipe) => {
-      const date = new Date(swipe.time);
+      // ✅ FIX: Handle both Date objects and strings safely
+      const date = swipe.time instanceof Date ? swipe.time : new Date(swipe.time);
+
       if (isNaN(date)) return;
       if (date < start || date > end) return;
 
@@ -424,10 +422,9 @@ function Analytics() {
           <option value="empty">Empty</option>
           <option value="firebase">Firebase Data</option>
 
-          {/* ✅ NEW dropdown options */}
-          <option value="pepsico">PepsiCo Center (Firebase)</option> {/* NEW */}
-          <option value="westerlin">Westerlin Gym (Firebase)</option> {/* NEW */}
-          <option value="combined">Combined Gyms (Firebase)</option> {/* NEW */}
+          <option value="pepsico">PepsiCo Center (Firebase)</option>
+          <option value="westerlin">Westerlin Gym (Firebase)</option>
+          <option value="combined">Combined Gyms (Firebase)</option>
         </select>
 
         <h3>Choose Time Range</h3>
