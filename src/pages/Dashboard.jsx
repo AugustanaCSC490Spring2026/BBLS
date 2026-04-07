@@ -15,9 +15,8 @@ const westerlinGymRef = collection(db, 'westerlinGym')
 const invalidSwipeInRef = collection(db, 'invalidSwipeIns');
 const currentStudentsRef = collection(db, "currentStudents");
 const bannedStudentsRef = collection(db, "bannedStudents");
-
-
 const guestEntranceRef = collection(db, "guestEntrance");
+let alertTimer;
 
 function Dashboard( {gym, updateGym } ) {
   const [isGuestPopupOpen, setIsGuestPopupOpen] = useState(false);
@@ -183,7 +182,8 @@ function Dashboard( {gym, updateGym } ) {
     })
     }
       customAlert.style.display = 'flex';
-      setTimeout(() => {customAlert.style.display = 'none';}, 6000);
+      clearTimeout(alertTimer);
+      alertTimer = setTimeout(() => {customAlert.style.display = 'none';}, 3500);
   }
 
 
