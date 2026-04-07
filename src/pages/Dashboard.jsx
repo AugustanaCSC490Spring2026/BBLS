@@ -131,7 +131,6 @@ function Dashboard( {gym, updateGym } ) {
   function storeSwipeIn(gym, swipeValid, verified_data, timeStamp, reasonsSwipeDenied, studentName){
     
     const customAlert = document.getElementById("customAlert");
-    const alertContent = document.getElementById("alertContent");
     const alertHeading = document.getElementById("alertHeading");
     const alertText = document.getElementById("alertText");
 
