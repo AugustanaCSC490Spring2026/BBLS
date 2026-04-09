@@ -22,7 +22,7 @@ import invalid from "./test-data/invalid.json";
 import timezone from "./test-data/timezone.json";
 import empty from "./test-data/empty.json";
 
-// NEW: Firebase imports
+// Firebase imports
 import { db } from "../Firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
@@ -118,6 +118,9 @@ function Analytics() {
       else if (dataFile === "firebase") {
         await fetchFirebaseData();
       }
+      else if (dataFile === "guestEntrance") { // ✅ NEW: handle guestEntrance selection
+        await fetchGuestEntrance();
+      }
       else if (dataFile === "normal") {
         setSwipeData(normalData);
       }
@@ -180,7 +183,6 @@ function Analytics() {
     return { start, end };
   }
 
-  // ✅ FIX: Store Date object directly instead of ISO string
   async function fetchSpecificCollection(collectionName) {
     const { start, end } = getDateRange();
     const ref = collection(db, collectionName);
@@ -200,14 +202,13 @@ function Analytics() {
 
       data.push({
         studentId: d.ID,
-        time: d.swipeInTime.toDate() // ✅ FIX
+        time: d.swipeInTime.toDate()
       });
     });
 
     setSwipeData(data);
   }
 
-  // ✅ FIX: Store Date object directly
   async function fetchCombinedCollections() {
     const { start, end } = getDateRange();
     const collections = ["pepsicoCenter", "westerlinGym"];
@@ -231,7 +232,7 @@ function Analytics() {
 
         combined.push({
           studentId: d.ID,
-          time: d.swipeInTime.toDate() // ✅ FIX
+          time: d.swipeInTime.toDate()
         });
       });
     }
@@ -239,7 +240,6 @@ function Analytics() {
     setSwipeData(combined);
   }
 
-  // ✅ FIX: Store Date object directly
   async function fetchFirebaseData() {
     const { start, end } = getDateRange();
     const swipeRef = collection(db, "swipeIns");
@@ -259,7 +259,34 @@ function Analytics() {
 
       data.push({
         studentId: d.ID,
-        time: d.swipeInTime.toDate() // ✅ FIX
+        time: d.swipeInTime.toDate()
+      });
+    });
+
+    setSwipeData(data);
+  }
+
+  // ✅ NEW: Fetch data from "guestEntrance" collection using "timestamp" field
+  async function fetchGuestEntrance() {
+    const { start, end } = getDateRange();
+    const ref = collection(db, "guestEntrance");
+
+    const q = query(
+      ref,
+      where("timestamp", ">=", start), // ✅ uses "timestamp" instead of "swipeInTime"
+      where("timestamp", "<=", end)
+    );
+
+    const snapshot = await getDocs(q);
+    const data = [];
+
+    snapshot.forEach((doc) => {
+      const d = doc.data();
+      if (!d.timestamp) return;
+
+      data.push({
+        studentId: "guest", // ✅ placeholder since no student ID field specified
+        time: d.timestamp.toDate() // ✅ convert Firestore timestamp to JS Date
       });
     });
 
@@ -320,7 +347,6 @@ function Analytics() {
     const buckets = generateIntervals(start, end);
 
     swipeData.forEach((swipe) => {
-      // ✅ FIX: Handle both Date objects and strings safely
       const date = swipe.time instanceof Date ? swipe.time : new Date(swipe.time);
 
       if (isNaN(date)) return;
@@ -425,6 +451,9 @@ function Analytics() {
           <option value="pepsico">PepsiCo Center (Firebase)</option>
           <option value="westerlin">Westerlin Gym (Firebase)</option>
           <option value="combined">Combined Gyms (Firebase)</option>
+
+          {/* ✅ NEW: Option to load guestEntrance collection */}
+          <option value="guestEntrance">Guest Entrance (Firebase)</option>
         </select>
 
         <h3>Choose Time Range</h3>
