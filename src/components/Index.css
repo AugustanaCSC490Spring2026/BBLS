@@ -29,3 +29,14 @@ button:hover {
   background-color: #0056b3;
   border-color: #004a99;
 }
+
+.card {
+    margin-top: 50px;
+    max-height: 70vh;
+    height: fit-content;
+    min-width: 31.5vw;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    flex: 1;
+}

@@ -1,17 +1,18 @@
 // This entire file was generated with help from ChatGPT 
 import React, { useState, useEffect } from "react";
-import { Bar } from "react-chartjs-2";
+import { Bar, Pie } from "react-chartjs-2"; // ✅ NEW: Added Pie chart
 import Navbar from "./Navigation.jsx";
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   BarElement,
+  ArcElement, // ✅ NEW: Needed for pie chart
   Tooltip,
   Legend
 } from "chart.js";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
 
 // JSON test datasets
 import midnightEdge from "./test-data/midnight-edge.json";
@@ -22,20 +23,67 @@ import invalid from "./test-data/invalid.json";
 import timezone from "./test-data/timezone.json";
 import empty from "./test-data/empty.json";
 
-// NEW: Firebase imports
+// Firebase imports
 import { db } from "../Firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
 function Analytics() {
+
+  // ✅ NEW: Chart type state (Swipe-ins vs Demographics)
+  const [chartType, setChartType] = useState("swipe");
+
   const [timeRange, setTimeRange] = useState("today");
   const [interval, setInterval] = useState("hours");
+
+  // ✅ NEW: Demographic type dropdown state
+  const [demographicType, setDemographicType] = useState("Class");
+
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [chartData, setChartData] = useState([]);
   const [swipeData, setSwipeData] = useState([]);
+
+  // ✅ NEW: Stores aggregated demographic counts
+  const [demographicData, setDemographicData] = useState({});
+
+  // ✅ NEW: Cached student data (FULL FETCH)
+  const [studentMap, setStudentMap] = useState({});
+
   const [dataFile, setDataFile] = useState("normal");
 
   const [normalData, setNormalData] = useState([]);
+
+  // ✅ NEW: Maps dropdown names to Firestore field names
+  const demographicFieldMap = {
+    Class: "Class",
+    Gender: "Gender",
+    "International/Domestic": "International",
+    PersonType: "PersonType",
+    Race: "Race",
+    Residence: "Residence",
+    Transfer: "Transfer"
+  };
+
+  // ✅ NEW: Fetch entire currentStudents collection ONCE and cache it
+  useEffect(() => {
+    async function loadStudents() {
+      try {
+        const snapshot = await getDocs(collection(db, "currentStudents"));
+        const map = {};
+
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          map[data.ID] = data;
+        });
+
+        setStudentMap(map);
+      } catch (err) {
+        console.error("Error loading students:", err);
+      }
+    }
+
+    loadStudents();
+  }, []);
 
   function generateNormalDataset() {
     const startDate = new Date();
@@ -106,18 +154,20 @@ function Analytics() {
   useEffect(() => {
     async function loadData() {
 
-      // ✅ NEW: handle new firebase dropdown options
-      if (dataFile === "pepsico") { // NEW
-        await fetchSpecificCollection("pepsicoCenter"); // NEW
+      if (dataFile === "pepsico") {
+        await fetchSpecificCollection("pepsicoCenter");
       }
-      else if (dataFile === "westerlin") { // NEW
-        await fetchSpecificCollection("westerlinGym"); // NEW
+      else if (dataFile === "westerlin") {
+        await fetchSpecificCollection("westerlinGym");
       }
-      else if (dataFile === "combined") { // NEW
-        await fetchCombinedCollections(); // NEW
+      else if (dataFile === "combined") {
+        await fetchCombinedCollections();
       }
       else if (dataFile === "firebase") {
         await fetchFirebaseData();
+      }
+      else if (dataFile === "guestEntrance") {
+        await fetchGuestEntrance();
       }
       else if (dataFile === "normal") {
         setSwipeData(normalData);
@@ -181,66 +231,61 @@ function Analytics() {
     return { start, end };
   }
 
-  // ✅ NEW: fetch from a specific collection
-  async function fetchSpecificCollection(collectionName) { // NEW
-    const { start, end } = getDateRange(); // NEW
+  async function fetchSpecificCollection(collectionName) {
+    const { start, end } = getDateRange();
+    const ref = collection(db, collectionName);
 
-    const ref = collection(db, collectionName); // NEW
-
-    const q = query( // NEW
+    const q = query(
       ref,
       where("swipeInTime", ">=", start),
       where("swipeInTime", "<=", end)
     );
 
-    const snapshot = await getDocs(q); // NEW
+    const snapshot = await getDocs(q);
+    const data = [];
 
-    const data = []; // NEW
-
-    snapshot.forEach((doc) => { // NEW
+    snapshot.forEach((doc) => {
       const d = doc.data();
       if (!d.swipeInTime) return;
 
       data.push({
         studentId: d.ID,
-        time: d.swipeInTime.toDate().toISOString().slice(0, 19)
+        time: d.swipeInTime.toDate()
       });
     });
 
-    setSwipeData(data); // NEW
+    setSwipeData(data);
   }
 
-  // ✅ NEW: fetch and combine both gyms
-  async function fetchCombinedCollections() { // NEW
-    const { start, end } = getDateRange(); // NEW
+  async function fetchCombinedCollections() {
+    const { start, end } = getDateRange();
+    const collections = ["pepsicoCenter", "westerlinGym"];
 
-    const collections = ["pepsicoCenter", "westerlinGym"]; // NEW
+    let combined = [];
 
-    let combined = []; // NEW
+    for (let name of collections) {
+      const ref = collection(db, name);
 
-    for (let name of collections) { // NEW
-      const ref = collection(db, name); // NEW
-
-      const q = query( // NEW
+      const q = query(
         ref,
         where("swipeInTime", ">=", start),
         where("swipeInTime", "<=", end)
       );
 
-      const snapshot = await getDocs(q); // NEW
+      const snapshot = await getDocs(q);
 
-      snapshot.forEach((doc) => { // NEW
+      snapshot.forEach((doc) => {
         const d = doc.data();
         if (!d.swipeInTime) return;
 
         combined.push({
           studentId: d.ID,
-          time: d.swipeInTime.toDate().toISOString().slice(0, 19)
+          time: d.swipeInTime.toDate()
         });
       });
     }
 
-    setSwipeData(combined); // NEW
+    setSwipeData(combined);
   }
 
   async function fetchFirebaseData() {
@@ -254,7 +299,6 @@ function Analytics() {
     );
 
     const snapshot = await getDocs(q);
-
     const data = [];
 
     snapshot.forEach((doc) => {
@@ -263,12 +307,69 @@ function Analytics() {
 
       data.push({
         studentId: d.ID,
-        time: d.swipeInTime.toDate().toISOString().slice(0, 19)
+        time: d.swipeInTime.toDate()
       });
     });
 
     setSwipeData(data);
   }
+
+  async function fetchGuestEntrance() {
+    const { start, end } = getDateRange();
+    const ref = collection(db, "guestEntrance");
+
+    const q = query(
+      ref,
+      where("timestamp", ">=", start),
+      where("timestamp", "<=", end)
+    );
+
+    const snapshot = await getDocs(q);
+    const data = [];
+
+    snapshot.forEach((doc) => {
+      const d = doc.data();
+      if (!d.timestamp) return;
+
+      data.push({
+        studentId: "guest",
+        time: d.timestamp.toDate()
+      });
+    });
+
+    setSwipeData(data);
+  }
+
+  // ✅ NEW: Process demographics using cached studentMap (NO DB CALLS)
+  function processDemographics() {
+    const { start, end } = getDateRange();
+    const counts = {};
+
+    swipeData.forEach((swipe) => {
+      if (swipe.studentId === "guest") return;
+
+      const date = swipe.time instanceof Date ? swipe.time : new Date(swipe.time);
+      if (isNaN(date) || date < start || date > end) return;
+
+      const student = studentMap[swipe.studentId];
+
+      const fieldName = demographicFieldMap[demographicType];
+      let value = student?.[fieldName];
+
+      if (!value || value.trim() === "") value = "N/A";
+
+      counts[value] = (counts[value] || 0) + 1;
+    });
+
+    setDemographicData(counts);
+  }
+
+  // ✅ NEW: Run demographic processing when needed
+  useEffect(() => {
+    if (chartType === "demographics" && Object.keys(studentMap).length > 0) {
+      processDemographics();
+    }
+  }, [chartType, demographicType, swipeData, timeRange, startDate, endDate, studentMap]);
 
   function generateIntervals(start, end) {
     let buckets = {};
@@ -324,7 +425,8 @@ function Analytics() {
     const buckets = generateIntervals(start, end);
 
     swipeData.forEach((swipe) => {
-      const date = new Date(swipe.time);
+      const date = swipe.time instanceof Date ? swipe.time : new Date(swipe.time);
+
       if (isNaN(date)) return;
       if (date < start || date > end) return;
 
@@ -371,45 +473,37 @@ function Analytics() {
     ]
   };
 
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      tooltip: {
-        callbacks: {
-          label: function (context) {
-            const idx = context.dataIndex;
-            const intervalData = context.chart.data.labels[idx];
-            const dataPoint = chartData[idx];
-            if (!dataPoint) return "";
-
-            let fullDateStr = intervalData;
-
-            if (interval === "hours") {
-              fullDateStr = intervalData.replace(" ", " at ") + ":00";
-            } else if (interval === "days") {
-              fullDateStr = new Date(intervalData).toLocaleDateString();
-            } else if (interval === "weeks") {
-              fullDateStr = `Week of ${new Date(intervalData).toLocaleDateString()}`;
-            } else if (interval === "months") {
-              const [m, y] = intervalData.split("/");
-              fullDateStr = new Date(y, m - 1, 1).toLocaleDateString(undefined, {
-                year: "numeric",
-                month: "long"
-              });
-            }
-
-            return `Date: ${fullDateStr}, Swipes: ${dataPoint.swipes}`;
-          }
-        }
+  // ✅ NEW: Pie chart dataset
+  const pieData = {
+    labels: Object.keys(demographicData),
+    datasets: [
+      {
+        data: Object.values(demographicData),
+        backgroundColor: [
+          "#8884d8",
+          "#82ca9d",
+          "#ffc658",
+          "#ff7f7f",
+          "#8dd1e1",
+          "#d0ed57",
+          "#a4de6c"
+        ]
       }
-    }
+    ]
   };
 
   return (
     <div>
       <Navbar />
       <div style={{ padding: "20px" }}>
+
+        {/* ✅ NEW: Chart Type Dropdown */}
+        <h3>Chart Type</h3>
+        <select value={chartType} onChange={(e) => setChartType(e.target.value)}>
+          <option value="swipe">Swipe-ins</option>
+          <option value="demographics">Demographics</option>
+        </select>
+
         <h1>Analytics Page</h1>
 
         <h3>Test Dataset</h3>
@@ -423,11 +517,14 @@ function Analytics() {
           <option value="timezone">Timezone</option>
           <option value="empty">Empty</option>
           <option value="firebase">Firebase Data</option>
+          <option value="pepsico">PepsiCo Center (Firebase)</option>
+          <option value="westerlin">Westerlin Gym (Firebase)</option>
+          <option value="combined">Combined Gyms (Firebase)</option>
 
-          {/* ✅ NEW dropdown options */}
-          <option value="pepsico">PepsiCo Center (Firebase)</option> {/* NEW */}
-          <option value="westerlin">Westerlin Gym (Firebase)</option> {/* NEW */}
-          <option value="combined">Combined Gyms (Firebase)</option> {/* NEW */}
+          {/* ✅ NEW: Hide guest option when demographics is selected */}
+          {chartType !== "demographics" && (
+            <option value="guestEntrance">Guest Entrance (Firebase)</option>
+          )}
         </select>
 
         <h3>Choose Time Range</h3>
@@ -447,17 +544,39 @@ function Analytics() {
           </div>
         )}
 
-        <h3>Interval</h3>
-        <select value={interval} onChange={(e) => setInterval(e.target.value)}>
-          <option value="hours">Hours</option>
-          <option value="days">Days</option>
-          <option value="weeks">Weeks</option>
-          <option value="months">Months</option>
-          <option value="years">Years</option>
-        </select>
+        {/* ✅ NEW: Conditional UI */}
+        {chartType === "swipe" ? (
+          <>
+            <h3>Interval</h3>
+            <select value={interval} onChange={(e) => setInterval(e.target.value)}>
+              <option value="hours">Hours</option>
+              <option value="days">Days</option>
+              <option value="weeks">Weeks</option>
+              <option value="months">Months</option>
+              <option value="years">Years</option>
+            </select>
+          </>
+        ) : (
+          <>
+            <h3>Demographic Type</h3>
+            <select value={demographicType} onChange={(e) => setDemographicType(e.target.value)}>
+              <option value="Class">Class</option>
+              <option value="Gender">Gender</option>
+              <option value="International/Domestic">International/Domestic</option>
+              <option value="PersonType">PersonType</option>
+              <option value="Race">Race</option>
+              <option value="Residence">Residence</option>
+              <option value="Transfer">Transfer</option>
+            </select>
+          </>
+        )}
 
         <div style={{ width: "100%", height: 400, marginTop: 40 }}>
-          <Bar data={data} options={options} />
+          {chartType === "swipe" ? (
+            <Bar data={data} />
+          ) : (
+            <Pie data={pieData} />
+          )}
         </div>
       </div>
     </div>
