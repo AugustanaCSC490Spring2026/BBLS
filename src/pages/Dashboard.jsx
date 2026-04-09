@@ -199,7 +199,7 @@ function Dashboard( {gym, updateGym } ) {
           </div>
         <div className="swipe-card">
           {/* <h1>{gym}</h1> */}
-          <h2>Swipe In, DID THIS WORK SUJAY </h2>
+          <h2>Swipe In</h2>
 
           <form onSubmit={handleSubmission}>
             <label>Student ID</label>
