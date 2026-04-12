@@ -6,19 +6,57 @@ import { collection, doc, setDoc } from "firebase/firestore";
 import { getDocs } from "firebase/firestore";
 import { useEffect } from "react";
 import { db } from "../Firebase.js";
+import { useLocation } from "react-router-dom";
 
 
 export default function Equipment() {
     const [studentId, setStudentId] = useState("");
     const [selectedEquipment, setSelectedEquipment] = useState("");
     const [quantity, setQuantity] = useState(1);
-
+    const locationState = useLocation();
+    const gym = locationState.state?.gym || "None Selected";
     const [activeCheckouts, setActiveCheckouts] = useState([]);
 
+    const pepsicoInventoryRef = collection(db, "pepsicoEquipmentInventory");
+    const westerlinInventoryRef = collection(db, "westerlinEquipmentInventory");
+
+    const pepsicoCheckoutRef = collection(db, "pepsicoCheckouts");
+    const westerlinCheckoutRef = collection(db, "westerlinCheckouts");
+    const getInventoryCollection = () => {
+
+        if (gym === "Pepsi-Co Center") {
+            return pepsicoInventoryRef;
+        }
+        else if (gym === "Westerlin Gym") {
+            return westerlinInventoryRef;
+        }
+        else {
+            alert("No gym selected");
+            return null;
+        }
+
+    };
+
+    const getCheckoutCollection = () => {
+
+        if (gym === "Pepsi-Co Center") {
+            return pepsicoCheckoutRef;
+        }
+        else if (gym === "Westerlin Gym") {
+            return westerlinCheckoutRef;
+        }
+        else {
+            alert("No gym selected");
+            return null;
+        }
+
+    };
     const [availableEquipment, setAvailableEquipment] = useState([]);
     useEffect(() => {
+    if (gym !== "None Selected") {
         fetchInventory();
-    }, []);
+    }
+}, [gym]);
     //handleCheckout will validate the input and create a new checkout record in Firestore
     const handleCheckout = () => {
         alert(`Feature to be Added`);
@@ -30,9 +68,11 @@ export default function Equipment() {
 
     const fetchInventory = async () => {
 
-        const snapshot = await getDocs(
-            collection(db, "equipmentInventory")
-        );
+        const inventoryRef = getInventoryCollection();
+
+        if (!inventoryRef) return;
+
+        const snapshot = await getDocs(inventoryRef);
 
         const equipmentList = snapshot.docs.map(doc => ({
             id: doc.id,
@@ -44,6 +84,7 @@ export default function Equipment() {
     };
     //handleImportCSV will allow the user to import checkout data from a CSV file
     const handleImportCSV = (event) => {
+
         const file = event.target.files[0];
 
         Papa.parse(file, {
@@ -51,7 +92,9 @@ export default function Equipment() {
             skipEmptyLines: true,
             complete: async (results) => {
 
-                const inventoryRef = collection(db, "equipmentInventory");
+                const inventoryRef = getInventoryCollection();
+
+                if (!inventoryRef) return;
 
                 for (const row of results.data) {
 
@@ -70,9 +113,11 @@ export default function Equipment() {
 
                 alert("Inventory Imported Successfully");
 
-                fetchInventory(); // refresh UI
+                fetchInventory();
+
             }
         });
+
     };
     //handleExportCSV will allow the user to export checkout data to a CSV file
     const handleExportCSV = () => {
