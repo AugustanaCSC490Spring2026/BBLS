@@ -5,23 +5,29 @@
 }
 
 button {
-  padding: 12px 24px;
-  font-size: 16px;
+  /* Rounded corners - 8px is a soft standard, 20px+ for a pill shape */
+  border-radius: 8px; 
+  
+  /* Blue background and white text */
+  background-color: #007BFF;
+  color: #FFFFFF;
+  
+  /* Keeps the button looking clean */
+  border: 1px solid transparent;
+  padding: 0.3em 1.2em;
+  font-size: 1em;
+  font-family: inherit;
   font-weight: 500;
-  color: black;
-  background-color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  transition: transform 0.2s, background-color 0.2s;
+  cursor: pointer;
+  
+  /* Smooth transition for hover effects */
+  transition: background-color 0.25s, border-color 0.25s;
 }
 
+/* Recommended: Add a hover state so users know it's clickable */
 button:hover {
-  background-color: #FFDD00;
-  transform: scale(1.05);
-}
-
-button:active {
-  transform: scale(0.95);
+  background-color: #0056b3;
+  border-color: #004a99;
 }
 
 .card {

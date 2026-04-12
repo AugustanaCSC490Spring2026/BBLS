@@ -1,0 +1,97 @@
+.nav-dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+/* Move the border-radius and background to a wrapper or the item itself */
+.nav-dropdown-item {
+  border-radius: 6px; /* Keep the rounded look on the actual button */
+  /* ... rest of your styles */
+}
+
+/* The Main Button */
+.nav-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 150px;
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 600; /* Bumped to 600 for better readability on white */
+  color: white; 
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* --- Theme Switching Logic --- */
+
+/* White Theme (Primary) */
+.nav-dropdown-trigger[data-theme="primary"],
+.nav-dropdown-item[data-theme="primary"] {
+  background-color: #ffffff;
+  color: #1d4ed8; /* Text matches the Blue Theme color */
+}
+
+.nav-dropdown-trigger[data-theme="primary"]:hover,
+.nav-dropdown-item[data-theme="primary"]:hover {
+  background-color: #f8f9fa; /* Slight off-white for hover feedback */
+}
+
+/* Blue Theme (Secondary) */
+.nav-dropdown-trigger[data-theme="secondary"],
+.nav-dropdown-item[data-theme="secondary"] {
+  background-color: #1d4ed8;
+  color: white;
+}
+
+.nav-dropdown-trigger[data-theme="secondary"]:hover,
+.nav-dropdown-item[data-theme="secondary"]:hover {
+  background-color: #1e40af;
+}
+
+/* --- UI Elements --- */
+
+.nav-dropdown-arrow {
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s ease;
+  /* Icon color will automatically inherit the 'color' property from the parent button */
+}
+
+.nav-dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+
+.nav-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  
+  /* REMOVE this: */
+  /* margin-top: 4px; */
+
+  /* ADD this: */
+  padding-top: 8px; /* This creates the visual gap but keeps the "hover" active */
+  background-color: transparent; 
+  z-index: 10;
+}
+
+/* Move the border-radius and background to a wrapper or the item itself */
+.nav-dropdown-item {
+  border-radius: 6px; /* Keep the rounded look on the actual button */
+  /* ... rest of your styles */
+}
+
+.nav-dropdown-item {
+  width: 100%;
+  padding: 8px 16px;
+  text-align: left;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
