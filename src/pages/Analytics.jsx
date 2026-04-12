@@ -494,7 +494,10 @@ function Analytics() {
 
   return (
     <div>
-      <Navbar />
+      <Navbar 
+            currentGym={gym} 
+            onGymChange={updateGym} 
+        />
       <div style={{ padding: "20px" }}>
 
         {/* ✅ NEW: Chart Type Dropdown */}

@@ -26,7 +26,7 @@ function Navbar({ currentGym, onGymChange }) {
     const [role, setRole] = useState("");
     const location = useLocation();
     const navigate = useNavigate();
-    const hideNavbarRoutes = ["/", "/location"];
+    const hideNavbarRoutes = ["/", "/Location"];
     const shouldShowNavbar = !hideNavbarRoutes.includes(location.pathname);
 
     useEffect(() => {

@@ -140,7 +140,10 @@ export default function Equipment({ gym, updateGym }) {
 
     return (
         <>
-            <Navbar />
+        <Navbar 
+            currentGym={gym} 
+            onGymChange={updateGym} 
+        />
 
             <div className="page">
                 <div className="page-header">

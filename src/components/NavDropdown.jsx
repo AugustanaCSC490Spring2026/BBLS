@@ -5,11 +5,11 @@ export function NavDropdown({ options, defaultOption, onChange }) {
   const [selectedOption, setSelectedOption] = useState(defaultOption || options[0]);
   const [isOpen, setIsOpen] = useState(false);
 
-  useEffect(() => {
-    if (defaultOption) {
-      setSelectedOption(defaultOption);
-    }
-  }, [defaultOption]);
+ useEffect(() => {
+  if (defaultOption && defaultOption !== selectedOption) {
+    setSelectedOption(defaultOption);
+  }
+}, [defaultOption]);
 
   // Determine the option not currently selected
   const otherOption = selectedOption === options[0] ? options[1] : options[0];
