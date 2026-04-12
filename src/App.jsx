@@ -9,6 +9,7 @@ import { AuthProvider } from "./AuthContext";
 import ProtectedRoute from "./ProtectedRoute";
 import Location from "./pages/Location";
 
+
 function App() {
   const [selectedGym, setSelectedGym] = useState(
     localStorage.getItem("selectedGym") || "Pepsi-Co Center"

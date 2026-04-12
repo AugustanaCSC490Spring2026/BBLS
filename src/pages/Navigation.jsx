@@ -15,7 +15,7 @@ function Navbar({ currentGym, onGymChange }) {
         signOut(auth)
             .then(() => {
                 console.log("User signed out successfully");
-                navigate(Login);
+                navigate("/");
             })
             .catch((error) => {
                 console.error("Error signing out: ", error);
@@ -26,7 +26,7 @@ function Navbar({ currentGym, onGymChange }) {
     const [role, setRole] = useState("");
     const location = useLocation();
     const navigate = useNavigate();
-    const hideNavbarRoutes = ["/", "/Location"];
+    const hideNavbarRoutes = ["/", "/location"];
     const shouldShowNavbar = !hideNavbarRoutes.includes(location.pathname);
 
     useEffect(() => {

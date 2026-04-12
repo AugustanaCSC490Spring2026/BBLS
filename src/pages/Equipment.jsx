@@ -3,18 +3,15 @@ import { useState } from "react";
 import "../components/Equipment.css";
 import Papa from "papaparse";
 import { collection, doc, setDoc } from "firebase/firestore";
-import { getDocs } from "firebase/firestore";
+import { getDoc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
 import { useEffect } from "react";
 import { db } from "../Firebase.js";
-import { useLocation } from "react-router-dom";
 
 
-export default function Equipment() {
+export default function Equipment({ gym, updateGym }) {
     const [studentId, setStudentId] = useState("");
     const [selectedEquipment, setSelectedEquipment] = useState("");
     const [quantity, setQuantity] = useState(1);
-    const locationState = useLocation();
-    const gym = locationState.state?.gym || "None Selected";
     const [activeCheckouts, setActiveCheckouts] = useState([]);
 
     const pepsicoInventoryRef = collection(db, "pepsicoEquipmentInventory");
@@ -22,6 +19,13 @@ export default function Equipment() {
 
     const pepsicoCheckoutRef = collection(db, "pepsicoCheckouts");
     const westerlinCheckoutRef = collection(db, "westerlinCheckouts");
+    useEffect(() => {
+
+        if (gym && gym !== "None Selected") {
+            fetchInventory();
+        }
+
+    }, [gym]);
     const getInventoryCollection = () => {
 
         if (gym === "Pepsi-Co Center") {
@@ -52,14 +56,72 @@ export default function Equipment() {
 
     };
     const [availableEquipment, setAvailableEquipment] = useState([]);
-    useEffect(() => {
-    if (gym !== "None Selected") {
-        fetchInventory();
-    }
-}, [gym]);
     //handleCheckout will validate the input and create a new checkout record in Firestore
-    const handleCheckout = () => {
-        alert(`Feature to be Added`);
+    const handleCheckout = async () => {
+
+        if (!studentId || !selectedEquipment || quantity <= 0) {
+            alert("Please fill all fields");
+            return;
+        }
+
+        const inventoryRef = getInventoryCollection();
+        const checkoutRef = getCheckoutCollection();
+
+        if (!inventoryRef || !checkoutRef) return;
+
+        try {
+
+            // Get equipment doc
+            const equipmentDocRef = doc(
+                inventoryRef,
+                selectedEquipment
+            );
+
+            const equipmentSnap = await getDoc(equipmentDocRef);
+
+            if (!equipmentSnap.exists()) {
+                alert("Equipment not found");
+                return;
+            }
+
+            const equipmentData = equipmentSnap.data();
+
+            if (equipmentData.available < quantity) {
+                alert("Not enough equipment available");
+                return;
+            }
+
+            // Update inventory
+            await updateDoc(equipmentDocRef, {
+                available:
+                    equipmentData.available - quantity
+            });
+
+            // Create checkout record
+            await addDoc(checkoutRef, {
+                studentId,
+                equipment: selectedEquipment,
+                quantity,
+                checkoutTime: serverTimestamp(),
+                returned: false
+            });
+
+            alert("Checkout successful");
+
+            fetchInventory();
+            fetchCheckouts();
+
+            setStudentId("");
+            setSelectedEquipment("");
+            setQuantity(1);
+
+        } catch (error) {
+
+            console.error(error);
+            alert("Checkout failed");
+
+        }
+
     };
     //handleReturn will mark a checkout as returned in Firestore
     const handleReturn = (id) => {
@@ -126,7 +188,10 @@ export default function Equipment() {
 
     return (
         <>
-            <Navbar />
+            <Navbar
+                currentGym={gym}
+                onGymChange={updateGym}
+            />
             <div className="page">
                 <div className="page-header">
                     <div className="left"><h2>Equipment Checkout</h2></div>
@@ -167,7 +232,7 @@ export default function Equipment() {
                             type="number"
                             min="1"
                             value={quantity}
-                            onChange={(e) => setQuantity(e.target.value)}
+                            onChange={(e) => setQuantity(Number(e.target.value))}
                         />
 
                         <button onClick={handleCheckout}>Checkout</button>
