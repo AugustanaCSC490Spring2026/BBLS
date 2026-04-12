@@ -134,9 +134,47 @@ export default function Equipment({ gym, updateGym }) {
         alert("Feature unavailable!");
     };
 
-    const handleImportCSV = (event) => {
-        alert("Feature unavailable!");
-    }
+     const handleImportCSV = (event) => {
+
+        const file = event.target.files[0];
+
+        Papa.parse(file, {
+
+            header: true,
+            skipEmptyLines: true,
+
+            complete: async (results) => {
+
+                const inventoryRef =
+                    getInventoryCollection();
+
+                if (!inventoryRef) return;
+
+                for (const row of results.data) {
+
+                    const docRef =
+                        doc(inventoryRef, row.name);
+
+                    await setDoc(docRef, {
+
+                        name: row.name,
+                        total: Number(row.total),
+                        available: Number(row.available)
+
+                    });
+
+                }
+
+                alert("Inventory Imported Successfully");
+
+                fetchInventory();
+
+            }
+
+        });
+
+    };
+
 
     return (
         <>

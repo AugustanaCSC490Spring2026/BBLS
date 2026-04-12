@@ -27,7 +27,7 @@ import empty from "./test-data/empty.json";
 import { db } from "../Firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
-function Analytics() {
+function Analytics({gym, updateGym}) {
 
   // ✅ NEW: Chart type state (Swipe-ins vs Demographics)
   const [chartType, setChartType] = useState("swipe");
