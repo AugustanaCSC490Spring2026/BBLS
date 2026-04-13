@@ -20,7 +20,7 @@
     width: 40%;
 }
 .banStudentsPopupContainer{
-    display: flex;
+    display: none;
 }
 .banStudentsPopupBackground{
     place-items: center;  
@@ -92,7 +92,6 @@
   padding: 20px;
   border-radius: 8px;
   text-align: center;
-  
 }
 .alertHeading{
     color: red;

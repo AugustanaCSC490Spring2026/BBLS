@@ -324,7 +324,8 @@ const Settings = () => {
       if (docSnap.exists()) {
         setDoc(doc(db, "bannedStudents", docSnap.data().ID),{
           ID: docSnap.data().ID,
-          Name: docSnap.data().FirstName + " " + docSnap.data().LastName,
+          FirstName: docSnap.data().FirstName, 
+          LastName: docSnap.data().LastName,
           dateBanned: serverTimestamp()
         })
         
