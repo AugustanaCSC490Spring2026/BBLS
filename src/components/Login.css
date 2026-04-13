@@ -40,7 +40,7 @@ body {
 
 
 .gsi-material-button {
-  background-color: #dbdbd7;
+  background-color: #4285F4;
   border-radius: 100px;
   border: black 0.5px;
   background-image: none;
@@ -57,9 +57,9 @@ body {
   min-width: min-content;
   transition: background-color 0.2s ease;
 }
-.sign-material-btn:hover {
+/* .sign-material-btn:hover {
   opacity: 0.8;
-}
+} */
 
 .gsi-material-button .gsi-material-button-icon {
   height: 20px;
@@ -104,7 +104,7 @@ body {
 
 .gsi-material-button:disabled {
   cursor: default;
-  background-color: #ffffff61;
+  background-color: #002F6C;
 }
 
 .gsi-material-button:disabled .gsi-material-button-state {
@@ -131,6 +131,6 @@ body {
 }
 
 .gsi-material-button:not(:disabled):hover .gsi-material-button-state {
-  background-color: #001d35;
+  /* background-color: #001d35; */
   opacity: 8%;
 }

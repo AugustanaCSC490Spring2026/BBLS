@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Bar, Pie } from "react-chartjs-2"; // ✅ NEW: Added Pie chart
 import Navbar from "./Navigation.jsx";
+import "../components/Analytics.css";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -27,7 +28,7 @@ import empty from "./test-data/empty.json";
 import { db } from "../Firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
-function Analytics() {
+function Analytics({ gym, updateGym }) {
 
   // ✅ NEW: Chart type state (Swipe-ins vs Demographics)
   const [chartType, setChartType] = useState("swipe");
@@ -493,94 +494,153 @@ function Analytics() {
   };
 
   return (
-    <div>
+    <>
       <Navbar />
-      <div style={{ padding: "20px" }}>
+<div className="page-header">
+      <h2>Analytics</h2>
+      </div>
+      <div className="Analytics-page">
+        <div className="card">
 
-        {/* ✅ NEW: Chart Type Dropdown */}
-        <h3>Chart Type</h3>
-        <select value={chartType} onChange={(e) => setChartType(e.target.value)}>
-          <option value="swipe">Swipe-ins</option>
-          <option value="demographics">Demographics</option>
-        </select>
+          <h2>Controls</h2>
 
-        <h1>Analytics Page</h1>
+          <div className="inner-grid">
 
-        <h3>Test Dataset</h3>
-        <select value={dataFile} onChange={(e) => setDataFile(e.target.value)}>
-          <option value="normal">Normal (generated thousands)</option>
-          <option value="midnightEdge">Midnight Edge</option>
-          <option value="leapYear">Leap Year</option>
-          <option value="duplicates">Duplicates</option>
-          <option value="future">Future Dates</option>
-          <option value="invalid">Invalid Data</option>
-          <option value="timezone">Timezone</option>
-          <option value="empty">Empty</option>
-          <option value="firebase">Firebase Data</option>
-          <option value="pepsico">PepsiCo Center (Firebase)</option>
-          <option value="westerlin">Westerlin Gym (Firebase)</option>
-          <option value="combined">Combined Gyms (Firebase)</option>
+            {/* Chart Type */}
+            <div className="control-box">
+              <h3>Chart Type</h3>
+              <select
+                value={chartType}
+                onChange={(e) => setChartType(e.target.value)}
+              >
+                <option value="swipe">Swipe-ins</option>
+                <option value="demographics">Demographics</option>
+              </select>
+            </div>
 
-          {/* ✅ NEW: Hide guest option when demographics is selected */}
-          {chartType !== "demographics" && (
-            <option value="guestEntrance">Guest Entrance (Firebase)</option>
-          )}
-        </select>
+            {/* Dataset */}
+            <div className="control-box">
+              <h3>Test Dataset</h3>
+              <select
+                value={dataFile}
+                onChange={(e) => setDataFile(e.target.value)}
+              >
+                <option value="normal">Normal (generated thousands)</option>
+                <option value="midnightEdge">Midnight Edge</option>
+                <option value="leapYear">Leap Year</option>
+                <option value="duplicates">Duplicates</option>
+                <option value="future">Future Dates</option>
+                <option value="invalid">Invalid Data</option>
+                <option value="timezone">Timezone</option>
+                <option value="empty">Empty</option>
+                <option value="firebase">Firebase Data</option>
+                <option value="pepsico">PepsiCo Center (Firebase)</option>
+                <option value="westerlin">Westerlin Gym (Firebase)</option>
+                <option value="combined">Combined Gyms (Firebase)</option>
 
-        <h3>Choose Time Range</h3>
-        <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)}>
-          <option value="today">Today</option>
-          <option value="yesterday">Yesterday</option>
-          <option value="week">This Week</option>
-          <option value="month">This Month</option>
-          <option value="year">This Year</option>
-          <option value="custom">Date Range</option>
-        </select>
+                {chartType !== "demographics" && (
+                  <option value="guestEntrance">
+                    Guest Entrance (Firebase)
+                  </option>
+                )}
+              </select>
+            </div>
 
-        {timeRange === "custom" && (
-          <div>
-            <input type="date" onChange={(e) => setStartDate(e.target.value)} />
-            <input type="date" onChange={(e) => setEndDate(e.target.value)} />
+            {/* Time Range */}
+            <div className="control-box">
+              <h3>Choose Time Range</h3>
+
+              <select
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value)}
+              >
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="year">This Year</option>
+                <option value="custom">Date Range</option>
+              </select>
+
+              {timeRange === "custom" && (
+                <div style={{ marginTop: "10px" }}>
+                  <input
+                    type="date"
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+
+                  <input
+                    type="date"
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Interval / Demographic */}
+            <div className="control-box">
+
+              {chartType === "swipe" ? (
+                <>
+                  <h3>Interval</h3>
+
+                  <select
+                    value={interval}
+                    onChange={(e) => setInterval(e.target.value)}
+                  >
+                    <option value="hours">Hours</option>
+                    <option value="days">Days</option>
+                    <option value="weeks">Weeks</option>
+                    <option value="months">Months</option>
+                    <option value="years">Years</option>
+                  </select>
+                </>
+              ) : (
+                <>
+                  <h3>Demographic Type</h3>
+
+                  <select
+                    value={demographicType}
+                    onChange={(e) =>
+                      setDemographicType(e.target.value)
+                    }
+                  >
+                    <option value="Class">Class</option>
+                    <option value="Gender">Gender</option>
+                    <option value="International/Domestic">
+                      International/Domestic
+                    </option>
+                    <option value="PersonType">PersonType</option>
+                    <option value="Race">Race</option>
+                    <option value="Residence">Residence</option>
+                    <option value="Transfer">Transfer</option>
+                  </select>
+                </>
+              )}
+
+            </div>
+
           </div>
-        )}
 
-        {/* ✅ NEW: Conditional UI */}
-        {chartType === "swipe" ? (
-          <>
-            <h3>Interval</h3>
-            <select value={interval} onChange={(e) => setInterval(e.target.value)}>
-              <option value="hours">Hours</option>
-              <option value="days">Days</option>
-              <option value="weeks">Weeks</option>
-              <option value="months">Months</option>
-              <option value="years">Years</option>
-            </select>
-          </>
-        ) : (
-          <>
-            <h3>Demographic Type</h3>
-            <select value={demographicType} onChange={(e) => setDemographicType(e.target.value)}>
-              <option value="Class">Class</option>
-              <option value="Gender">Gender</option>
-              <option value="International/Domestic">International/Domestic</option>
-              <option value="PersonType">PersonType</option>
-              <option value="Race">Race</option>
-              <option value="Residence">Residence</option>
-              <option value="Transfer">Transfer</option>
-            </select>
-          </>
-        )}
+        </div>
 
-        <div style={{ width: "100%", height: 400, marginTop: 40 }}>
-          {chartType === "swipe" ? (
-            <Bar data={data} />
-          ) : (
-            <Pie data={pieData} />
-          )}
+        <div className="Charts" style={{ marginTop: "30px" }}>
+
+          <div style={{ width: "100%", height: 400 }}>
+
+            {chartType === "swipe" ? (
+              <Bar data={data} />
+            ) : (
+              <Pie data={pieData} />
+            )}
+
+          </div>
+
         </div>
       </div>
-    </div>
+    </>
   );
+
 }
 
 export default Analytics;

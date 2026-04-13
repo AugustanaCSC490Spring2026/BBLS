@@ -13,6 +13,7 @@ import {
     serverTimestamp
 } from "firebase/firestore";
 import { db } from "../Firebase.js";
+const currentStudentsRef = collection(db, "currentStudents");
 
 export default function Equipment({ gym, updateGym }) {
     const onGymChange = { updateGym };
@@ -42,7 +43,7 @@ export default function Equipment({ gym, updateGym }) {
         if (gym === "Westerlin Gym") return westerlinCheckoutRef;
         return null;
     };
-
+    // commenting for a new commit - stonedahl
     const fetchInventory = async () => {
         const inventoryRef = getInventoryCollection();
         if (!inventoryRef) return;
@@ -79,25 +80,40 @@ export default function Equipment({ gym, updateGym }) {
     }, [gym]);
 
     const handleCheckout = async () => {
+
         if (!studentId || !selectedEquipment || quantity <= 0) {
             alert("Please fill all fields");
             return;
         }
 
-        const inventoryRef = getInventoryCollection();
-        const checkoutRef = getCheckoutCollection();
+        const studentName =
+            await verifyStudent(studentId);
+
+        if (!studentName) return;
+
+        const inventoryRef =
+            getInventoryCollection();
+
+        const checkoutRef =
+            getCheckoutCollection();
+
         if (!inventoryRef || !checkoutRef) return;
 
         try {
-            const equipmentDocRef = doc(inventoryRef, selectedEquipment);
-            const equipmentSnap = await getDoc(equipmentDocRef);
+
+            const equipmentDocRef =
+                doc(inventoryRef, selectedEquipment);
+
+            const equipmentSnap =
+                await getDoc(equipmentDocRef);
 
             if (!equipmentSnap.exists()) {
                 alert("Equipment not found");
                 return;
             }
 
-            const equipmentData = equipmentSnap.data();
+            const equipmentData =
+                equipmentSnap.data();
 
             if (equipmentData.available < quantity) {
                 alert("Not enough equipment available");
@@ -105,15 +121,19 @@ export default function Equipment({ gym, updateGym }) {
             }
 
             await updateDoc(equipmentDocRef, {
-                available: equipmentData.available - quantity
+                available:
+                    equipmentData.available - quantity
             });
 
             await addDoc(checkoutRef, {
+
                 studentId,
+                studentName, // ✅ store name
                 equipment: selectedEquipment,
                 quantity,
                 checkoutTime: serverTimestamp(),
                 returned: false
+
             });
 
             alert("Checkout successful");
@@ -124,26 +144,159 @@ export default function Equipment({ gym, updateGym }) {
             setStudentId("");
             setSelectedEquipment("");
             setQuantity(1);
-        } catch (error) {
+
+        }
+
+        catch (error) {
+
             console.error(error);
             alert("Checkout failed");
+
         }
     };
 
     const handleReturn = async (id) => {
-        alert("Feature unavailable!");
+
+        const checkoutRef =
+            getCheckoutCollection();
+
+        const inventoryRef =
+            getInventoryCollection();
+
+        if (!checkoutRef || !inventoryRef) return;
+
+        try {
+
+            const checkoutDocRef =
+                doc(checkoutRef, id);
+
+            const checkoutSnap =
+                await getDoc(checkoutDocRef);
+
+            if (!checkoutSnap.exists()) return;
+
+            const checkoutData =
+                checkoutSnap.data();
+
+            const equipmentDocRef =
+                doc(
+                    inventoryRef,
+                    checkoutData.equipment
+                );
+
+            const equipmentSnap =
+                await getDoc(equipmentDocRef);
+
+            const equipmentData =
+                equipmentSnap.data();
+
+            await updateDoc(equipmentDocRef, {
+
+                available:
+                    equipmentData.available +
+                    checkoutData.quantity
+
+            });
+
+            await updateDoc(checkoutDocRef, {
+
+                returned: true,
+                returnTime: serverTimestamp()
+
+            });
+
+            fetchInventory();
+            fetchCheckouts();
+
+        }
+
+        catch (error) {
+
+            console.error(error);
+            alert("Return failed");
+
+        }
+
+    };
+    const verifyStudent = async (id) => {
+        try {
+            const studentDocRef =
+                doc(currentStudentsRef, id);
+
+            const studentSnap =
+                await getDoc(studentDocRef);
+
+            if (!studentSnap.exists()) {
+                alert("Student ID not found in database");
+                return null;
+            }
+
+            const studentData =
+                studentSnap.data();
+
+            const fullName =
+                studentData.FirstName +
+                " " +
+                studentData.LastName;
+
+            return fullName;
+
+        } catch (error) {
+
+            console.error(error);
+            alert("Error checking student ID");
+
+            return null;
+        }
+    };
+    const handleImportCSV = (event) => {
+
+        const file = event.target.files[0];
+
+        Papa.parse(file, {
+
+            header: true,
+            skipEmptyLines: true,
+
+            complete: async (results) => {
+
+                const inventoryRef =
+                    getInventoryCollection();
+
+                if (!inventoryRef) return;
+
+                for (const row of results.data) {
+
+                    const docRef =
+                        doc(inventoryRef, row.name);
+
+                    await setDoc(docRef, {
+
+                        name: row.name,
+                        total: Number(row.total),
+                        available: Number(row.available)
+
+                    });
+
+                }
+
+                alert("Inventory Imported Successfully");
+
+                fetchInventory();
+
+            }
+
+        });
+
     };
 
-    const handleImportCSV = (event) => {
-        alert("Feature unavailable!");
-    }
 
     return (
         <>
-        <Navbar 
-            currentGym={gym} 
-            onGymChange={updateGym} 
-        />
+            <Navbar
+                currentGym={gym}
+                onGymChange={updateGym}
+            />
 
             <div className="page">
                 <div className="page-header">
@@ -151,18 +304,6 @@ export default function Equipment({ gym, updateGym }) {
                         <h2>
                             Equipment Checkout — {gym}
                         </h2>
-                    </div>
-
-                    <div className="right">
-                        <input
-                            type="file"
-                            accept=".csv"
-                            onChange={handleImportCSV}
-                        />
-
-                        <button>
-                            Export CSV
-                        </button>
                     </div>
                 </div>
 
@@ -249,7 +390,7 @@ export default function Equipment({ gym, updateGym }) {
                             >
                                 <div>
                                     <strong>
-                                        {item.studentId}
+                                        {item.studentName}
                                     </strong>
 
                                     <p>
