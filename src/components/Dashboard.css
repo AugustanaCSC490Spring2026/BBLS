@@ -169,6 +169,10 @@
   cursor: pointer;
   color: #1558b0;
 }
+.close-btn:hover {
+  color: #ffffff;
+  background-color: #002F6C;
+}
 
 .input-group {
   margin-bottom: 15px;
@@ -209,7 +213,7 @@
 }
 
 .guest-submit-btn:hover {
-  background-color: #b3c338;
+  background-color: #002F6C;
 }
 
 .input-group select {

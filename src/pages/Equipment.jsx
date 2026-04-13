@@ -13,6 +13,7 @@ import {
     serverTimestamp
 } from "firebase/firestore";
 import { db } from "../Firebase.js";
+const currentStudentsRef = collection(db, "currentStudents");
 
 export default function Equipment({ gym, updateGym }) {
     const onGymChange = { updateGym };
@@ -79,25 +80,40 @@ export default function Equipment({ gym, updateGym }) {
     }, [gym]);
 
     const handleCheckout = async () => {
+
         if (!studentId || !selectedEquipment || quantity <= 0) {
             alert("Please fill all fields");
             return;
         }
 
-        const inventoryRef = getInventoryCollection();
-        const checkoutRef = getCheckoutCollection();
+        const studentName =
+            await verifyStudent(studentId);
+
+        if (!studentName) return;
+
+        const inventoryRef =
+            getInventoryCollection();
+
+        const checkoutRef =
+            getCheckoutCollection();
+
         if (!inventoryRef || !checkoutRef) return;
 
         try {
-            const equipmentDocRef = doc(inventoryRef, selectedEquipment);
-            const equipmentSnap = await getDoc(equipmentDocRef);
+
+            const equipmentDocRef =
+                doc(inventoryRef, selectedEquipment);
+
+            const equipmentSnap =
+                await getDoc(equipmentDocRef);
 
             if (!equipmentSnap.exists()) {
                 alert("Equipment not found");
                 return;
             }
 
-            const equipmentData = equipmentSnap.data();
+            const equipmentData =
+                equipmentSnap.data();
 
             if (equipmentData.available < quantity) {
                 alert("Not enough equipment available");
@@ -105,15 +121,19 @@ export default function Equipment({ gym, updateGym }) {
             }
 
             await updateDoc(equipmentDocRef, {
-                available: equipmentData.available - quantity
+                available:
+                    equipmentData.available - quantity
             });
 
             await addDoc(checkoutRef, {
+
                 studentId,
+                studentName, // ✅ store name
                 equipment: selectedEquipment,
                 quantity,
                 checkoutTime: serverTimestamp(),
                 returned: false
+
             });
 
             alert("Checkout successful");
@@ -124,9 +144,14 @@ export default function Equipment({ gym, updateGym }) {
             setStudentId("");
             setSelectedEquipment("");
             setQuantity(1);
-        } catch (error) {
+
+        }
+
+        catch (error) {
+
             console.error(error);
             alert("Checkout failed");
+
         }
     };
 
@@ -193,8 +218,38 @@ export default function Equipment({ gym, updateGym }) {
         }
 
     };
+    const verifyStudent = async (id) => {
+        try {
+            const studentDocRef =
+                doc(currentStudentsRef, id);
 
-     const handleImportCSV = (event) => {
+            const studentSnap =
+                await getDoc(studentDocRef);
+
+            if (!studentSnap.exists()) {
+                alert("Student ID not found in database");
+                return null;
+            }
+
+            const studentData =
+                studentSnap.data();
+
+            const fullName =
+                studentData.FirstName +
+                " " +
+                studentData.LastName;
+
+            return fullName;
+
+        } catch (error) {
+
+            console.error(error);
+            alert("Error checking student ID");
+
+            return null;
+        }
+    };
+    const handleImportCSV = (event) => {
 
         const file = event.target.files[0];
 
@@ -238,10 +293,10 @@ export default function Equipment({ gym, updateGym }) {
 
     return (
         <>
-        <Navbar 
-            currentGym={gym} 
-            onGymChange={updateGym} 
-        />
+            <Navbar
+                currentGym={gym}
+                onGymChange={updateGym}
+            />
 
             <div className="page">
                 <div className="page-header">
@@ -347,7 +402,7 @@ export default function Equipment({ gym, updateGym }) {
                             >
                                 <div>
                                     <strong>
-                                        {item.studentId}
+                                        {item.studentName}
                                     </strong>
 
                                     <p>
