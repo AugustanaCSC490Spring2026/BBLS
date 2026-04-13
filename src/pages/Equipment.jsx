@@ -43,7 +43,7 @@ export default function Equipment({ gym, updateGym }) {
         if (gym === "Westerlin Gym") return westerlinCheckoutRef;
         return null;
     };
-
+    // commenting for a new commit - stonedahl
     const fetchInventory = async () => {
         const inventoryRef = getInventoryCollection();
         if (!inventoryRef) return;
