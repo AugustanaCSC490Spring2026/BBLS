@@ -54,6 +54,10 @@ function Analytics({ gym, updateGym }) {
 
   const [normalData, setNormalData] = useState([]);
 
+  // 🆕 Export dropdown state
+  const [exportFormat, setExportFormat] = useState("");
+  
+
   // ✅ NEW: Maps dropdown names to Firestore field names
   const demographicFieldMap = {
     Class: "Class",
@@ -232,6 +236,59 @@ function Analytics({ gym, updateGym }) {
     return { start, end };
   }
 
+  // ================================
+  // CSV EXPORT (FIXED + CHRONOLOGICAL + LOCAL TIME)
+  // ================================
+  function exportSwipeDataToCSV() {
+    if (chartType !== "swipe") return;
+
+    const { start, end } = getDateRange();
+
+    const filtered = swipeData
+      .filter((swipe) => {
+        const date =
+          swipe.time instanceof Date ? swipe.time : new Date(swipe.time);
+
+        return !isNaN(date) && date >= start && date <= end;
+      })
+      // ✅ chronological order fix
+      .sort((a, b) => {
+        const aDate = new Date(a.time);
+        const bDate = new Date(b.time);
+        return aDate - bDate;
+      });
+
+    const pad = (n) => String(n).padStart(2, "0");
+
+    const rows = [["Student ID", "Swipe Time"]];
+
+    filtered.forEach((swipe) => {
+      const date =
+        swipe.time instanceof Date ? swipe.time : new Date(swipe.time);
+
+      // ✅ FIX: local time (fixes 16/19 hour shift issue)
+      const localTime =
+        `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+        `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+
+      rows.push([swipe.studentId, localTime]);
+    });
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      rows.map((row) => row.join(",")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "swipe_data.csv");
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   async function fetchSpecificCollection(collectionName) {
     const { start, end } = getDateRange();
     const ref = collection(db, collectionName);
@@ -341,7 +398,6 @@ function Analytics({ gym, updateGym }) {
     setSwipeData(data);
   }
 
-  // ✅ NEW: Process demographics using cached studentMap (NO DB CALLS)
   function processDemographics() {
     const { start, end } = getDateRange();
     const counts = {};
@@ -365,7 +421,6 @@ function Analytics({ gym, updateGym }) {
     setDemographicData(counts);
   }
 
-  // ✅ NEW: Run demographic processing when needed
   useEffect(() => {
     if (chartType === "demographics" && Object.keys(studentMap).length > 0) {
       processDemographics();
@@ -474,7 +529,6 @@ function Analytics({ gym, updateGym }) {
     ]
   };
 
-  // ✅ NEW: Pie chart dataset
   const pieData = {
     labels: Object.keys(demographicData),
     datasets: [
@@ -496,12 +550,12 @@ function Analytics({ gym, updateGym }) {
   return (
     <>
       <Navbar />
-<div className="page-header">
-      <h2>Analytics</h2>
+      <div className="page-header">
+        <h2>Analytics</h2>
       </div>
+
       <div className="Analytics-page">
         <div className="card">
-
           <h2>Controls</h2>
 
           <div className="inner-grid">
@@ -568,7 +622,6 @@ function Analytics({ gym, updateGym }) {
                     type="date"
                     onChange={(e) => setStartDate(e.target.value)}
                   />
-
                   <input
                     type="date"
                     onChange={(e) => setEndDate(e.target.value)}
@@ -579,11 +632,9 @@ function Analytics({ gym, updateGym }) {
 
             {/* Interval / Demographic */}
             <div className="control-box">
-
               {chartType === "swipe" ? (
                 <>
                   <h3>Interval</h3>
-
                   <select
                     value={interval}
                     onChange={(e) => setInterval(e.target.value)}
@@ -598,7 +649,6 @@ function Analytics({ gym, updateGym }) {
               ) : (
                 <>
                   <h3>Demographic Type</h3>
-
                   <select
                     value={demographicType}
                     onChange={(e) =>
@@ -617,30 +667,43 @@ function Analytics({ gym, updateGym }) {
                   </select>
                 </>
               )}
-
             </div>
-
           </div>
-
         </div>
 
         <div className="Charts" style={{ marginTop: "30px" }}>
+          <div style={{ width: "100%", height: 400, position: "relative" }}>
+            {/* 🆕 Export dropdown (swipe only) */}
+            {chartType === "swipe" && (
+              <div style={{ position: "absolute", top: 10, right: 10, zIndex: 10 }}>
+                <select
+                  value={exportFormat}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setExportFormat(value);
 
-          <div style={{ width: "100%", height: 400 }}>
+                    if (value === "csv") exportSwipeDataToCSV();
+                    if (value === "png") console.log("PNG not implemented yet");
 
+                    setExportFormat("");
+                  }}
+                >
+                  <option value="">Export</option>
+                  <option value="csv">Export CSV</option>
+                  <option value="png">Export PNG</option>
+                </select>
+              </div>
+            )}
             {chartType === "swipe" ? (
               <Bar data={data} />
             ) : (
               <Pie data={pieData} />
             )}
-
           </div>
-
         </div>
       </div>
     </>
   );
-
 }
 
 export default Analytics;
