@@ -1,6 +1,6 @@
 // This entire file was generated with help from ChatGPT
 
-import React from "react";
+import React, { useState } from "react";
 
 // PapaParse is used to read and convert CSV into JavaScript objects
 import Papa from "papaparse";
@@ -14,8 +14,10 @@ import { db } from "../Firebase.js";
 // Firestore tools for batch writing
 import { doc, writeBatch } from "firebase/firestore";
 
+import "../components/Settings.css";
 const Settings = () => {
-
+  const [showGymPopup, setShowGymPopup] = useState(false);
+  const [selectedGym, setSelectedGym] = useState(null);
   // Handles when a user selects a file
   const handleFileChange = (event) => {
 
@@ -126,6 +128,91 @@ const Settings = () => {
     });
   };
 
+  const handleEquipmentImport = (event) => {
+
+    const file = event.target.files[0];
+
+    if (!file || !selectedGym) return;
+    if (
+      file.type !== "text/csv" &&
+      !file.name.toLowerCase().endsWith(".csv")
+    ) {
+      alert("Please upload a valid .csv file.");
+      event.target.value = null;
+      return;
+    }
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+
+      complete: async (results) => {
+
+        let batch = writeBatch(db);
+        let operationCount = 0;
+
+        let successCount = 0;
+        let failCount = 0;
+
+        // Choose collection
+        const collectionName =
+          selectedGym === "westerlin"
+            ? "westerlinEquipmentInventory"
+            : "pepsicoEquipmentInventory";
+
+        for (const row of results.data) {
+
+          try {
+
+            if (!row.name) {
+              failCount++;
+              continue;
+            }
+
+            const equipmentData = {
+              name: row.name.trim(),
+              total: Number(row.total) || 0,
+              available: Number(row.available) || 0
+            };
+
+            const docRef =
+              doc(db, collectionName, equipmentData.name);
+
+            batch.set(docRef, equipmentData);
+
+            operationCount++;
+            successCount++;
+
+            if (operationCount === 500) {
+
+              await batch.commit();
+
+              batch = writeBatch(db);
+              operationCount = 0;
+            }
+
+          } catch (err) {
+
+            console.error(err);
+            failCount++;
+
+          }
+        }
+
+        if (operationCount > 0) {
+          await batch.commit();
+        }
+
+        alert(
+          `Equipment Upload Complete!\nGym: ${selectedGym} \nFailed: ${failCount}`
+        );
+
+        event.target.value = null;
+
+      }
+    });
+  };
+
   return (
     <>
       <Navbar />
@@ -135,14 +222,90 @@ const Settings = () => {
 
         <section className="modify-student-body">
           <h2>Modify Student Body</h2>
-
-          {/* File input triggers CSV upload */}
+          <button
+            onClick={() =>
+              document.getElementById("studentFileInput").click()
+            }
+          >
+            Import Student Body
+          </button>
           <input
+            id="studentFileInput"
             type="file"
             accept=".csv"
+            style={{ display: "none" }}
             onChange={handleFileChange}
           />
+
+
+          <br /><br />
+          <h2>Modify Equipment</h2>
+          <button
+            onClick={() => setShowGymPopup(true)}
+          >
+            Import Equipment CSV
+          </button>
         </section>
+        <input
+          id="equipmentFileInput"
+          type="file"
+          accept=".csv"
+          style={{ display: "none" }}
+          onChange={handleEquipmentImport}
+        />
+        {showGymPopup && (
+
+          <div className="popup-overlay">
+
+            <div className="popup-box">
+
+              <h2>Select Gym</h2>
+
+              <button
+                onClick={() => {
+
+                  setSelectedGym("westerlin");
+
+                  setShowGymPopup(false);
+
+                  document
+                    .getElementById("equipmentFileInput")
+                    .click();
+
+                }}
+              >
+                Westerlin Gym
+              </button>
+
+              <button
+                onClick={() => {
+
+                  setSelectedGym("pepsico");
+
+                  setShowGymPopup(false);
+
+                  document
+                    .getElementById("equipmentFileInput")
+                    .click();
+
+                }}
+              >
+                PepsiCo Center
+              </button>
+
+              <br /><br />
+
+              <button
+                onClick={() => setShowGymPopup(false)}
+              >
+                Cancel
+              </button>
+
+            </div>
+
+          </div>
+
+        )}
       </div>
     </>
   );

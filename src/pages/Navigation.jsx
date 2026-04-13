@@ -43,7 +43,7 @@ function Navbar({ currentGym, onGymChange }) {
                 {shouldShowNavbar && (
                     <>
                         <div className="nav-links">
-                            {location.pathname !== "/analytics" && (
+                            {location.pathname !== "/analytics" && location.pathname !== "/settings" && (
                                 <NavDropdown
                                     options={["Pepsi-Co Center", "Westerlin Gym"]}
                                     defaultOption={currentGym}

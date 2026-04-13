@@ -305,18 +305,6 @@ export default function Equipment({ gym, updateGym }) {
                             Equipment Checkout — {gym}
                         </h2>
                     </div>
-
-                    <div className="right">
-                        <input
-                            type="file"
-                            accept=".csv"
-                            onChange={handleImportCSV}
-                        />
-
-                        <button>
-                            Export CSV
-                        </button>
-                    </div>
                 </div>
 
                 <div className="layout">
