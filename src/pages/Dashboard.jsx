@@ -76,7 +76,7 @@ function Dashboard( {gym, updateGym } ) {
       await getDoc(docRef).then((docSnap) => {
         if (docSnap.exists()) {
           console.log("valid ID");
-          studentName = docSnap.data().Name;
+          studentName = docSnap.data().FirstName + " " + docSnap.data().LastName;
           swipeValid = true;
         }
         else{
@@ -87,7 +87,7 @@ function Dashboard( {gym, updateGym } ) {
       docRef = doc(db, "bannedStudents", verified_data);
       await getDoc(docRef).then((docSnap) =>{
         if (docSnap.exists()){
-          studentName = docSnap.data().Name;
+          studentName = docSnap.data().FirstName + " " + docSnap.data().LastName;
           console.log("banned user");
           swipeValid = false;
           reasonsSwipeDenied = studentName + " is currently banned from entering Augustan Rec Facilities";
@@ -98,7 +98,7 @@ function Dashboard( {gym, updateGym } ) {
       docRef = await doc(db, "currentStudents", verified_data);
       await getDoc(docRef).then((docSnap) => {
         if (docSnap.exists()) {
-          studentName = docSnap.data().Name;
+          studentName = docSnap.data().FirstName + " " + docSnap.data().LastName;
           console.log("valid ID");
           swipeValid = true;
         }
@@ -110,7 +110,7 @@ function Dashboard( {gym, updateGym } ) {
       docRef = doc(db, "bannedStudents", verified_data);
       await getDoc(docRef).then((docSnap) =>{
         if (docSnap.exists()){
-          studentName = docSnap.data().Name;
+          studentName = docSnap.data().FirstName + " " + docSnap.data().LastName;
           console.log("banned user");
           swipeValid = false;
           reasonsSwipeDenied = studentName + " is currently banned from entering Augustan Rec Facilities";
@@ -154,7 +154,7 @@ function Dashboard( {gym, updateGym } ) {
     const alertText = document.getElementById("alertText");
 
       if (swipeValid && gym !== "None Selected"){
-        alertHeading.textContent = "Swipe in Accepted";
+        alertHeading.textContent = "ID Accepted";
         alertHeading.style.color = "#14AB00";
         alertText.textContent = "welcome " + studentName;
         if(gym === "Pepsi-Co Center"){
@@ -170,7 +170,7 @@ function Dashboard( {gym, updateGym } ) {
         }
     }
     else if (!swipeValid){
-        alertHeading.textContent = "Swipe in Denied";
+        alertHeading.textContent = "ID Denied";
         alertHeading.style.color = "#E80000";
         alertText.textContent = reasonsSwipeDenied;
       console.log("invalid swipe");
@@ -183,7 +183,7 @@ function Dashboard( {gym, updateGym } ) {
     }
       customAlert.style.display = 'flex';
       clearTimeout(alertTimer);
-      alertTimer = setTimeout(() => {customAlert.style.display = 'none';}, 3500);
+      alertTimer = setTimeout(() => {customAlert.style.display = 'none';}, 4500);
   }
 
 
@@ -193,7 +193,7 @@ function Dashboard( {gym, updateGym } ) {
       <div className="Dashboard">
           <div className="customAlert" id="customAlert">
             <div className="alertContent" id="alertContent">
-              <h2 id="alertHeading"> Test Text</h2>
+              <h2 id="alertHeading"> If you can see this there is a bug</h2>
               <p id="alertText"></p>
             </div>
           </div>

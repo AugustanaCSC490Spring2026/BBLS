@@ -1,7 +1,5 @@
-// This entire file was generated with help from ChatGPT
-
-import React from "react";
-
+// everything pertaining to importing csv files in this file was generated with help from ChatGPT
+import "../components/Settings.css";
 // PapaParse is used to read and convert CSV into JavaScript objects
 import Papa from "papaparse";
 
@@ -11,8 +9,8 @@ import Navbar from "./Navigation.jsx";
 // Firebase setup
 import { db } from "../Firebase.js";
 
-// Firestore tools for batch writing
-import { doc, writeBatch } from "firebase/firestore";
+// Firestore tools 
+import { doc, writeBatch, collection, serverTimestamp, getDoc, deleteDoc, setDoc} from "firebase/firestore";
 
 const Settings = () => {
 
@@ -125,6 +123,151 @@ const Settings = () => {
       }
     });
   };
+  const bannedStudentsRef = collection(db, "bannedStudents");
+  let studentId;
+  let studentName;
+  let verified_data;
+  let swipeOutput;
+  let docRef;
+  let popupTimer; 
+  //verify ID
+  const handleKeyDown = (input) =>{
+    if (input.key === "enter"){
+      window.alert("enter key");
+      input.preventDefault();
+      handleSubmission();
+    }
+  }
+  function updateStudentID(input){
+        studentId = input;
+      }
+  const handleSubmission = async (event) =>{
+        event.preventDefault();
+
+    let temp_input;
+    try{
+    temp_input = studentId.trim();
+    } catch{
+      console.log("error");
+      swipeOutput = "no ID entered";
+      displayIdEntryError(swipeOutput);
+      return;
+    }
+    
+    updateStudentID(temp_input);
+    let isbanned;
+        // checks ID to ensure it has the right number of characters
+        if (temp_input.length !== 7 && temp_input.length !== 16) {
+          verified_data = temp_input;
+          swipeOutput = "invalid ID format";
+          displayIdEntryError(swipeOutput);
+
+        } else if (temp_input.length == 7) {
+          verified_data = temp_input;
+          docRef = await doc(db, "currentStudents", verified_data);
+            await getDoc(docRef).then((docSnap) => {
+            if (!docSnap.exists()) {
+              swipeOutput = "Entered ID not in student Database"
+              displayIdEntryError(swipeOutput);
+            }
+            else{
+              studentName = docSnap.data().FirstName + " " + docSnap.data().LastName;
+              docRef =  doc(db, "bannedStudents", verified_data);
+              getDoc(docRef).then((docSnap) => {
+              if (!docSnap.exists()) {
+                isbanned = false;
+                displayPopup(isbanned);
+              }
+              else{
+                isbanned = true;
+                displayPopup(isbanned);
+              }
+            })
+            }
+        })
+        } else {
+          verified_data = temp_input.slice(3, 10);
+          //currently not supporting card swipes but can change if don wants
+        }
+        document.getElementById("studentInputForm").value = "";
+        updateStudentID("");
+  }
+
+  function displayIdEntryError(swipeOutput){
+    const customAlert = document.getElementById("customAlert");
+    const alertText = document.getElementById("alertText");
+    alertText.textContent = swipeOutput;
+    customAlert.style.display = "flex";
+    setTimeout (() => {customAlert.style.display = "none";}, 1000);
+
+  }
+  function displayPopup(isbanned) {
+    const banStudentsPopupContainer = document.getElementById("banStudentsPopupContainer");
+    const banStudentButton = document.getElementById("banStudentButton");
+    const unbaneStudentButton = document.getElementById("unbaneStudentButton");
+    const banStudentsPopupHeader = document.getElementById("banStudentsPopupHeader");
+    const banStudentsPopupText = document.getElementById("banStudentsPopupText");
+
+    banStudentsPopupContainer.style.display = "flex";
+    if(isbanned){
+      banStudentsPopupHeader.textContent = studentName + " is currently Banned";
+      banStudentsPopupText.textContent = "would you like to unban?";
+      unbaneStudentButton.style.display = "flex";
+      banStudentButton.style.display = "none";
+    }
+    else{
+      banStudentsPopupHeader.textContent = studentName + " is currently not Banned";
+      banStudentsPopupText.textContent = "would you like to ban?";
+      unbaneStudentButton.style.display = "none";
+      banStudentButton.style.display = "flex";
+
+    }
+    clearTimeout(popupTimer);
+    popupTimer = setTimeout (() => {banStudentsPopupContainer.style.display = "none";}, 30000);
+
+
+  }
+
+  const banStudent = async (event) =>{
+    event.preventDefault();
+    docRef = await doc(db, "currentStudents", verified_data);
+      await getDoc(docRef).then((docSnap) => {
+      if (docSnap.exists()) {
+        setDoc(doc(db, "bannedStudents", docSnap.data().ID),{
+          ID: docSnap.data().ID,
+          Name: docSnap.data().FirstName + " " + docSnap.data().LastName,
+          dateBanned: serverTimestamp()
+        })
+        
+      } else{
+        displayIdEntryError("error retrieving data from database. Please re-enter ID");
+      }
+      cancelOperation(event);
+  })
+    cancelOperation(event);
+
+  }
+
+  const unbanStudent = async (event) =>{
+    event.preventDefault();
+    docRef = await doc(db, "bannedStudents", verified_data);
+    if (docRef){
+      deleteDoc(docRef);
+    }
+    else{
+      displayIdEntryError("error retrieving data from database. Please re-enter ID");
+
+    }
+      cancelOperation(event);
+    }
+
+
+  const cancelOperation = async (event) =>{
+    event.preventDefault();
+    const banStudentsPopupContainer = document.getElementById("banStudentsPopupContainer");
+    event.preventDefault();
+    banStudentsPopupContainer.style.display = "none";
+  }
 
   return (
     <>
@@ -134,7 +277,7 @@ const Settings = () => {
         <h1>Settings</h1>
 
         <section className="modify-student-body">
-          <h2>Modify Student Body</h2>
+          <h2 className="test">Modify Student Body</h2>
 
           {/* File input triggers CSV upload */}
           <input
@@ -143,6 +286,56 @@ const Settings = () => {
             onChange={handleFileChange}
           />
         </section>
+        <section className="banStudentsButtonContainer">
+          <h2 className="banStudentsHeader"> Ban/Unban students </h2>
+          <form className="IDSearchForm" onSubmit={handleSubmission}>
+              <input
+              id="studentInputForm"
+              className="studentInputForm"
+              type="password"
+              ref={null}
+              value={studentId}
+              placeholder="Enter Student ID"
+              onChange={(e) => updateStudentID(e.target.value)}
+              onKeyDown={handleKeyDown}
+
+            />
+          <button 
+          className="selectStudentButton">Search ID</button>
+          </form>
+
+        <div id="banStudentsPopupContainer" className="banStudentsPopupContainer">
+          <div className="banStudentsPopupBackground">
+          <div className="banStudentsPopup">
+            <h2 id="banStudentsPopupHeader"></h2>
+            <p id="banStudentsPopupText"></p>
+            <button 
+              className="banStudentButton" 
+              id="banStudentButton"
+              onClick={banStudent}
+              >Ban</button>
+            <button 
+              className = "cancelOperationButton" 
+              id="cancelOpertaionButton"
+              onClick={cancelOperation}
+              >cancel</button>
+            <button 
+              className="unbaneStudentButton" 
+              id="unbaneStudentButton"
+              onClick={unbanStudent}
+              >Unban</button>
+
+          </div>
+        </div>
+        </div>
+        </section>
+          <div className="customAlert" id="customAlert">
+            <div className="alertContent" id="alertContent">
+              <h2 className="alertHeading">ID entry error</h2>
+              <p id="alertText"></p>
+            </div>
+          </div>
+
       </div>
     </>
   );
