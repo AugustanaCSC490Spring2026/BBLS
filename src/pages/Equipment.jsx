@@ -131,7 +131,67 @@ export default function Equipment({ gym, updateGym }) {
     };
 
     const handleReturn = async (id) => {
-        alert("Feature unavailable!");
+
+        const checkoutRef =
+            getCheckoutCollection();
+
+        const inventoryRef =
+            getInventoryCollection();
+
+        if (!checkoutRef || !inventoryRef) return;
+
+        try {
+
+            const checkoutDocRef =
+                doc(checkoutRef, id);
+
+            const checkoutSnap =
+                await getDoc(checkoutDocRef);
+
+            if (!checkoutSnap.exists()) return;
+
+            const checkoutData =
+                checkoutSnap.data();
+
+            const equipmentDocRef =
+                doc(
+                    inventoryRef,
+                    checkoutData.equipment
+                );
+
+            const equipmentSnap =
+                await getDoc(equipmentDocRef);
+
+            const equipmentData =
+                equipmentSnap.data();
+
+            await updateDoc(equipmentDocRef, {
+
+                available:
+                    equipmentData.available +
+                    checkoutData.quantity
+
+            });
+
+            await updateDoc(checkoutDocRef, {
+
+                returned: true,
+                returnTime: serverTimestamp()
+
+            });
+
+            fetchInventory();
+            fetchCheckouts();
+
+        }
+
+        catch (error) {
+
+            console.error(error);
+            alert("Return failed");
+
+        }
+
     };
 
      const handleImportCSV = (event) => {
