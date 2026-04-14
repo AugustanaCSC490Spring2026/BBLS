@@ -243,7 +243,11 @@ function Analytics({ gym, updateGym }) {
 
     const pad = (n) => String(n).padStart(2, "0");
 
-    const rows = [["Student ID", "Swipe Time"]];
+    const hasGuestData = filtered.some(swipe => swipe.studentId === "guest");
+
+    const rows = hasGuestData
+      ? [["Student ID", "Name", "Swipe Time"]]
+      : [["Student ID", "Swipe Time"]];
 
     filtered.forEach((swipe) => {
       const date =
@@ -254,7 +258,15 @@ function Analytics({ gym, updateGym }) {
         `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
         `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 
-      rows.push([swipe.studentId, localTime]);
+      if (hasGuestData) {
+        rows.push([
+          swipe.studentId,
+          swipe.studentId === "guest" ? (swipe.name || "") : "",
+          localTime
+        ]);
+      } else {
+        rows.push([swipe.studentId, localTime]);
+      }
     });
 
     const csvContent =
@@ -374,6 +386,7 @@ function Analytics({ gym, updateGym }) {
 
       data.push({
         studentId: "guest",
+        name: d.name || "", //  Only for guests
         time: d.timestamp.toDate()
       });
     });
