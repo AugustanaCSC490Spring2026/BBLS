@@ -135,13 +135,6 @@ function Analytics({ gym, updateGym }) {
 
   const datasets = {
     normal: generateNormalDataset,
-    midnightEdge,
-    leapYear,
-    duplicates,
-    future,
-    invalid,
-    timezone,
-    empty
   };
 
   useEffect(() => {
