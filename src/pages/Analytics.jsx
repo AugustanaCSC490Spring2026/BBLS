@@ -1,5 +1,5 @@
 // This entire file was generated with help from ChatGPT 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Bar, Pie } from "react-chartjs-2"; // ✅ NEW: Added Pie chart
 import Navbar from "./Navigation.jsx";
 import "../components/Analytics.css";
@@ -49,6 +49,7 @@ function Analytics({ gym, updateGym }) {
   // 🆕 Export dropdown state
   const [exportFormat, setExportFormat] = useState("");
   
+  const chartRef = useRef(null);
 
   // Maps dropdown names to Firestore field names
   const demographicFieldMap = {
@@ -245,6 +246,25 @@ function Analytics({ gym, updateGym }) {
     return { start, end };
   }
 
+  // PNG Export
+  function exportSwipeDataToPNG() {
+    if (chartType !== "swipe") return;
+    if (!chartRef.current) return;
+
+    const chart = chartRef.current;
+
+    // react-chartjs-2 exposes chart instance here
+    const url = chart.toBase64Image("image/png", 1);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "swipe_chart.png";
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+  
   // CSV EXPORT 
   function exportSwipeDataToCSV() {
     if (chartType !== "swipe") return;
@@ -757,7 +777,7 @@ function Analytics({ gym, updateGym }) {
                     setExportFormat(value);
 
                     if (value === "csv") exportSwipeDataToCSV();
-                    if (value === "png") console.log("PNG not implemented yet");
+                    if (value === "png") exportSwipeDataToPNG();
 
                     setExportFormat("");
                   }}
@@ -770,6 +790,7 @@ function Analytics({ gym, updateGym }) {
             )}
             {chartType === "swipe" ? (
               <Bar
+                ref={chartRef}
                 data={data}
                 options={{
                   responsive: true,
