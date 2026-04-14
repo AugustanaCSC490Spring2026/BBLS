@@ -19,11 +19,33 @@
 .studentInputForm{
     width: 40%;
 }
-.banStudentsPopupContainer{
-    display: none;
+
+/* 2. Create a container for the buttons */
+.popup-button-group {
+    display: flex;
+    justify-content: center;
+    gap: 15px; /* Adds space between buttons without messy margins */
+    margin-top: 20px;
+    width: 100%;
 }
+
+/* 3. Cleanup button margins (let the gap handle it) */
+.banStudentButton, .unbanStudentButton, .cancelOperationButton {
+    margin: 0; 
+    min-width: 100px; /* Optional: makes buttons the same size */
+}
+
+.banStudentsPopupContainer {
+    display: none; /* JS will change this to 'block' or 'flex' */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
 .banStudentsPopupBackground{
-    place-items: center;  
+    display: flex;
     justify-content: center;
     align-items: center;
     position: fixed;
@@ -34,17 +56,23 @@
     background-color: rgba(0, 0, 0, 0.6);
 
 }
-.banStudentsPopup{
-    background-color: rgba(255, 255, 255);
-    margin-top: 40%;
+
+.banStudentsPopup {
+    background-color: white;
     width: 400px;
-    height: 200px;
-    padding: 20px;
+    height: auto; /* Changed from 200px to auto */
+    padding: 30px;
     border-radius: 12px;
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
+
 .banStudentButton{
-    display: none;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
     padding: 8px;
     background-color: #1a73e8;
     color: white;
@@ -53,7 +81,9 @@
     margin-left: 4px;
 }
 .unbanStudentButton{
-    display: none;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
     padding: 8px;
     background-color: #1a73e8;
     color: white;
@@ -62,6 +92,9 @@
     margin-left: 4px;
 }
 .cancelOperationButton{
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
     padding: 8px;
     background-color: #1a73e8;
     color: white;

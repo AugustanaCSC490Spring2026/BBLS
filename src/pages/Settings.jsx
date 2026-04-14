@@ -293,21 +293,21 @@ const Settings = () => {
   function displayPopup(isbanned) {
     const banStudentsPopupContainer = document.getElementById("banStudentsPopupContainer");
     const banStudentButton = document.getElementById("banStudentButton");
-    const unbaneStudentButton = document.getElementById("unbaneStudentButton");
+    const unbanStudentButton = document.getElementById("unbanStudentButton");
     const banStudentsPopupHeader = document.getElementById("banStudentsPopupHeader");
     const banStudentsPopupText = document.getElementById("banStudentsPopupText");
 
     banStudentsPopupContainer.style.display = "flex";
     if(isbanned){
-      banStudentsPopupHeader.textContent = studentName + " is currently Banned";
-      banStudentsPopupText.textContent = "would you like to unban?";
-      unbaneStudentButton.style.display = "flex";
+      banStudentsPopupHeader.textContent = studentName + " is currently banned.";
+      banStudentsPopupText.textContent = "Would you like to unban this student?";
+      unbanStudentButton.style.display = "flex";
       banStudentButton.style.display = "none";
     }
     else{
-      banStudentsPopupHeader.textContent = studentName + " is currently not Banned";
-      banStudentsPopupText.textContent = "would you like to ban?";
-      unbaneStudentButton.style.display = "none";
+      banStudentsPopupHeader.textContent = studentName + " is currently not banned.";
+      banStudentsPopupText.textContent = "Would you like to ban this student?";
+      unbanStudentButton.style.display = "none";
       banStudentButton.style.display = "flex";
 
     }
@@ -475,21 +475,26 @@ const Settings = () => {
           <div className="banStudentsPopup">
             <h2 id="banStudentsPopupHeader"></h2>
             <p id="banStudentsPopupText"></p>
-            <button 
-              className="banStudentButton" 
-              id="banStudentButton"
-              onClick={banStudent}
-              >Ban</button>
-            <button 
-              className = "cancelOperationButton" 
-              id="cancelOpertaionButton"
-              onClick={cancelOperation}
-              >cancel</button>
-            <button 
-              className="unbaneStudentButton" 
-              id="unbaneStudentButton"
-              onClick={unbanStudent}
-              >Unban</button>
+            {/* Wrap buttons in this new div */}
+              <div className="popup-button-group">
+                <button 
+                  className="banStudentButton" 
+                  id="banStudentButton"
+                  onClick={banStudent}
+                >Ban</button>
+
+                <button 
+                  className="unbanStudentButton" 
+                  id="unbanStudentButton"
+                  onClick={unbanStudent}
+                >Unban</button>
+
+                <button 
+                  className="cancelOperationButton" 
+                  id="cancelOperationButton"
+                  onClick={cancelOperation}
+                >Cancel</button>
+              </div>
 
           </div>
         </div>
