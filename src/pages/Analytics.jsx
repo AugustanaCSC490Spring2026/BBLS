@@ -247,24 +247,33 @@ function Analytics({ gym, updateGym }) {
   }
 
   // PNG Export
-  function exportSwipeDataToPNG() {
-    if (chartType !== "swipe") return;
-    if (!chartRef.current) return;
+  function exportChartToPNG() {
+    let chartInstance = chartRef.current;
 
-    const chart = chartRef.current;
+    // Some versions wrap it like this:
+    if (chartInstance?.chart) {
+      chartInstance = chartInstance.chart;
+    }
 
-    // react-chartjs-2 exposes chart instance here
-    const url = chart.toBase64Image("image/png", 1);
+    if (!chartInstance || !chartInstance.toBase64Image) {
+      console.error("Chart instance not ready for export");
+      return;
+    }
+
+    const url = chartInstance.toBase64Image("image/png", 1);
 
     const link = document.createElement("a");
     link.href = url;
-    link.download = "swipe_chart.png";
+    link.download =
+      chartType === "swipe"
+        ? "swipe_chart.png"
+        : "demographics_chart.png";
 
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   }
-  
+    
   // CSV EXPORT 
   function exportSwipeDataToCSV() {
     if (chartType !== "swipe") return;
@@ -768,26 +777,30 @@ function Analytics({ gym, updateGym }) {
         <div className="Charts" style={{ marginTop: "30px" }}>
           <div style={{ width: "100%", height: 400, position: "relative" }}>
             {/* 🆕 Export dropdown (swipe only) */}
-            {chartType === "swipe" && (
-              <div style={{ position: "absolute", top: 10, right: 10, zIndex: 10 }}>
-                <select
-                  value={exportFormat}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setExportFormat(value);
+            <div style={{ position: "absolute", top: 10, right: 10, zIndex: 10 }}>
+              <select
+                value={exportFormat}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setExportFormat(value);
 
-                    if (value === "csv") exportSwipeDataToCSV();
-                    if (value === "png") exportSwipeDataToPNG();
+                  if (value === "csv") exportSwipeDataToCSV();
+                  if (value === "png") exportChartToPNG();
 
-                    setExportFormat("");
-                  }}
-                >
-                  <option value="">Export</option>
+                  setExportFormat("");
+                }}
+              >
+                <option value="">Export</option>
+
+                {/* CSV ONLY for swipe charts */}
+                {chartType === "swipe" && (
                   <option value="csv">Export CSV</option>
-                  <option value="png">Export PNG</option>
-                </select>
-              </div>
-            )}
+                )}
+
+                {/* PNG available for BOTH chart types */}
+                <option value="png">Export PNG</option>
+              </select>
+            </div>
             {chartType === "swipe" ? (
               <Bar
                 ref={chartRef}
@@ -812,7 +825,7 @@ function Analytics({ gym, updateGym }) {
                 No data
               </div>
             ) : (
-              <Pie data={pieData} />
+              <Pie ref={chartRef} data={pieData} />
             )}
           </div>
         </div>
