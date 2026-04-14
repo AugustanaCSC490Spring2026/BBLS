@@ -69,7 +69,7 @@ function Dashboard( {gym, updateGym } ) {
     if (temp_input.length !== 7 && temp_input.length !== 16) {
       verified_data = temp_input;
       swipeValid = false;
-      reasonsSwipeDenied = "invalid ID format";
+      reasonsSwipeDenied = "Invalid ID format";
     } else if (temp_input.length == 7) {
       verified_data = temp_input;
       docRef = await doc(db, "currentStudents", verified_data);
@@ -81,7 +81,7 @@ function Dashboard( {gym, updateGym } ) {
         }
         else{
           swipeValid = false;
-          reasonsSwipeDenied = "ID entered does not exist";
+          reasonsSwipeDenied = "ID entered does not exist.";
         }
       })
       docRef = doc(db, "bannedStudents", verified_data);
@@ -90,7 +90,7 @@ function Dashboard( {gym, updateGym } ) {
           studentName = docSnap.data().FirstName + " " + docSnap.data().LastName;
           console.log("banned user");
           swipeValid = false;
-          reasonsSwipeDenied = studentName + " is currently banned from entering Augustan Rec Facilities";
+          reasonsSwipeDenied = studentName + " is currently banned from entering Augustana Rec Facilities.";
         }
       })
     } else {
@@ -113,7 +113,7 @@ function Dashboard( {gym, updateGym } ) {
           studentName = docSnap.data().FirstName + " " + docSnap.data().LastName;
           console.log("banned user");
           swipeValid = false;
-          reasonsSwipeDenied = studentName + " is currently banned from entering Augustan Rec Facilities";
+          reasonsSwipeDenied = studentName + " is currently banned from entering Augustana Rec Facilities.";
         }
       })
     }
@@ -156,7 +156,7 @@ function Dashboard( {gym, updateGym } ) {
       if (swipeValid && gym !== "None Selected"){
         alertHeading.textContent = "ID Accepted";
         alertHeading.style.color = "#14AB00";
-        alertText.textContent = "welcome " + studentName;
+        alertText.textContent = "Welcome, " + studentName + "!";
         if(gym === "Pepsi-Co Center"){
           addDoc(pepsicoCenterRef, {
           ID: verified_data,
@@ -173,7 +173,7 @@ function Dashboard( {gym, updateGym } ) {
         alertHeading.textContent = "ID Denied";
         alertHeading.style.color = "#E80000";
         alertText.textContent = reasonsSwipeDenied;
-      console.log("invalid swipe");
+      console.log("Invalid swipe in");
       console.log(verified_data, timeStamp);
       addDoc(invalidSwipeInRef, {
       gym: gym,
