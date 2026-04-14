@@ -61,6 +61,30 @@ function Analytics({ gym, updateGym }) {
     Transfer: "Transfer"
   };
 
+  // Gives categories for guest swipes different colors on the graph
+  const categoryColorMap = {};
+  function getCategoryColor(category) {
+    if (categoryColorMap[category]) return categoryColorMap[category];
+
+    const palette = [
+      "#8884d8",
+      "#82ca9d",
+      "#ffc658",
+      "#ff7f7f",
+      "#8dd1e1",
+      "#d0ed57",
+      "#a4de6c",
+      "#a78bfa",
+      "#fb7185",
+      "#34d399"
+    ];
+
+    const index = Object.keys(categoryColorMap).length % palette.length;
+    categoryColorMap[category] = palette[index];
+
+    return categoryColorMap[category];
+  }
+
   // Fetch entire currentStudents collection ONCE and cache it
   useEffect(() => {
     async function loadStudents() {
@@ -395,6 +419,7 @@ function Analytics({ gym, updateGym }) {
       data.push({
         studentId: "guest",
         name: d.name || "", //  Only for guests
+        category: d.category || "N/A",
         time: d.timestamp.toDate()
       });
     });
@@ -522,7 +547,10 @@ function Analytics({ gym, updateGym }) {
     processData();
   }, [timeRange, interval, startDate, endDate, swipeData]);
 
-  const data = {
+  const { start, end } = getDateRange();
+
+  
+  let data = {
     labels: chartData.map((d) => d.interval),
     datasets: [
       {
@@ -532,6 +560,56 @@ function Analytics({ gym, updateGym }) {
       }
     ]
   };
+
+  // splits guest swipes based on cateogry
+  if (dataFile === "guestEntrance") {
+    const buckets = generateIntervals(start, end);
+
+    const categoryMap = {};
+
+    swipeData.forEach((swipe) => {
+      const date =
+        swipe.time instanceof Date ? swipe.time : new Date(swipe.time);
+
+      if (isNaN(date) || date < start || date > end) return;
+
+      const category = swipe.category || "N/A";
+
+      if (!categoryMap[category]) {
+        categoryMap[category] = { ...buckets };
+      }
+
+      let label = "";
+
+      if (interval === "hours")
+        label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()} ${date.getHours()}:00`;
+      else if (interval === "days")
+        label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+      else if (interval === "weeks") {
+        const weekStart = new Date(date);
+        weekStart.setDate(date.getDate() - date.getDay());
+        weekStart.setHours(0, 0, 0, 0);
+        label = `${weekStart.getMonth() + 1}/${weekStart.getDate()}/${weekStart.getFullYear()}`;
+      }
+      else if (interval === "months")
+        label = `${date.getMonth() + 1}/${date.getFullYear()}`;
+      else if (interval === "years")
+        label = `${date.getFullYear()}`;
+
+      if (categoryMap[category][label] !== undefined) {
+        categoryMap[category][label] += 1;
+      }
+    });
+
+    data = {
+      labels: Object.keys(buckets),
+      datasets: Object.keys(categoryMap).map((cat) => ({
+        label: cat,
+        data: Object.keys(buckets).map((b) => categoryMap[cat][b] || 0),
+        backgroundColor: getCategoryColor(cat)
+      }))
+    };
+  }
 
   const pieData = {
     labels: Object.keys(demographicData),
@@ -691,7 +769,16 @@ function Analytics({ gym, updateGym }) {
               </div>
             )}
             {chartType === "swipe" ? (
-              <Bar data={data} />
+              <Bar
+                data={data}
+                options={{
+                  responsive: true,
+                  scales: {
+                    x: { stacked: true },
+                    y: { stacked: true }
+                  }
+                }}
+              />
             ) : Object.keys(demographicData).length === 0 ? (
               <div style={{
                 display: "flex",
