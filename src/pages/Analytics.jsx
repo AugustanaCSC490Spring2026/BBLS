@@ -671,6 +671,17 @@ function Analytics({ gym, updateGym }) {
             )}
             {chartType === "swipe" ? (
               <Bar data={data} />
+            ) : Object.keys(demographicData).length === 0 ? (
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
+                fontSize: "18px",
+                fontWeight: "500"
+              }}>
+                No data
+              </div>
             ) : (
               <Pie data={pieData} />
             )}
