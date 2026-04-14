@@ -8,21 +8,13 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
-  ArcElement, // ✅ NEW: Needed for pie chart
+  ArcElement, // Needed for pie chart
   Tooltip,
   Legend
 } from "chart.js";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
 
-// JSON test datasets
-import midnightEdge from "./test-data/midnight-edge.json";
-import leapYear from "./test-data/leap-year.json";
-import duplicates from "./test-data/duplicates.json";
-import future from "./test-data/future.json";
-import invalid from "./test-data/invalid.json";
-import timezone from "./test-data/timezone.json";
-import empty from "./test-data/empty.json";
 
 // Firebase imports
 import { db } from "../Firebase";
@@ -30,13 +22,13 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 
 function Analytics({ gym, updateGym }) {
 
-  // ✅ NEW: Chart type state (Swipe-ins vs Demographics)
+  // Chart type state (Swipe-ins vs Demographics)
   const [chartType, setChartType] = useState("swipe");
 
   const [timeRange, setTimeRange] = useState("today");
   const [interval, setInterval] = useState("hours");
 
-  // ✅ NEW: Demographic type dropdown state
+  // Demographic type dropdown state
   const [demographicType, setDemographicType] = useState("Class");
 
   const [startDate, setStartDate] = useState("");
@@ -44,10 +36,10 @@ function Analytics({ gym, updateGym }) {
   const [chartData, setChartData] = useState([]);
   const [swipeData, setSwipeData] = useState([]);
 
-  // ✅ NEW: Stores aggregated demographic counts
+  // Stores aggregated demographic counts
   const [demographicData, setDemographicData] = useState({});
 
-  // ✅ NEW: Cached student data (FULL FETCH)
+  // Cached student data (FULL FETCH)
   const [studentMap, setStudentMap] = useState({});
 
   const [dataFile, setDataFile] = useState("normal");
@@ -58,7 +50,7 @@ function Analytics({ gym, updateGym }) {
   const [exportFormat, setExportFormat] = useState("");
   
 
-  // ✅ NEW: Maps dropdown names to Firestore field names
+  // Maps dropdown names to Firestore field names
   const demographicFieldMap = {
     Class: "Class",
     Gender: "Gender",
@@ -69,7 +61,7 @@ function Analytics({ gym, updateGym }) {
     Transfer: "Transfer"
   };
 
-  // ✅ NEW: Fetch entire currentStudents collection ONCE and cache it
+  // Fetch entire currentStudents collection ONCE and cache it
   useEffect(() => {
     async function loadStudents() {
       try {
@@ -236,9 +228,7 @@ function Analytics({ gym, updateGym }) {
     return { start, end };
   }
 
-  // ================================
-  // CSV EXPORT (FIXED + CHRONOLOGICAL + LOCAL TIME)
-  // ================================
+  // CSV EXPORT 
   function exportSwipeDataToCSV() {
     if (chartType !== "swipe") return;
 
@@ -574,27 +564,19 @@ function Analytics({ gym, updateGym }) {
 
             {/* Dataset */}
             <div className="control-box">
-              <h3>Test Dataset</h3>
+              <h3>Dataset</h3>
               <select
                 value={dataFile}
                 onChange={(e) => setDataFile(e.target.value)}
               >
-                <option value="normal">Normal (generated thousands)</option>
-                <option value="midnightEdge">Midnight Edge</option>
-                <option value="leapYear">Leap Year</option>
-                <option value="duplicates">Duplicates</option>
-                <option value="future">Future Dates</option>
-                <option value="invalid">Invalid Data</option>
-                <option value="timezone">Timezone</option>
-                <option value="empty">Empty</option>
-                <option value="firebase">Firebase Data</option>
-                <option value="pepsico">PepsiCo Center (Firebase)</option>
-                <option value="westerlin">Westerlin Gym (Firebase)</option>
-                <option value="combined">Combined Gyms (Firebase)</option>
+                <option value="normal">Randomly Generated (non-firebase data)</option>
+                <option value="pepsico">PepsiCo Center</option>
+                <option value="westerlin">Westerlin Gym</option>
+                <option value="combined">Combined Gyms</option>
 
                 {chartType !== "demographics" && (
                   <option value="guestEntrance">
-                    Guest Entrance (Firebase)
+                    Guest Entrance
                   </option>
                 )}
               </select>
