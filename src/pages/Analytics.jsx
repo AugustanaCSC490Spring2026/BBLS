@@ -234,7 +234,6 @@ function Analytics({ gym, updateGym }) {
 
         return !isNaN(date) && date >= start && date <= end;
       })
-      // ✅ chronological order fix
       .sort((a, b) => {
         const aDate = new Date(a.time);
         const bDate = new Date(b.time);
@@ -245,27 +244,36 @@ function Analytics({ gym, updateGym }) {
 
     const hasGuestData = filtered.some(swipe => swipe.studentId === "guest");
 
+    // ✅ UPDATED HEADERS
     const rows = hasGuestData
-      ? [["Student ID", "Name", "Swipe Time"]]
-      : [["Student ID", "Swipe Time"]];
+      ? [["Student ID", "Name", "Swipe Time"]] // DO NOT add email for guests
+      : [["Student ID", "Email", "Swipe Time"]];
 
     filtered.forEach((swipe) => {
       const date =
         swipe.time instanceof Date ? swipe.time : new Date(swipe.time);
 
-      // ✅ FIX: local time (fixes 16/19 hour shift issue)
       const localTime =
         `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
         `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 
       if (hasGuestData) {
+        // ✅ unchanged guest behavior
         rows.push([
           swipe.studentId,
           swipe.studentId === "guest" ? (swipe.name || "") : "",
           localTime
         ]);
       } else {
-        rows.push([swipe.studentId, localTime]);
+        // ✅ NEW: pull email from studentMap
+        const student = studentMap[swipe.studentId];
+        const email = student?.Email || "";
+
+        rows.push([
+          swipe.studentId,
+          email,
+          localTime
+        ]);
       }
     });
 

@@ -1,4 +1,4 @@
-// everything pertaining to importing csv files in this file was generated with help from ChatGPT
+// Everything pertaining to importing csv files in this file was generated with help from ChatGPT
 
 import React, { useState } from "react";
 
