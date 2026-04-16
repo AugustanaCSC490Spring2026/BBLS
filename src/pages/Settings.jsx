@@ -1,4 +1,4 @@
-// everything pertaining to importing csv files in this file was generated with help from ChatGPT
+// Everything pertaining to importing csv files in this file was generated with help from ChatGPT
 
 import React, { useState } from "react";
 
@@ -12,13 +12,39 @@ import Navbar from "./Navigation.jsx";
 import { db } from "../Firebase.js";
 
 // Firestore tools 
-import { doc, writeBatch, collection, serverTimestamp, getDoc, deleteDoc, setDoc} from "firebase/firestore";
+import { doc, writeBatch, collection, serverTimestamp, getDoc, deleteDoc, setDoc, getDocs } from "firebase/firestore";
 
 import "../components/Settings.css";
 const Settings = () => {
   const [showGymPopup, setShowGymPopup] = useState(false);
   const [selectedGym, setSelectedGym] = useState(null);
-  // Handles when a user selects a file
+
+  // Helper function to clear the currentStudents collection within firestore when a CSV is uploaded
+  const clearCollection = async (collectionName) => {
+    const colRef = collection(db, collectionName);
+    const snapshot = await getDocs(colRef);
+
+    let batch = writeBatch(db);
+    let count = 0;
+
+    for (const docSnap of snapshot.docs) {
+      batch.delete(docSnap.ref);
+      count++;
+
+      // Firestore batch limit
+      if (count === 500) {
+        await batch.commit();
+        batch = writeBatch(db);
+        count = 0;
+      }
+    }
+
+    if (count > 0) {
+      await batch.commit();
+    }
+  };
+
+  // Handles when a user selects a file for updating current students
   const handleFileChange = (event) => {
 
     // Get the selected file
@@ -41,8 +67,21 @@ const Settings = () => {
 
       // Runs when parsing is complete
       complete: async (results) => {
+        const data = results.data;
 
-        const data = results.data; // Array of row objects
+        //  Confirmation before wiping database
+        const confirmUpload = window.confirm(
+          "This will DELETE all existing students and replace them with the uploaded CSV.\n\nAre you sure you want to continue?"
+        );
+
+        if (!confirmUpload) {
+          alert("Upload cancelled.");
+          event.target.value = null; // Removes selected file if cancelled
+          return;
+        }
+
+        // Clear existing collection
+        await clearCollection("currentStudents");
 
         console.log("Parsed CSV:", data);
 
@@ -118,6 +157,9 @@ const Settings = () => {
         alert(
           `Upload complete!\nSuccess: ${successCount}\nFailed: ${failCount}`
         );
+
+        // Removes the upload file after upload
+        event.target.value = null;
       },
 
       // Runs if CSV parsing fails
@@ -293,21 +335,21 @@ const Settings = () => {
   function displayPopup(isbanned) {
     const banStudentsPopupContainer = document.getElementById("banStudentsPopupContainer");
     const banStudentButton = document.getElementById("banStudentButton");
-    const unbaneStudentButton = document.getElementById("unbaneStudentButton");
+    const unbanStudentButton = document.getElementById("unbanStudentButton");
     const banStudentsPopupHeader = document.getElementById("banStudentsPopupHeader");
     const banStudentsPopupText = document.getElementById("banStudentsPopupText");
 
     banStudentsPopupContainer.style.display = "flex";
     if(isbanned){
-      banStudentsPopupHeader.textContent = studentName + " is currently Banned";
-      banStudentsPopupText.textContent = "would you like to unban?";
-      unbaneStudentButton.style.display = "flex";
+      banStudentsPopupHeader.textContent = studentName + " is currently banned.";
+      banStudentsPopupText.textContent = "Would you like to unban this student?";
+      unbanStudentButton.style.display = "flex";
       banStudentButton.style.display = "none";
     }
     else{
-      banStudentsPopupHeader.textContent = studentName + " is currently not Banned";
-      banStudentsPopupText.textContent = "would you like to ban?";
-      unbaneStudentButton.style.display = "none";
+      banStudentsPopupHeader.textContent = studentName + " is currently not banned.";
+      banStudentsPopupText.textContent = "Would you like to ban this student?";
+      unbanStudentButton.style.display = "none";
       banStudentButton.style.display = "flex";
 
     }
@@ -475,21 +517,26 @@ const Settings = () => {
           <div className="banStudentsPopup">
             <h2 id="banStudentsPopupHeader"></h2>
             <p id="banStudentsPopupText"></p>
-            <button 
-              className="banStudentButton" 
-              id="banStudentButton"
-              onClick={banStudent}
-              >Ban</button>
-            <button 
-              className = "cancelOperationButton" 
-              id="cancelOpertaionButton"
-              onClick={cancelOperation}
-              >cancel</button>
-            <button 
-              className="unbaneStudentButton" 
-              id="unbaneStudentButton"
-              onClick={unbanStudent}
-              >Unban</button>
+            {/* Wrap buttons in this new div */}
+              <div className="popup-button-group">
+                <button 
+                  className="banStudentButton" 
+                  id="banStudentButton"
+                  onClick={banStudent}
+                >Ban</button>
+
+                <button 
+                  className="unbanStudentButton" 
+                  id="unbanStudentButton"
+                  onClick={unbanStudent}
+                >Unban</button>
+
+                <button 
+                  className="cancelOperationButton" 
+                  id="cancelOperationButton"
+                  onClick={cancelOperation}
+                >Cancel</button>
+              </div>
 
           </div>
         </div>
