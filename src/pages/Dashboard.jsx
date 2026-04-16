@@ -191,10 +191,10 @@ function Dashboard( {gym, updateGym } ) {
     <>
       <Navbar currentGym={gym} onGymChange={updateGym} />
       <div className="Dashboard">
-          <div className="customAlert" id="customAlert">
-            <div className="alertContent" id="alertContent">
-              <h2 id="alertHeading"> If you can see this there is a bug</h2>
-              <p id="alertText"></p>
+        <div className="customAlert" id="customAlert">
+              <div className="alertContent" id="alertContent">
+               <h2 id="alertHeading"> If you can see this there is a bug</h2>
+               <p id="alertText"></p>
             </div>
           </div>
         <div className="swipe-card">
@@ -218,6 +218,7 @@ function Dashboard( {gym, updateGym } ) {
             </button>
 
           </form>
+          
         </div>
       </div>
       <button 
