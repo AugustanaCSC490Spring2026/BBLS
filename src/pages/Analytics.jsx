@@ -48,7 +48,7 @@ function Analytics({ gym, updateGym }) {
 
   // 🆕 Export dropdown state
   const [exportFormat, setExportFormat] = useState("");
-  
+
   const chartRef = useRef(null);
 
   // Maps dropdown names to Firestore field names
@@ -273,7 +273,7 @@ function Analytics({ gym, updateGym }) {
     link.click();
     document.body.removeChild(link);
   }
-    
+
   // CSV EXPORT 
   function exportSwipeDataToCSV() {
     if (chartType !== "swipe") return;
@@ -578,7 +578,7 @@ function Analytics({ gym, updateGym }) {
 
   const { start, end } = getDateRange();
 
-  
+
   let data = {
     labels: chartData.map((d) => d.interval),
     datasets: [
@@ -662,17 +662,13 @@ function Analytics({ gym, updateGym }) {
     <>
       <Navbar />
       <div className="page-header">
-        <h2>Analytics</h2>
       </div>
 
       <div className="Analytics-page">
-        <div className="card">
-          <h2>Controls</h2>
-
-          <div className="inner-grid">
-
-            {/* Chart Type */}
-            <div className="control-box">
+        <div className="analytics-card">
+          {/* Chart Type */}
+          <div className="control-box">
+            <div className="control-content">
               <h3>Chart Type</h3>
               <select
                 value={chartType}
@@ -684,7 +680,7 @@ function Analytics({ gym, updateGym }) {
             </div>
 
             {/* Dataset */}
-            <div className="control-box">
+            <div className="control-content">
               <h3>Dataset</h3>
               <select
                 value={dataFile}
@@ -704,7 +700,7 @@ function Analytics({ gym, updateGym }) {
             </div>
 
             {/* Time Range */}
-            <div className="control-box">
+            <div className="control-content">
               <h3>Choose Time Range</h3>
 
               <select
@@ -732,9 +728,8 @@ function Analytics({ gym, updateGym }) {
                 </div>
               )}
             </div>
-
             {/* Interval / Demographic */}
-            <div className="control-box">
+            <div className="control-content">
               {chartType === "swipe" ? (
                 <>
                   <h3>Interval</h3>

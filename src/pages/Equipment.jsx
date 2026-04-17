@@ -128,7 +128,7 @@ export default function Equipment({ gym, updateGym }) {
             await addDoc(checkoutRef, {
 
                 studentId,
-                studentName, // ✅ store name
+                studentName, 
                 equipment: selectedEquipment,
                 quantity,
                 checkoutTime: serverTimestamp(),
