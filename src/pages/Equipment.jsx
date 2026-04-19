@@ -128,7 +128,7 @@ export default function Equipment({ gym, updateGym }) {
             await addDoc(checkoutRef, {
 
                 studentId,
-                studentName, 
+                studentName,
                 equipment: selectedEquipment,
                 quantity,
                 checkoutTime: serverTimestamp(),
@@ -219,34 +219,40 @@ export default function Equipment({ gym, updateGym }) {
 
     };
     const verifyStudent = async (id) => {
-        try {
-            const studentDocRef =
-                doc(currentStudentsRef, id);
+        const verified_id = id.length === 16 ? id.slice(3, 10) : id;
 
-            const studentSnap =
-                await getDoc(studentDocRef);
+        if (verified_id.length !== 7) {
+            return { swipeValid: false, studentName: null, reason: "Invalid ID format" };
+        }
+
+        try {
+            const studentSnap = await getDoc(doc(db, "currentStudents", verified_id));
 
             if (!studentSnap.exists()) {
-                alert("Student ID not found in database");
-                return null;
+                return { swipeValid: false, studentName: null, reason: "ID entered does not exist." };
             }
 
-            const studentData =
-                studentSnap.data();
+            const data = studentSnap.data();
+            const studentName = data.FirstName + " " + data.LastName;
 
-            const fullName =
-                studentData.FirstName +
-                " " +
-                studentData.LastName;
 
-            return fullName;
+            const bannedSnap = await getDoc(doc(db, "bannedStudents", verified_id));
+
+            if (bannedSnap.exists()) {
+                const bannedData = bannedSnap.data();
+                const bannedName = bannedData.FirstName + " " + bannedData.LastName;
+                return {
+                    swipeValid: false,
+                    studentName: bannedName,
+                    reason: bannedName + " is currently banned from entering Augustana Rec Facilities."
+                };
+            }
+
+            return { swipeValid: true, studentName, reason: null };
 
         } catch (error) {
-
             console.error(error);
-            alert("Error checking student ID");
-
-            return null;
+            return { swipeValid: false, studentName: null, reason: "Error checking student ID" };
         }
     };
     const handleImportCSV = (event) => {
@@ -315,6 +321,7 @@ export default function Equipment({ gym, updateGym }) {
                         </div>
 
                         <input
+                            type="password"
                             placeholder="Student ID"
                             value={studentId}
                             onChange={(e) =>
