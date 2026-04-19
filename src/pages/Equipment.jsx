@@ -390,32 +390,42 @@ export default function Equipment({ gym, updateGym }) {
                             <h2>Active Checkouts</h2>
                         </div>
 
-                        {activeCheckouts.map(item => (
-                            <div
-                                key={item.id}
-                                className="checkout"
-                            >
-                                <div>
-                                    <strong>
-                                        {item.studentName}
-                                    </strong>
+                        {activeCheckouts.length === 0 ? (
 
-                                    <p>
-                                        {item.equipment}
-                                        {" x"}
-                                        {item.quantity}
-                                    </p>
-                                </div>
+                            <p className="empty-message">
+                                No active checkouts
+                            </p>
 
-                                <button
-                                    onClick={() =>
-                                        handleReturn(item.id)
-                                    }
+                        ) : (
+
+                            activeCheckouts.map(item => (
+                                <div
+                                    key={item.id}
+                                    className="checkout"
                                 >
-                                    Return
-                                </button>
-                            </div>
-                        ))}
+                                    <div>
+                                        <strong>
+                                            {item.studentName}
+                                        </strong>
+
+                                        <p>
+                                            {item.equipment}
+                                            {" x"}
+                                            {item.quantity}
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        onClick={() =>
+                                            handleReturn(item.id)
+                                        }
+                                    >
+                                        Return
+                                    </button>
+                                </div>
+                            ))
+
+                        )}
                     </div>
 
                 </div>

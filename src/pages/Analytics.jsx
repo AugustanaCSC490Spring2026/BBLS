@@ -768,60 +768,72 @@ function Analytics({ gym, updateGym }) {
             </div>
           </div>
         </div>
+        <div className="charts-boxes">
+          <div className="stat-cards">
+            <div className="stat-card">
 
-        <div className="Charts" style={{ marginTop: "30px" }}>
-          <div style={{ width: "100%", height: 400, position: "relative" }}>
-            {/* 🆕 Export dropdown (swipe only) */}
-            <div style={{ position: "absolute", top: 10, right: 10, zIndex: 10 }}>
-              <select
-                value={exportFormat}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setExportFormat(value);
-
-                  if (value === "csv") exportSwipeDataToCSV();
-                  if (value === "png") exportChartToPNG();
-
-                  setExportFormat("");
-                }}
-              >
-                <option value="">Export</option>
-
-                {/* CSV ONLY for swipe charts */}
-                {chartType === "swipe" && (
-                  <option value="csv">Export CSV</option>
-                )}
-
-                {/* PNG available for BOTH chart types */}
-                <option value="png">Export PNG</option>
-              </select>
             </div>
-            {chartType === "swipe" ? (
-              <Bar
-                ref={chartRef}
-                data={data}
-                options={{
-                  responsive: true,
-                  scales: {
-                    x: { stacked: true },
-                    y: { stacked: true }
-                  }
-                }}
-              />
-            ) : Object.keys(demographicData).length === 0 ? (
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                height: "100%",
-                fontSize: "18px",
-                fontWeight: "500"
-              }}>
-                No data
+            <div className="stat-card">
+              
+            </div>
+            <div className="stat-card">
+              
+            </div>
+          </div>
+          <div className="Charts" style={{ marginTop: "30px" }}>
+            <div style={{ width: "100%", height: 400, position: "relative" }}>
+              {/* 🆕 Export dropdown (swipe only) */}
+              <div style={{ position: "absolute", top: 10, right: 10, zIndex: 10 }}>
+                <select
+                  value={exportFormat}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setExportFormat(value);
+
+                    if (value === "csv") exportSwipeDataToCSV();
+                    if (value === "png") exportChartToPNG();
+
+                    setExportFormat("");
+                  }}
+                >
+                  <option value="">Export</option>
+
+                  {/* CSV ONLY for swipe charts */}
+                  {chartType === "swipe" && (
+                    <option value="csv">Export CSV</option>
+                  )}
+
+                  {/* PNG available for BOTH chart types */}
+                  <option value="png">Export PNG</option>
+                </select>
               </div>
-            ) : (
-              <Pie ref={chartRef} data={pieData} />
-            )}
+              {chartType === "swipe" ? (
+                <Bar
+                  ref={chartRef}
+                  data={data}
+                  options={{
+                    responsive: true,
+                    scales: {
+                      x: { stacked: true },
+                      y: { stacked: true }
+                    }
+                  }}
+                />
+              ) : Object.keys(demographicData).length === 0 ? (
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: "100%",
+                  fontSize: "18px",
+                  fontWeight: "500"
+                }}>
+                  No data
+                </div>
+              ) : (
+                <Pie ref={chartRef} data={pieData} />
+              )}
+            </div>
           </div>
         </div>
       </div>
