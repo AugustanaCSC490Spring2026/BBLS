@@ -1,58 +1,69 @@
 async function ValidateSwipe(swipe, getDoc, doc, db){
+  // defining vars for the return object.
+  let swipeValid = null;
+  let reasonSwipeDenied = "No reason given";
+  let studentName = "No student name";
 
+  // trimming anything extra from the input
+  swipe = swipe.trim();
 
-    // trimming anything extra from the input
-    swipe = swipe.trim();
-    // if the input is not 7 or 16 char long then it is invalid. 
-    if (swipe.length !== 7 && swipe.length !== 16) {
-      return [false, "Invalid ID format"];
-    } 
-
-    // if the input is 7 char long it is just the ID number.
-    else if (swipe.length == 7) {
-        //backend validation that the student exists. 
-      await getDoc(docRef).then((docSnap) => {
-        if (docSnap.exists()) {
-          studentName = docSnap.data().FirstName + " " + docSnap.data().LastName;
-        } else{
-          return [false, "ID not associated with a student"];
-        }
-      })
-      // student exists, checking if they are banned. 
-      docRef = doc(db, "bannedStudents", verified_data);
-      await getDoc(docRef).then((docSnap) =>{
-        if (docSnap.exists()){
-          studentName = docSnap.data().FirstName + " " + docSnap.data().LastName;
-          console.log("banned user");
-          swipeValid = false;
-          reasonsSwipeDenied = studentName + " is currently banned from entering Augustana Rec Facilities.";
-        }
-      })
-    } 
-
-    // this input is 16 char long so it is a swipe. 
-    else {
-      verified_data = temp_input.slice(3, 10);
-      docRef = await doc(db, "currentStudents", verified_data);
-      await getDoc(docRef).then((docSnap) => {
-        if (docSnap.exists()) {
-          studentName = docSnap.data().FirstName + " " + docSnap.data().LastName;
-          console.log("valid ID");
-          swipeValid = true;
-        }
-        else{
-          swipeValid = false;
-          reasonsSwipeDenied = "ID entered does not exist";
-        }
-      })
-      docRef = doc(db, "bannedStudents", verified_data);
-      await getDoc(docRef).then((docSnap) =>{
-        if (docSnap.exists()){
-          studentName = docSnap.data().FirstName + " " + docSnap.data().LastName;
-          console.log("banned user");
-          swipeValid = false;
-          reasonsSwipeDenied = studentName + " is currently banned from entering Augustana Rec Facilities.";
-        }
-      })
+  if (swipe.length !== 7 && swipe.length !== 16) {
+    return {
+      isValid: false,
+      studentId: swipe,
+      name: studentName,
+      reasonDenied: "Invalid ID format"
+    };
+  }
+  // if it's 7 we dont need to do anything
+  // if its 16 we need to trim the extra characters off.
+  else if (swipe.length == 16) {
+    swipe = swipe.slice(3, 10);
+  }
+  
+  // backend validation now that we know the ID number.
+  try{
+    const studentSnap = await getDoc(doc(db, "currentStudents", swipe));
+    if (studentSnap.exists()) {
+      studentName = studentSnap.data().FirstName + " " + studentSnap.data().LastName;
+      swipeValid = true;  
     }
+    else{
+      return {
+        isValid: false,
+        studentId: swipe,
+        name: studentName,
+        reasonDenied: "ID entered does not exist"
+      };
+    }
+    const bannedSnap = await getDoc(doc(db, "bannedStudents", swipe));
+      if (bannedSnap.exists()) {
+      studentName = bannedSnap.data().FirstName + " " + bannedSnap.data().LastName;
+      console.log("banned user");
+      swipeValid = false;
+      reasonSwipeDenied = studentName + " is currently banned from entering Augustana Rec Facilities.";
+    }
+
+  }
+  catch (error){
+    console.log("Error fetching student data:", error);
+    return {
+      isValid: false,
+      studentId: swipe,
+      name: studentName,
+      reasonDenied: "Error fetching student data"
+    };
+  }
+  
+  // student exists, checking if they are banned.
+  
+  return {
+  isValid: swipeValid,
+  studentId: swipe,
+  name: studentName,
+  reasonDenied: reasonSwipeDenied
+  };
 }
+
+export default ValidateSwipe;
+  

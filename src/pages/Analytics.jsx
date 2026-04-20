@@ -1,5 +1,5 @@
 // This entire file was generated with help from ChatGPT 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Bar, Pie } from "react-chartjs-2"; // ✅ NEW: Added Pie chart
 import Navbar from "./Navigation.jsx";
 import "../components/Analytics.css";
@@ -48,7 +48,8 @@ function Analytics({ gym, updateGym }) {
 
   // 🆕 Export dropdown state
   const [exportFormat, setExportFormat] = useState("");
-  
+
+  const chartRef = useRef(null);
 
   // Maps dropdown names to Firestore field names
   const demographicFieldMap = {
@@ -60,6 +61,30 @@ function Analytics({ gym, updateGym }) {
     Residence: "Residence",
     Transfer: "Transfer"
   };
+
+  // Gives categories for guest swipes different colors on the graph
+  const categoryColorMap = {};
+  function getCategoryColor(category) {
+    if (categoryColorMap[category]) return categoryColorMap[category];
+
+    const palette = [
+      "#8884d8",
+      "#82ca9d",
+      "#ffc658",
+      "#ff7f7f",
+      "#8dd1e1",
+      "#d0ed57",
+      "#a4de6c",
+      "#a78bfa",
+      "#fb7185",
+      "#34d399"
+    ];
+
+    const index = Object.keys(categoryColorMap).length % palette.length;
+    categoryColorMap[category] = palette[index];
+
+    return categoryColorMap[category];
+  }
 
   // Fetch entire currentStudents collection ONCE and cache it
   useEffect(() => {
@@ -219,6 +244,34 @@ function Analytics({ gym, updateGym }) {
     }
 
     return { start, end };
+  }
+
+  // PNG Export
+  function exportChartToPNG() {
+    let chartInstance = chartRef.current;
+
+    // Some versions wrap it like this:
+    if (chartInstance?.chart) {
+      chartInstance = chartInstance.chart;
+    }
+
+    if (!chartInstance || !chartInstance.toBase64Image) {
+      console.error("Chart instance not ready for export");
+      return;
+    }
+
+    const url = chartInstance.toBase64Image("image/png", 1);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download =
+      chartType === "swipe"
+        ? "swipe_chart.png"
+        : "demographics_chart.png";
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   // CSV EXPORT 
@@ -395,6 +448,7 @@ function Analytics({ gym, updateGym }) {
       data.push({
         studentId: "guest",
         name: d.name || "", //  Only for guests
+        category: d.category || "N/A",
         time: d.timestamp.toDate()
       });
     });
@@ -522,7 +576,10 @@ function Analytics({ gym, updateGym }) {
     processData();
   }, [timeRange, interval, startDate, endDate, swipeData]);
 
-  const data = {
+  const { start, end } = getDateRange();
+
+
+  let data = {
     labels: chartData.map((d) => d.interval),
     datasets: [
       {
@@ -532,6 +589,56 @@ function Analytics({ gym, updateGym }) {
       }
     ]
   };
+
+  // splits guest swipes based on cateogry
+  if (dataFile === "guestEntrance") {
+    const buckets = generateIntervals(start, end);
+
+    const categoryMap = {};
+
+    swipeData.forEach((swipe) => {
+      const date =
+        swipe.time instanceof Date ? swipe.time : new Date(swipe.time);
+
+      if (isNaN(date) || date < start || date > end) return;
+
+      const category = swipe.category || "N/A";
+
+      if (!categoryMap[category]) {
+        categoryMap[category] = { ...buckets };
+      }
+
+      let label = "";
+
+      if (interval === "hours")
+        label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()} ${date.getHours()}:00`;
+      else if (interval === "days")
+        label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+      else if (interval === "weeks") {
+        const weekStart = new Date(date);
+        weekStart.setDate(date.getDate() - date.getDay());
+        weekStart.setHours(0, 0, 0, 0);
+        label = `${weekStart.getMonth() + 1}/${weekStart.getDate()}/${weekStart.getFullYear()}`;
+      }
+      else if (interval === "months")
+        label = `${date.getMonth() + 1}/${date.getFullYear()}`;
+      else if (interval === "years")
+        label = `${date.getFullYear()}`;
+
+      if (categoryMap[category][label] !== undefined) {
+        categoryMap[category][label] += 1;
+      }
+    });
+
+    data = {
+      labels: Object.keys(buckets),
+      datasets: Object.keys(categoryMap).map((cat) => ({
+        label: cat,
+        data: Object.keys(buckets).map((b) => categoryMap[cat][b] || 0),
+        backgroundColor: getCategoryColor(cat)
+      }))
+    };
+  }
 
   const pieData = {
     labels: Object.keys(demographicData),
@@ -555,17 +662,13 @@ function Analytics({ gym, updateGym }) {
     <>
       <Navbar />
       <div className="page-header">
-        <h2>Analytics</h2>
       </div>
 
       <div className="Analytics-page">
-        <div className="card">
-          <h2>Controls</h2>
-
-          <div className="inner-grid">
-
-            {/* Chart Type */}
-            <div className="control-box">
+        <div className="analytics-card">
+          {/* Chart Type */}
+          <div className="control-box">
+            <div className="control-content">
               <h3>Chart Type</h3>
               <select
                 value={chartType}
@@ -577,7 +680,7 @@ function Analytics({ gym, updateGym }) {
             </div>
 
             {/* Dataset */}
-            <div className="control-box">
+            <div className="control-content">
               <h3>Dataset</h3>
               <select
                 value={dataFile}
@@ -597,7 +700,7 @@ function Analytics({ gym, updateGym }) {
             </div>
 
             {/* Time Range */}
-            <div className="control-box">
+            <div className="control-content">
               <h3>Choose Time Range</h3>
 
               <select
@@ -625,9 +728,8 @@ function Analytics({ gym, updateGym }) {
                 </div>
               )}
             </div>
-
             {/* Interval / Demographic */}
-            <div className="control-box">
+            <div className="control-content">
               {chartType === "swipe" ? (
                 <>
                   <h3>Interval</h3>
@@ -670,28 +772,42 @@ function Analytics({ gym, updateGym }) {
         <div className="Charts" style={{ marginTop: "30px" }}>
           <div style={{ width: "100%", height: 400, position: "relative" }}>
             {/* 🆕 Export dropdown (swipe only) */}
-            {chartType === "swipe" && (
-              <div style={{ position: "absolute", top: 10, right: 10, zIndex: 10 }}>
-                <select
-                  value={exportFormat}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setExportFormat(value);
+            <div style={{ position: "absolute", top: 10, right: 10, zIndex: 10 }}>
+              <select
+                value={exportFormat}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setExportFormat(value);
 
-                    if (value === "csv") exportSwipeDataToCSV();
-                    if (value === "png") console.log("PNG not implemented yet");
+                  if (value === "csv") exportSwipeDataToCSV();
+                  if (value === "png") exportChartToPNG();
 
-                    setExportFormat("");
-                  }}
-                >
-                  <option value="">Export</option>
+                  setExportFormat("");
+                }}
+              >
+                <option value="">Export</option>
+
+                {/* CSV ONLY for swipe charts */}
+                {chartType === "swipe" && (
                   <option value="csv">Export CSV</option>
-                  <option value="png">Export PNG</option>
-                </select>
-              </div>
-            )}
+                )}
+
+                {/* PNG available for BOTH chart types */}
+                <option value="png">Export PNG</option>
+              </select>
+            </div>
             {chartType === "swipe" ? (
-              <Bar data={data} />
+              <Bar
+                ref={chartRef}
+                data={data}
+                options={{
+                  responsive: true,
+                  scales: {
+                    x: { stacked: true },
+                    y: { stacked: true }
+                  }
+                }}
+              />
             ) : Object.keys(demographicData).length === 0 ? (
               <div style={{
                 display: "flex",
@@ -704,7 +820,7 @@ function Analytics({ gym, updateGym }) {
                 No data
               </div>
             ) : (
-              <Pie data={pieData} />
+              <Pie ref={chartRef} data={pieData} />
             )}
           </div>
         </div>

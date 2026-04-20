@@ -1,6 +1,7 @@
 import Navbar from "./Navigation.jsx";
 import { useState, useEffect } from "react";
 import "../components/Equipment.css";
+import ValidateSwipe from "../components/ValidateSwipe.js";
 import Papa from "papaparse";
 import {
     collection,
@@ -43,7 +44,7 @@ export default function Equipment({ gym, updateGym }) {
         if (gym === "Westerlin Gym") return westerlinCheckoutRef;
         return null;
     };
-    // commenting for a new commit - stonedahl
+
     const fetchInventory = async () => {
         const inventoryRef = getInventoryCollection();
         if (!inventoryRef) return;
@@ -128,7 +129,7 @@ export default function Equipment({ gym, updateGym }) {
             await addDoc(checkoutRef, {
 
                 studentId,
-                studentName, // ✅ store name
+                studentName, 
                 equipment: selectedEquipment,
                 quantity,
                 checkoutTime: serverTimestamp(),
@@ -218,37 +219,48 @@ export default function Equipment({ gym, updateGym }) {
         }
 
     };
+
     const verifyStudent = async (id) => {
         try {
-            const studentDocRef =
-                doc(currentStudentsRef, id);
-
-            const studentSnap =
-                await getDoc(studentDocRef);
-
-            if (!studentSnap.exists()) {
-                alert("Student ID not found in database");
-                return null;
-            }
-
-            const studentData =
-                studentSnap.data();
-
-            const fullName =
-                studentData.FirstName +
-                " " +
-                studentData.LastName;
-
-            return fullName;
+            const validationResult = await ValidateSwipe(id, getDoc, doc, db);
 
         } catch (error) {
-
-            console.error(error);
-            alert("Error checking student ID");
-
+            console.log(error);
             return null;
         }
     };
+
+    // const verifyStudent = async (id) => {
+    //     try {
+    //         const studentDocRef =
+    //             doc(currentStudentsRef, id);
+
+    //         const studentSnap =
+    //             await getDoc(studentDocRef);
+
+    //         if (!studentSnap.exists()) {
+    //             alert("Student ID not found in database");
+    //             return null;
+    //         }
+
+    //         const studentData =
+    //             studentSnap.data();
+
+    //         const fullName =
+    //             studentData.FirstName +
+    //             " " +
+    //             studentData.LastName;
+
+    //         return fullName;
+
+    //     } catch (error) {
+
+    //         console.error(error);
+    //         alert("Error checking student ID");
+
+    //         return null;
+    //     }
+    // };
     const handleImportCSV = (event) => {
 
         const file = event.target.files[0];
