@@ -86,11 +86,19 @@ export default function Equipment({ gym, updateGym }) {
             alert("Please fill all fields");
             return;
         }
+        
+        const validation = await ValidateSwipe(studentId, getDoc, doc, db);
+            if (!validation.isValid) {
+                alert(validation.reasonDenied);
+                return;
+            }
 
         const studentName =
-            await verifyStudent(studentId);
+            validation.name;
 
         if (!studentName) return;
+
+        const validatedId = validation.studentId;
 
         const inventoryRef =
             getInventoryCollection();
@@ -220,16 +228,6 @@ export default function Equipment({ gym, updateGym }) {
 
     };
 
-    const verifyStudent = async (id) => {
-        try {
-            const validationResult = await ValidateSwipe(id, getDoc, doc, db);
-
-        } catch (error) {
-            console.log(error);
-            return null;
-        }
-    };
-
     // const verifyStudent = async (id) => {
     //     try {
     //         const studentDocRef =
@@ -261,6 +259,7 @@ export default function Equipment({ gym, updateGym }) {
     //         return null;
     //     }
     // };
+
     const handleImportCSV = (event) => {
 
         const file = event.target.files[0];
@@ -403,7 +402,9 @@ export default function Equipment({ gym, updateGym }) {
                                 <div>
                                     <strong>
                                         {item.studentName}
+                                        {/* sujay, what exactly is item? is it a snapshot of 1 item or the data? im not too sure.  */}
                                     </strong>
+
 
                                     <p>
                                         {item.equipment}
