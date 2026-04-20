@@ -137,7 +137,7 @@ export default function Equipment({ gym, updateGym }) {
             await addDoc(checkoutRef, {
 
                 studentId,
-                studentName, 
+                studentName,
                 equipment: selectedEquipment,
                 quantity,
                 checkoutTime: serverTimestamp(),
@@ -326,6 +326,7 @@ export default function Equipment({ gym, updateGym }) {
                         </div>
 
                         <input
+                            type="password"
                             placeholder="Student ID"
                             value={studentId}
                             onChange={(e) =>
@@ -394,34 +395,42 @@ export default function Equipment({ gym, updateGym }) {
                             <h2>Active Checkouts</h2>
                         </div>
 
-                        {activeCheckouts.map(item => (
-                            <div
-                                key={item.id}
-                                className="checkout"
-                            >
-                                <div>
-                                    <strong>
-                                        {item.studentName}
-                                        {/* sujay, what exactly is item? is it a snapshot of 1 item or the data? im not too sure.  */}
-                                    </strong>
+                        {activeCheckouts.length === 0 ? (
 
+                            <p className="empty-message">
+                                No active checkouts
+                            </p>
 
-                                    <p>
-                                        {item.equipment}
-                                        {" x"}
-                                        {item.quantity}
-                                    </p>
-                                </div>
+                        ) : (
 
-                                <button
-                                    onClick={() =>
-                                        handleReturn(item.id)
-                                    }
+                            activeCheckouts.map(item => (
+                                <div
+                                    key={item.id}
+                                    className="checkout"
                                 >
-                                    Return
-                                </button>
-                            </div>
-                        ))}
+                                    <div>
+                                        <strong>
+                                            {item.studentName}
+                                        </strong>
+
+                                        <p>
+                                            {item.equipment}
+                                            {" x"}
+                                            {item.quantity}
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        onClick={() =>
+                                            handleReturn(item.id)
+                                        }
+                                    >
+                                        Return
+                                    </button>
+                                </div>
+                            ))
+
+                        )}
                     </div>
 
                 </div>
