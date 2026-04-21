@@ -1,6 +1,7 @@
 import Navbar from "./Navigation.jsx";
 import { useState, useEffect } from "react";
 import "../components/Equipment.css";
+import ValidateSwipe from "../components/ValidateSwipe.js";
 import Papa from "papaparse";
 import {
     collection,
@@ -43,7 +44,7 @@ export default function Equipment({ gym, updateGym }) {
         if (gym === "Westerlin Gym") return westerlinCheckoutRef;
         return null;
     };
-    // commenting for a new commit - stonedahl
+
     const fetchInventory = async () => {
         const inventoryRef = getInventoryCollection();
         if (!inventoryRef) return;
@@ -85,11 +86,19 @@ export default function Equipment({ gym, updateGym }) {
             alert("Please fill all fields");
             return;
         }
+        
+        const validation = await ValidateSwipe(studentId, getDoc, doc, db);
+            if (!validation.isValid) {
+                alert(validation.reasonDenied);
+                return;
+            }
 
         const studentName =
-            await verifyStudent(studentId);
+            validation.name;
 
         if (!studentName) return;
+
+        const validatedId = validation.studentId;
 
         const inventoryRef =
             getInventoryCollection();
@@ -128,7 +137,7 @@ export default function Equipment({ gym, updateGym }) {
             await addDoc(checkoutRef, {
 
                 studentId,
-                studentName, // ✅ store name
+                studentName,
                 equipment: selectedEquipment,
                 quantity,
                 checkoutTime: serverTimestamp(),
@@ -218,37 +227,39 @@ export default function Equipment({ gym, updateGym }) {
         }
 
     };
-    const verifyStudent = async (id) => {
-        try {
-            const studentDocRef =
-                doc(currentStudentsRef, id);
 
-            const studentSnap =
-                await getDoc(studentDocRef);
+    // const verifyStudent = async (id) => {
+    //     try {
+    //         const studentDocRef =
+    //             doc(currentStudentsRef, id);
 
-            if (!studentSnap.exists()) {
-                alert("Student ID not found in database");
-                return null;
-            }
+    //         const studentSnap =
+    //             await getDoc(studentDocRef);
 
-            const studentData =
-                studentSnap.data();
+    //         if (!studentSnap.exists()) {
+    //             alert("Student ID not found in database");
+    //             return null;
+    //         }
 
-            const fullName =
-                studentData.FirstName +
-                " " +
-                studentData.LastName;
+    //         const studentData =
+    //             studentSnap.data();
 
-            return fullName;
+    //         const fullName =
+    //             studentData.FirstName +
+    //             " " +
+    //             studentData.LastName;
 
-        } catch (error) {
+    //         return fullName;
 
-            console.error(error);
-            alert("Error checking student ID");
+    //     } catch (error) {
 
-            return null;
-        }
-    };
+    //         console.error(error);
+    //         alert("Error checking student ID");
+
+    //         return null;
+    //     }
+    // };
+
     const handleImportCSV = (event) => {
 
         const file = event.target.files[0];
@@ -315,6 +326,7 @@ export default function Equipment({ gym, updateGym }) {
                         </div>
 
                         <input
+                            type="password"
                             placeholder="Student ID"
                             value={studentId}
                             onChange={(e) =>
@@ -383,32 +395,42 @@ export default function Equipment({ gym, updateGym }) {
                             <h2>Active Checkouts</h2>
                         </div>
 
-                        {activeCheckouts.map(item => (
-                            <div
-                                key={item.id}
-                                className="checkout"
-                            >
-                                <div>
-                                    <strong>
-                                        {item.studentName}
-                                    </strong>
+                        {activeCheckouts.length === 0 ? (
 
-                                    <p>
-                                        {item.equipment}
-                                        {" x"}
-                                        {item.quantity}
-                                    </p>
-                                </div>
+                            <p className="empty-message">
+                                No active checkouts
+                            </p>
 
-                                <button
-                                    onClick={() =>
-                                        handleReturn(item.id)
-                                    }
+                        ) : (
+
+                            activeCheckouts.map(item => (
+                                <div
+                                    key={item.id}
+                                    className="checkout"
                                 >
-                                    Return
-                                </button>
-                            </div>
-                        ))}
+                                    <div>
+                                        <strong>
+                                            {item.studentName}
+                                        </strong>
+
+                                        <p>
+                                            {item.equipment}
+                                            {" x"}
+                                            {item.quantity}
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        onClick={() =>
+                                            handleReturn(item.id)
+                                        }
+                                    >
+                                        Return
+                                    </button>
+                                </div>
+                            ))
+
+                        )}
                     </div>
 
                 </div>

@@ -9,6 +9,7 @@ import Navbar from "./Navigation.jsx";
 import "../components/Dashboard.css";
 import { FunnelChart } from "recharts";
 import GuestPopup from "../components/GuestTab.jsx";
+import ValidateSwipe from "../components/ValidateSwipe.js";
 
 const pepsicoCenterRef = collection(db, 'pepsicoCenter')
 const westerlinGymRef = collection(db, 'westerlinGym')
@@ -60,68 +61,22 @@ function Dashboard( {gym, updateGym } ) {
 
     let verified_data;
     let swipeValid = false;
-    let reasonsSwipeDenied;
+    let reasonSwipeDenied;
     let docRef;
     let studentName;
 
+    //validating the swipe input
+    const validationResult = await ValidateSwipe(temp_input, getDoc, doc, db);
+    swipeValid = validationResult.isValid;
+    verified_data = validationResult.studentId;
+    studentName = validationResult.name;
+    reasonSwipeDenied = validationResult.reasonDenied;
 
-    // Validate ID
-    if (temp_input.length !== 7 && temp_input.length !== 16) {
-      verified_data = temp_input;
-      swipeValid = false;
-      reasonsSwipeDenied = "Invalid ID format";
-    } else if (temp_input.length == 7) {
-      verified_data = temp_input;
-      docRef = await doc(db, "currentStudents", verified_data);
-      await getDoc(docRef).then((docSnap) => {
-        if (docSnap.exists()) {
-          console.log("valid ID");
-          studentName = docSnap.data().FirstName + " " + docSnap.data().LastName;
-          swipeValid = true;
-        }
-        else{
-          swipeValid = false;
-          reasonsSwipeDenied = "ID entered does not exist.";
-        }
-      })
-      docRef = doc(db, "bannedStudents", verified_data);
-      await getDoc(docRef).then((docSnap) =>{
-        if (docSnap.exists()){
-          studentName = docSnap.data().FirstName + " " + docSnap.data().LastName;
-          console.log("banned user");
-          swipeValid = false;
-          reasonsSwipeDenied = studentName + " is currently banned from entering Augustana Rec Facilities.";
-        }
-      })
-    } else {
-      verified_data = temp_input.slice(3, 10);
-      docRef = await doc(db, "currentStudents", verified_data);
-      await getDoc(docRef).then((docSnap) => {
-        if (docSnap.exists()) {
-          studentName = docSnap.data().FirstName + " " + docSnap.data().LastName;
-          console.log("valid ID");
-          swipeValid = true;
-        }
-        else{
-          swipeValid = false;
-          reasonsSwipeDenied = "ID entered does not exist";
-        }
-      })
-      docRef = doc(db, "bannedStudents", verified_data);
-      await getDoc(docRef).then((docSnap) =>{
-        if (docSnap.exists()){
-          studentName = docSnap.data().FirstName + " " + docSnap.data().LastName;
-          console.log("banned user");
-          swipeValid = false;
-          reasonsSwipeDenied = studentName + " is currently banned from entering Augustana Rec Facilities.";
-        }
-      })
-    }
 
     try {
       // CHANGED: using serverTimestamp instead of string date
       // This allows Firebase to store a real timestamp, so we can filter in analytics.jsx (written with ChatGPT)
-      storeSwipeIn(gym, swipeValid, verified_data, serverTimestamp(), reasonsSwipeDenied, studentName);
+      storeSwipeIn(gym, swipeValid, verified_data, serverTimestamp(), reasonSwipeDenied, studentName);
     } catch (err) {
       console.error("Error saving swipe:", err);
     }
@@ -147,7 +102,7 @@ function Dashboard( {gym, updateGym } ) {
   });
 }
     //saves data to firebase
-  function storeSwipeIn(gym, swipeValid, verified_data, timeStamp, reasonsSwipeDenied, studentName){
+  function storeSwipeIn(gym, swipeValid, verified_data, timeStamp, reasonSwipeDenied, studentName){
     
     const customAlert = document.getElementById("customAlert");
     const alertHeading = document.getElementById("alertHeading");
@@ -172,7 +127,7 @@ function Dashboard( {gym, updateGym } ) {
     else if (!swipeValid){
         alertHeading.textContent = "ID Denied";
         alertHeading.style.color = "#E80000";
-        alertText.textContent = reasonsSwipeDenied;
+        alertText.textContent = reasonSwipeDenied;
       console.log("Invalid swipe in");
       console.log(verified_data, timeStamp);
       addDoc(invalidSwipeInRef, {

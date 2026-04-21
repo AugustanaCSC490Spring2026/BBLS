@@ -48,7 +48,7 @@ function Analytics({ gym, updateGym }) {
 
   // 🆕 Export dropdown state
   const [exportFormat, setExportFormat] = useState("");
-  
+
   const chartRef = useRef(null);
 
   // Maps dropdown names to Firestore field names
@@ -273,7 +273,7 @@ function Analytics({ gym, updateGym }) {
     link.click();
     document.body.removeChild(link);
   }
-    
+
   // CSV EXPORT 
   function exportSwipeDataToCSV() {
     if (chartType !== "swipe") return;
@@ -578,7 +578,7 @@ function Analytics({ gym, updateGym }) {
 
   const { start, end } = getDateRange();
 
-  
+
   let data = {
     labels: chartData.map((d) => d.interval),
     datasets: [
@@ -662,17 +662,13 @@ function Analytics({ gym, updateGym }) {
     <>
       <Navbar />
       <div className="page-header">
-        <h2>Analytics</h2>
       </div>
 
       <div className="Analytics-page">
-        <div className="card">
-          <h2>Controls</h2>
-
-          <div className="inner-grid">
-
-            {/* Chart Type */}
-            <div className="control-box">
+        <div className="analytics-card">
+          {/* Chart Type */}
+          <div className="control-box">
+            <div className="control-content">
               <h3>Chart Type</h3>
               <select
                 value={chartType}
@@ -684,7 +680,7 @@ function Analytics({ gym, updateGym }) {
             </div>
 
             {/* Dataset */}
-            <div className="control-box">
+            <div className="control-content">
               <h3>Dataset</h3>
               <select
                 value={dataFile}
@@ -704,7 +700,7 @@ function Analytics({ gym, updateGym }) {
             </div>
 
             {/* Time Range */}
-            <div className="control-box">
+            <div className="control-content">
               <h3>Choose Time Range</h3>
 
               <select
@@ -732,9 +728,8 @@ function Analytics({ gym, updateGym }) {
                 </div>
               )}
             </div>
-
             {/* Interval / Demographic */}
-            <div className="control-box">
+            <div className="control-content">
               {chartType === "swipe" ? (
                 <>
                   <h3>Interval</h3>
@@ -773,60 +768,72 @@ function Analytics({ gym, updateGym }) {
             </div>
           </div>
         </div>
+        <div className="charts-boxes">
+          <div className="stat-cards">
+            <div className="stat-card">
 
-        <div className="Charts" style={{ marginTop: "30px" }}>
-          <div style={{ width: "100%", height: 400, position: "relative" }}>
-            {/* 🆕 Export dropdown (swipe only) */}
-            <div style={{ position: "absolute", top: 10, right: 10, zIndex: 10 }}>
-              <select
-                value={exportFormat}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setExportFormat(value);
-
-                  if (value === "csv") exportSwipeDataToCSV();
-                  if (value === "png") exportChartToPNG();
-
-                  setExportFormat("");
-                }}
-              >
-                <option value="">Export</option>
-
-                {/* CSV ONLY for swipe charts */}
-                {chartType === "swipe" && (
-                  <option value="csv">Export CSV</option>
-                )}
-
-                {/* PNG available for BOTH chart types */}
-                <option value="png">Export PNG</option>
-              </select>
             </div>
-            {chartType === "swipe" ? (
-              <Bar
-                ref={chartRef}
-                data={data}
-                options={{
-                  responsive: true,
-                  scales: {
-                    x: { stacked: true },
-                    y: { stacked: true }
-                  }
-                }}
-              />
-            ) : Object.keys(demographicData).length === 0 ? (
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                height: "100%",
-                fontSize: "18px",
-                fontWeight: "500"
-              }}>
-                No data
+            <div className="stat-card">
+              
+            </div>
+            <div className="stat-card">
+              
+            </div>
+          </div>
+          <div className="Charts" style={{ marginTop: "30px" }}>
+            <div style={{ width: "100%", height: 400, position: "relative" }}>
+              {/* 🆕 Export dropdown (swipe only) */}
+              <div style={{ position: "absolute", top: 10, right: 10, zIndex: 10 }}>
+                <select
+                  value={exportFormat}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setExportFormat(value);
+
+                    if (value === "csv") exportSwipeDataToCSV();
+                    if (value === "png") exportChartToPNG();
+
+                    setExportFormat("");
+                  }}
+                >
+                  <option value="">Export</option>
+
+                  {/* CSV ONLY for swipe charts */}
+                  {chartType === "swipe" && (
+                    <option value="csv">Export CSV</option>
+                  )}
+
+                  {/* PNG available for BOTH chart types */}
+                  <option value="png">Export PNG</option>
+                </select>
               </div>
-            ) : (
-              <Pie ref={chartRef} data={pieData} />
-            )}
+              {chartType === "swipe" ? (
+                <Bar
+                  ref={chartRef}
+                  data={data}
+                  options={{
+                    responsive: true,
+                    scales: {
+                      x: { stacked: true },
+                      y: { stacked: true }
+                    }
+                  }}
+                />
+              ) : Object.keys(demographicData).length === 0 ? (
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: "100%",
+                  fontSize: "18px",
+                  fontWeight: "500"
+                }}>
+                  No data
+                </div>
+              ) : (
+                <Pie ref={chartRef} data={pieData} />
+              )}
+            </div>
           </div>
         </div>
       </div>
