@@ -399,6 +399,17 @@ const Settings = () => {
     const banStudentsPopupContainer = document.getElementById("banStudentsPopupContainer");
     event.preventDefault();
     banStudentsPopupContainer.style.display = "none";
+    updateBannedStudentsList();
+  }
+  function updateBannedStudentsList(){
+    const bannedStudentsList = document.getElementById("bannedStudentsList");
+    getDocs(bannedStudentsRef).then((docSnap) =>{
+      let bannedList = [];
+      docSnap.docs.forEach((doc) =>{
+        bannedList.push(doc.data().FirstName + " " + doc.data().LastName + "\n")
+      })
+      bannedStudentsList.textContent = bannedList;
+    })
   }
 
   return (
@@ -540,6 +551,10 @@ const Settings = () => {
 
           </div>
         </div>
+        </div>
+        <div className="bannedStudentsListContainer">
+          <h2 className="bannedStudentsListHeader"> Currently Banned Students</h2>
+          <div className="bannedStudentsList" id="bannedStudentsList"></div>
         </div>
         </section>
           <div className="customAlert" id="customAlert">

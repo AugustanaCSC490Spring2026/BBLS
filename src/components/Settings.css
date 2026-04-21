@@ -174,3 +174,10 @@
   padding: 10px 20px;
   cursor: pointer;
 }
+
+.bannedStudentsList{
+    padding: 20px;
+    border: 1px solid black;
+    height: 200px;
+    overflow: auto;
+}
