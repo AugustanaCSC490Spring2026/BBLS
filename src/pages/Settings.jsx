@@ -15,6 +15,9 @@ import { db } from "../Firebase.js";
 import { doc, writeBatch, collection, serverTimestamp, getDoc, deleteDoc, setDoc, getDocs } from "firebase/firestore";
 
 import "../components/Settings.css";
+
+
+
 const Settings = () => {
   const [showGymPopup, setShowGymPopup] = useState(false);
   const [selectedGym, setSelectedGym] = useState(null);
@@ -401,6 +404,19 @@ const Settings = () => {
     banStudentsPopupContainer.style.display = "none";
     updateBannedStudentsList();
   }
+
+  document.addEventListener('readystatechange', event => { 
+
+    // When window loaded ( external resources are loaded too- `css`,`src`, etc...) 
+    if (event.target.readyState === "complete") {
+      console.log("window load")
+      updateBannedStudentsList();    }
+    if (event.target.readyState === "interactive") {   //does same as:  ..addEventListener("DOMContentLoaded"..
+        updateBannedStudentsList();
+        console.log("DOM load");
+    }
+});
+
   function updateBannedStudentsList(){
     const bannedStudentsList = document.getElementById("bannedStudentsList");
     getDocs(bannedStudentsRef).then((docSnap) =>{
@@ -553,8 +569,12 @@ const Settings = () => {
         </div>
         </div>
         <div className="bannedStudentsListContainer">
-          <h2 className="bannedStudentsListHeader"> Currently Banned Students</h2>
-          <div className="bannedStudentsList" id="bannedStudentsList"></div>
+          <h2 className="bannedStudentsListHeader"> Currently Banned Students
+            <button className= "bannedStudentsListRefreshButton"
+            onClick={updateBannedStudentsList}>refresh</button>
+          </h2>
+          <div className="bannedStudentsList" id="bannedStudentsList">
+          </div>
         </div>
         </section>
           <div className="customAlert" id="customAlert">

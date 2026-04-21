@@ -181,3 +181,13 @@
     height: 200px;
     overflow: auto;
 }
+
+.bannedStudentsListRefreshButton{
+    font-size: 18px;
+    padding: 8px;
+    background-color: #1a73e8;
+    color: white;
+    margin-top: 10px;
+    border-radius: 10px;
+    margin-left: 8px;
+}
