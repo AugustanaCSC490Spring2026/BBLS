@@ -368,13 +368,9 @@ const Settings = () => {
     const banStudentsPopupText = document.getElementById("banStudentsPopupText");
 
     banStudentsPopupContainer.style.display = "flex";
-<<<<<<< HEAD
       //if the student is banned displays only the unban and cancel buttons
     //if the student is not banned displays only the ban and cancel buttons
     if(isbanned){
-=======
-    if (isbanned) {
->>>>>>> f23a1943b3e1c74c3b62bf6930984a94f7209d04
       banStudentsPopupHeader.textContent = studentName + " is currently banned.";
       banStudentsPopupText.textContent = "Would you like to unban this student?";
       unbanStudentButton.style.display = "flex";
@@ -389,32 +385,20 @@ const Settings = () => {
     }
     //sets a 30 second timer to ensure admin can't accidentally leave the option open
     clearTimeout(popupTimer);
-<<<<<<< HEAD
     popupTimer = setTimeout (() => {banStudentsPopupContainer.style.display = "none"; }, 30000);
-=======
-    popupTimer = setTimeout(() => { banStudentsPopupContainer.style.display = "none"; }, 30000);
->>>>>>> f23a1943b3e1c74c3b62bf6930984a94f7209d04
 
 
   }
 
-<<<<<<< HEAD
   //bans student
   const banStudent = async (event) =>{
     //grabs student info from the students database
-=======
-  const banStudent = async (event) => {
->>>>>>> f23a1943b3e1c74c3b62bf6930984a94f7209d04
     event.preventDefault();
     docRef = await doc(db, "currentStudents", verified_data);
     await getDoc(docRef).then((docSnap) => {
       if (docSnap.exists()) {
-<<<<<<< HEAD
         //stores relevent info into the banned students database
         setDoc(doc(db, "bannedStudents", docSnap.data().ID),{
-=======
-        setDoc(doc(db, "bannedStudents", docSnap.data().ID), {
->>>>>>> f23a1943b3e1c74c3b62bf6930984a94f7209d04
           ID: docSnap.data().ID,
           FirstName: docSnap.data().FirstName,
           LastName: docSnap.data().LastName,
@@ -430,29 +414,19 @@ const Settings = () => {
     cancelOperation(event);
 
   }
-<<<<<<< HEAD
   //unbans student
   const unbanStudent = async (event) =>{
-=======
-
-  const unbanStudent = async (event) => {
->>>>>>> f23a1943b3e1c74c3b62bf6930984a94f7209d04
     event.preventDefault();
     //checks to see if student is in the banned students database
     docRef = await doc(db, "bannedStudents", verified_data);
-<<<<<<< HEAD
     if (docRef){
       //deletes student from database
-=======
-    if (docRef) {
->>>>>>> f23a1943b3e1c74c3b62bf6930984a94f7209d04
       deleteDoc(docRef);
     }
     else {
       displayIdEntryError("error retrieving data from database. Please re-enter ID");
 
     }
-<<<<<<< HEAD
           //runs the cancel operation function to remove the popup
       cancelOperation(event);
     }
@@ -460,13 +434,6 @@ const Settings = () => {
 
   const cancelOperation = async (event) =>{
     //removes the popup that displays option to ban/unban student
-=======
-    cancelOperation(event);
-  }
-
-
-  const cancelOperation = async (event) => {
->>>>>>> f23a1943b3e1c74c3b62bf6930984a94f7209d04
     event.preventDefault();
     const banStudentsPopupContainer = document.getElementById("banStudentsPopupContainer");
     event.preventDefault();
@@ -474,33 +441,7 @@ const Settings = () => {
     updateBannedStudentsList();
   }
 
-<<<<<<< HEAD
 
-=======
-  document.addEventListener('readystatechange', event => {
-
-    // When window loaded ( external resources are loaded too- `css`,`src`, etc...) 
-    if (event.target.readyState === "complete") {
-      console.log("window load")
-      updateBannedStudentsList();
-    }
-    if (event.target.readyState === "interactive") {   //does same as:  ..addEventListener("DOMContentLoaded"..
-      updateBannedStudentsList();
-      console.log("DOM load");
-    }
-  });
-
-  function updateBannedStudentsList() {
-    const bannedStudentsList = document.getElementById("bannedStudentsList");
-    getDocs(bannedStudentsRef).then((docSnap) => {
-      let bannedList = [];
-      docSnap.docs.forEach((doc) => {
-        bannedList.push(doc.data().FirstName + " " + doc.data().LastName + "\n")
-      })
-      bannedStudentsList.textContent = bannedList;
-    })
-  }
->>>>>>> f23a1943b3e1c74c3b62bf6930984a94f7209d04
 
   return (
     <>
