@@ -1,20 +1,16 @@
 
 .modify-student-body{
     margin-top: 20px;
-    margin-left: 10%;
 }
 .banStudentsButtonContainer{
     padding: 10px;
     margin-top: 30px;
-    margin-left: 10%;
 }
 .selectStudentButton{
     padding: 8px;
     background-color: #1a73e8;
     color: white;
-    margin-top: 10px;
     border-radius: 10px;
-    margin-left: 4px;
 }
 .studentInputForm{
     width: 40%;
@@ -31,6 +27,7 @@
 
 /* 3. Cleanup button margins (let the gap handle it) */
 .banStudentButton, .unbanStudentButton, .cancelOperationButton {
+  margin-left: 4px;
     margin: 0; 
     min-width: 100px; /* Optional: makes buttons the same size */
 }
@@ -69,40 +66,6 @@
     align-items: center;
 }
 
-.banStudentButton{
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    padding: 8px;
-    background-color: #1a73e8;
-    color: white;
-    margin-top: 10px;
-    border-radius: 10px;
-    margin-left: 4px;
-}
-.unbanStudentButton{
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    padding: 8px;
-    background-color: #1a73e8;
-    color: white;
-    margin-top: 10px;
-    border-radius: 10px;
-    margin-left: 4px;
-}
-.cancelOperationButton{
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    padding: 8px;
-    background-color: #1a73e8;
-    color: white;
-    margin-top: 10px;
-    border-radius: 10px;
-    margin-left: 4px;
-    margin-right: 4px;
-}
 
 .customAlert{
   display: none;
@@ -157,7 +120,6 @@
 }
 
 .settings-container h2{
-  margin-top: 20px;
   margin-bottom: 15px;
 }
 .popup-box {
@@ -177,17 +139,19 @@
 
 .bannedStudentsList{
     padding: 20px;
+    max-width: 60%;
     border: 1px solid black;
     height: 200px;
     overflow: auto;
 }
 
-.bannedStudentsListRefreshButton{
-    font-size: 18px;
-    padding: 8px;
-    background-color: #1a73e8;
-    color: white;
-    margin-top: 10px;
-    border-radius: 10px;
-    margin-left: 8px;
+.bannedStudentsHeader{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    margin-top: 20px;
+}
+.bannedStudentsHeader h2{
+  margin: 0;
 }
