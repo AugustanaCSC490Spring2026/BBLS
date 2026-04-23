@@ -288,76 +288,76 @@ const Settings = () => {
   let verified_data;
   let swipeOutput;
   let docRef;
-  let popupTimer; 
+  let popupTimer;
   //verify ID
-  const handleKeyDown = (input) =>{
-    if (input.key === "enter"){
+  const handleKeyDown = (input) => {
+    if (input.key === "enter") {
       window.alert("enter key");
       input.preventDefault();
       handleSubmission();
     }
   }
-  function updateStudentID(input){
-        studentId = input;
-      }
-  const handleSubmission = async (event) =>{
-        event.preventDefault();
+  function updateStudentID(input) {
+    studentId = input;
+  }
+  const handleSubmission = async (event) => {
+    event.preventDefault();
 
     let temp_input;
-    try{
-    temp_input = studentId.trim();
-    } catch{
+    try {
+      temp_input = studentId.trim();
+    } catch {
       console.log("error");
       swipeOutput = "no ID entered";
       displayIdEntryError(swipeOutput);
       return;
     }
-    
+
     updateStudentID(temp_input);
     let isbanned;
-        // checks ID to ensure it has the right number of characters
-        if (temp_input.length !== 7 && temp_input.length !== 16) {
-          verified_data = temp_input;
-          swipeOutput = "invalid ID format";
-          displayIdEntryError(swipeOutput);
+    // checks ID to ensure it has the right number of characters
+    if (temp_input.length !== 7 && temp_input.length !== 16) {
+      verified_data = temp_input;
+      swipeOutput = "invalid ID format";
+      displayIdEntryError(swipeOutput);
 
-        } else if (temp_input.length == 7) {
-          verified_data = temp_input;
-          docRef = await doc(db, "currentStudents", verified_data);
-            await getDoc(docRef).then((docSnap) => {
-            if (!docSnap.exists()) {
-              swipeOutput = "Entered ID not in student Database"
-              displayIdEntryError(swipeOutput);
-            }
-            else{
-              studentName = docSnap.data().FirstName + " " + docSnap.data().LastName;
-              docRef =  doc(db, "bannedStudents", verified_data);
-              getDoc(docRef).then((docSnap) => {
-              if (!docSnap.exists()) {
-                isbanned = false;
-                displayPopup(isbanned);
-              }
-              else{
-                isbanned = true;
-                displayPopup(isbanned);
-              }
-            })
-            }
-        })
-        } else {
-          verified_data = temp_input.slice(3, 10);
-          //currently not supporting card swipes but can change if don wants
+    } else if (temp_input.length == 7) {
+      verified_data = temp_input;
+      docRef = await doc(db, "currentStudents", verified_data);
+      await getDoc(docRef).then((docSnap) => {
+        if (!docSnap.exists()) {
+          swipeOutput = "Entered ID not in student Database"
+          displayIdEntryError(swipeOutput);
         }
-        document.getElementById("studentInputForm").value = "";
-        updateStudentID("");
+        else {
+          studentName = docSnap.data().FirstName + " " + docSnap.data().LastName;
+          docRef = doc(db, "bannedStudents", verified_data);
+          getDoc(docRef).then((docSnap) => {
+            if (!docSnap.exists()) {
+              isbanned = false;
+              displayPopup(isbanned);
+            }
+            else {
+              isbanned = true;
+              displayPopup(isbanned);
+            }
+          })
+        }
+      })
+    } else {
+      verified_data = temp_input.slice(3, 10);
+      //currently not supporting card swipes but can change if don wants
+    }
+    document.getElementById("studentInputForm").value = "";
+    updateStudentID("");
   }
 
-  function displayIdEntryError(swipeOutput){
+  function displayIdEntryError(swipeOutput) {
     const customAlert = document.getElementById("customAlert");
     const alertText = document.getElementById("alertText");
     alertText.textContent = swipeOutput;
     customAlert.style.display = "flex";
-    setTimeout (() => {customAlert.style.display = "none";}, 1000);
+    setTimeout(() => { customAlert.style.display = "none"; }, 1000);
 
   }
   function displayPopup(isbanned) {
@@ -368,15 +368,19 @@ const Settings = () => {
     const banStudentsPopupText = document.getElementById("banStudentsPopupText");
 
     banStudentsPopupContainer.style.display = "flex";
+<<<<<<< HEAD
       //if the student is banned displays only the unban and cancel buttons
     //if the student is not banned displays only the ban and cancel buttons
     if(isbanned){
+=======
+    if (isbanned) {
+>>>>>>> f23a1943b3e1c74c3b62bf6930984a94f7209d04
       banStudentsPopupHeader.textContent = studentName + " is currently banned.";
       banStudentsPopupText.textContent = "Would you like to unban this student?";
       unbanStudentButton.style.display = "flex";
       banStudentButton.style.display = "none";
     }
-    else{
+    else {
       banStudentsPopupHeader.textContent = studentName + " is currently not banned.";
       banStudentsPopupText.textContent = "Would you like to ban this student?";
       unbanStudentButton.style.display = "none";
@@ -385,48 +389,70 @@ const Settings = () => {
     }
     //sets a 30 second timer to ensure admin can't accidentally leave the option open
     clearTimeout(popupTimer);
+<<<<<<< HEAD
     popupTimer = setTimeout (() => {banStudentsPopupContainer.style.display = "none"; }, 30000);
+=======
+    popupTimer = setTimeout(() => { banStudentsPopupContainer.style.display = "none"; }, 30000);
+>>>>>>> f23a1943b3e1c74c3b62bf6930984a94f7209d04
 
 
   }
 
+<<<<<<< HEAD
   //bans student
   const banStudent = async (event) =>{
     //grabs student info from the students database
+=======
+  const banStudent = async (event) => {
+>>>>>>> f23a1943b3e1c74c3b62bf6930984a94f7209d04
     event.preventDefault();
     docRef = await doc(db, "currentStudents", verified_data);
-      await getDoc(docRef).then((docSnap) => {
+    await getDoc(docRef).then((docSnap) => {
       if (docSnap.exists()) {
+<<<<<<< HEAD
         //stores relevent info into the banned students database
         setDoc(doc(db, "bannedStudents", docSnap.data().ID),{
+=======
+        setDoc(doc(db, "bannedStudents", docSnap.data().ID), {
+>>>>>>> f23a1943b3e1c74c3b62bf6930984a94f7209d04
           ID: docSnap.data().ID,
-          FirstName: docSnap.data().FirstName, 
+          FirstName: docSnap.data().FirstName,
           LastName: docSnap.data().LastName,
           dateBanned: serverTimestamp()
         })
-        
-      } else{
+
+      } else {
         displayIdEntryError("error retrieving data from database. Please re-enter ID");
       }
       //runs the cancel operation function to remove the popup
       cancelOperation(event);
-  })
+    })
     cancelOperation(event);
 
   }
+<<<<<<< HEAD
   //unbans student
   const unbanStudent = async (event) =>{
+=======
+
+  const unbanStudent = async (event) => {
+>>>>>>> f23a1943b3e1c74c3b62bf6930984a94f7209d04
     event.preventDefault();
     //checks to see if student is in the banned students database
     docRef = await doc(db, "bannedStudents", verified_data);
+<<<<<<< HEAD
     if (docRef){
       //deletes student from database
+=======
+    if (docRef) {
+>>>>>>> f23a1943b3e1c74c3b62bf6930984a94f7209d04
       deleteDoc(docRef);
     }
-    else{
+    else {
       displayIdEntryError("error retrieving data from database. Please re-enter ID");
 
     }
+<<<<<<< HEAD
           //runs the cancel operation function to remove the popup
       cancelOperation(event);
     }
@@ -434,6 +460,13 @@ const Settings = () => {
 
   const cancelOperation = async (event) =>{
     //removes the popup that displays option to ban/unban student
+=======
+    cancelOperation(event);
+  }
+
+
+  const cancelOperation = async (event) => {
+>>>>>>> f23a1943b3e1c74c3b62bf6930984a94f7209d04
     event.preventDefault();
     const banStudentsPopupContainer = document.getElementById("banStudentsPopupContainer");
     event.preventDefault();
@@ -441,16 +474,41 @@ const Settings = () => {
     updateBannedStudentsList();
   }
 
+<<<<<<< HEAD
 
+=======
+  document.addEventListener('readystatechange', event => {
+
+    // When window loaded ( external resources are loaded too- `css`,`src`, etc...) 
+    if (event.target.readyState === "complete") {
+      console.log("window load")
+      updateBannedStudentsList();
+    }
+    if (event.target.readyState === "interactive") {   //does same as:  ..addEventListener("DOMContentLoaded"..
+      updateBannedStudentsList();
+      console.log("DOM load");
+    }
+  });
+
+  function updateBannedStudentsList() {
+    const bannedStudentsList = document.getElementById("bannedStudentsList");
+    getDocs(bannedStudentsRef).then((docSnap) => {
+      let bannedList = [];
+      docSnap.docs.forEach((doc) => {
+        bannedList.push(doc.data().FirstName + " " + doc.data().LastName + "\n")
+      })
+      bannedStudentsList.textContent = bannedList;
+    })
+  }
+>>>>>>> f23a1943b3e1c74c3b62bf6930984a94f7209d04
 
   return (
     <>
       <Navbar />
 
       <div className="settings-container">
-        <h1>Settings</h1>
-
         <section className="modify-student-body">
+          <h1>Settings</h1>
           <h2 className="test">Modify Student Body</h2>
           <button
             onClick={() =>
@@ -539,7 +597,7 @@ const Settings = () => {
         <section className="banStudentsButtonContainer">
           <h2 className="banStudentsHeader"> Ban/Unban students </h2>
           <form className="IDSearchForm" onSubmit={handleSubmission}>
-              <input
+            <input
               id="studentInputForm"
               className="studentInputForm"
               type="password"
@@ -550,54 +608,55 @@ const Settings = () => {
               onKeyDown={handleKeyDown}
 
             />
-          <button 
-          className="selectStudentButton">Search ID</button>
+            <button
+              className="selectStudentButton">Search ID</button>
           </form>
 
-        <div id="banStudentsPopupContainer" className="banStudentsPopupContainer">
-          <div className="banStudentsPopupBackground">
-          <div className="banStudentsPopup">
-            <h2 id="banStudentsPopupHeader"></h2>
-            <p id="banStudentsPopupText"></p>
-            {/* Wrap buttons in this new div */}
-              <div className="popup-button-group">
-                <button 
-                  className="banStudentButton" 
-                  id="banStudentButton"
-                  onClick={banStudent}
-                >Ban</button>
+          <div id="banStudentsPopupContainer" className="banStudentsPopupContainer">
+            <div className="banStudentsPopupBackground">
+              <div className="banStudentsPopup">
+                <h2 id="banStudentsPopupHeader"></h2>
+                <p id="banStudentsPopupText"></p>
+                {/* Wrap buttons in this new div */}
+                <div className="popup-button-group">
+                  <button
+                    className="banStudentButton"
+                    id="banStudentButton"
+                    onClick={banStudent}
+                  >Ban</button>
 
-                <button 
-                  className="unbanStudentButton" 
-                  id="unbanStudentButton"
-                  onClick={unbanStudent}
-                >Unban</button>
+                  <button
+                    className="unbanStudentButton"
+                    id="unbanStudentButton"
+                    onClick={unbanStudent}
+                  >Unban</button>
 
-                <button 
-                  className="cancelOperationButton" 
-                  id="cancelOperationButton"
-                  onClick={cancelOperation}
-                >Cancel</button>
+                  <button
+                    className="cancelOperationButton"
+                    id="cancelOperationButton"
+                    onClick={cancelOperation}
+                  >Cancel</button>
+                </div>
+
               </div>
-
-          </div>
-        </div>
-        </div>
-        <div className="bannedStudentsListContainer">
-          <h2 className="bannedStudentsListHeader"> Currently Banned Students
-            <button className= "bannedStudentsListRefreshButton"
-            onClick={updateBannedStudentsList}>refresh</button>
-          </h2>
-          <div className="bannedStudentsList" id="bannedStudentsList">
-          </div>
-        </div>
-        </section>
-          <div className="customAlert" id="customAlert">
-            <div className="alertContent" id="alertContent">
-              <h2 className="alertHeading">ID entry error</h2>
-              <p id="alertText"></p>
             </div>
           </div>
+          <div className="bannedStudentsListContainer">
+            <div className="bannedStudentsHeader">
+              <h2 className="bannedStudentsListHeader">Currently Banned Students</h2>
+              <button className="bannedStudentsListRefreshButton" onClick={updateBannedStudentsList}>Refresh</button>
+            </div>
+
+            <div className="bannedStudentsList" id="bannedStudentsList">
+            </div>
+          </div>
+        </section>
+        <div className="customAlert" id="customAlert">
+          <div className="alertContent" id="alertContent">
+            <h2 className="alertHeading">ID entry error</h2>
+            <p id="alertText"></p>
+          </div>
+        </div>
 
       </div>
     </>
