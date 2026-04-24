@@ -10,6 +10,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import Location from "./pages/Location";
 import logo from './assets/logo.png';
 import Navbar from "./pages/Navigation.jsx";
+import AwayModeOverlay from "./components/AwayModeOverlay.jsx";
 
 
 function App() {
@@ -20,17 +21,23 @@ function App() {
     setSelectedGym(newGym);
     localStorage.setItem("selectedGym", newGym);
   };
+  const [awayMode, setAwayMode] = useState(false);
   return (
     <>
-
       <title>Augustana Recreation</title>
       <link rel="icon" type="image/x-icon" href={logo}></link>
       <AuthProvider>
         <BrowserRouter>
           <Navbar
-            currentGym={selectedGym}
-            onGymChange={handleGymChange}
-          />
+  currentGym={selectedGym}
+  onGymChange={handleGymChange}
+  onAwayMode={() => setAwayMode(true)}
+/>
+<AwayModeOverlay
+  isActive={awayMode}
+  onDismiss={() => setAwayMode(false)}
+/>
+          
           <Routes>
             <Route path="/" element={<Login />} />
 

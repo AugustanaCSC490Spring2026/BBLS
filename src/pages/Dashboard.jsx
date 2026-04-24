@@ -5,7 +5,6 @@ import { useLocation } from 'react-router-dom';
 // NEW: added serverTimestamp for accurate backend time
 import { addDoc, collection, serverTimestamp, getDoc, doc } from "firebase/firestore";
 
-import Navbar from "./Navigation.jsx";
 import "../components/Dashboard.css";
 import { FunnelChart } from "recharts";
 import GuestPopup from "../components/GuestTab.jsx";
@@ -24,8 +23,6 @@ function Dashboard( {gym, updateGym } ) {
   const [studentId, setStudentId] = useState("");
   const inputRef = useRef(null);
   const locationState = useLocation();
-  const pickedGym = locationState.state?.gym || "None Selected";
-
   // Auto-focus on load
   useEffect(() => {
     inputRef.current?.focus();

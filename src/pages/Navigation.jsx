@@ -6,8 +6,10 @@ import { NavDropdown } from "../components/NavDropdown.jsx";
 import { useAuth } from "../AuthContext.jsx";
 import { useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from "firebase/auth";
+import awayModeIcon from "../assets/moon.png";
+import signOutIcon from "../assets/signout.png";
 
-function Navbar({ currentGym, onGymChange }) {
+function Navbar({ currentGym, onGymCxhange, onAwayMode }) {
     const auth = getAuth();
     // handleSignOut will sign the user out and navigate them back to the login page
     const handleSignOut = () => {
@@ -47,7 +49,6 @@ function Navbar({ currentGym, onGymChange }) {
                                 <NavDropdown
                                     options={["Pepsi-Co Center", "Westerlin Gym"]}
                                     defaultOption={currentGym}
-                                    onChange={onGymChange}
                                 />
                             )}
                             <Link to="/dashboard" className="nav-item">
@@ -67,8 +68,9 @@ function Navbar({ currentGym, onGymChange }) {
                                 </Link>
                             )}
                         </div>
+                        <button onClick={onAwayMode}>Away  <img src={awayModeIcon} alt="Away Mode"/ ></button>
                         <button className="sign-out-button" onClick={handleSignOut}>
-                            Sign Out
+                            Sign Out  <img src={signOutIcon} alt="Sign Out" />
                         </button>
                     </>
                 )}
