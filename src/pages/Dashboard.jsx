@@ -144,7 +144,6 @@ function Dashboard( {gym, updateGym } ) {
 
   return (
     <>
-      <Navbar currentGym={gym} onGymChange={updateGym} />
       <div className="Dashboard">
         <div className="customAlert" id="customAlert">
               <div className="alertContent" id="alertContent">

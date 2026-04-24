@@ -9,6 +9,7 @@ import { AuthProvider } from "./AuthContext";
 import ProtectedRoute from "./ProtectedRoute";
 import Location from "./pages/Location";
 import logo from './assets/logo.png';
+import Navbar from "./pages/Navigation.jsx";
 
 
 function App() {
@@ -21,10 +22,15 @@ function App() {
   };
   return (
     <>
-    <title>Augustana Recreation</title>
+
+      <title>Augustana Recreation</title>
       <link rel="icon" type="image/x-icon" href={logo}></link>
       <AuthProvider>
         <BrowserRouter>
+          <Navbar
+            currentGym={selectedGym}
+            onGymChange={handleGymChange}
+          />
           <Routes>
             <Route path="/" element={<Login />} />
 

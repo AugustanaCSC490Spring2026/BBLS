@@ -36,7 +36,6 @@ function Login() {
 
   return (
     <>
-      <Navbar />
       <main className="main">
         <div className="card">
           <div className="card-header">

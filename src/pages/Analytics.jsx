@@ -1,7 +1,6 @@
 // This entire file was generated with help from ChatGPT 
 import React, { useState, useEffect, useRef } from "react";
 import { Bar, Pie } from "react-chartjs-2"; // ✅ NEW: Added Pie chart
-import Navbar from "./Navigation.jsx";
 import "../components/Analytics.css";
 import {
   Chart as ChartJS,
@@ -660,7 +659,6 @@ function Analytics({ gym, updateGym }) {
 
   return (
     <>
-      <Navbar />
       <div className="page-header">
       </div>
 

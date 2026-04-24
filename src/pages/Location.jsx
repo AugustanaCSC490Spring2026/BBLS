@@ -18,7 +18,6 @@ function Location( { onSelectGym } ) {
 
   return (
     <>
-    <Navbar />
     <div className="selection-container">
       <button 
         onClick={() => handleSelection("Pepsi-Co Center")}

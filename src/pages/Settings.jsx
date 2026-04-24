@@ -431,8 +431,6 @@ const Settings = () => {
 
   return (
     <>
-      <Navbar />
-
       <div className="settings-container">
         <section className="modify-student-body">
           <h1>Settings</h1>
