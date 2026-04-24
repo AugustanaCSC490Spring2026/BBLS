@@ -16,7 +16,33 @@ import { doc, writeBatch, collection, serverTimestamp, getDoc, deleteDoc, setDoc
 
 import "../components/Settings.css";
 
+const bannedStudentsRef = collection(db, "bannedStudents");
 
+
+document.addEventListener("DOMContentLoaded", function() {
+
+  console.log("page loaded");
+  setTimeout (() => {loadPage();}, 500)
+});
+
+function loadPage() {
+  updateBannedStudentsList();
+}
+
+  function updateBannedStudentsList(){
+      const bannedStudentsList = document.getElementById("bannedStudentsList");
+    //grabs the list of all documents from the database
+    getDocs(bannedStudentsRef).then((docSnap) =>{
+      //loopes through each doc in the list and adds them to html element
+      let bannedList = [];
+      docSnap.docs.forEach((doc) =>{
+        bannedList.push(doc.data().FirstName + " " + doc.data().LastName + "\n")
+      })
+        console.log(bannedStudentsList);
+
+      bannedStudentsList.textContent = bannedList;
+    })
+  }
 
 const Settings = () => {
   const [showGymPopup, setShowGymPopup] = useState(false);
@@ -257,7 +283,6 @@ const Settings = () => {
       }
     });
   };
-  const bannedStudentsRef = collection(db, "bannedStudents");
   let studentId;
   let studentName;
   let verified_data;
@@ -343,7 +368,9 @@ const Settings = () => {
     const banStudentsPopupText = document.getElementById("banStudentsPopupText");
 
     banStudentsPopupContainer.style.display = "flex";
-    if (isbanned) {
+      //if the student is banned displays only the unban and cancel buttons
+    //if the student is not banned displays only the ban and cancel buttons
+    if(isbanned){
       banStudentsPopupHeader.textContent = studentName + " is currently banned.";
       banStudentsPopupText.textContent = "Would you like to unban this student?";
       unbanStudentButton.style.display = "flex";
@@ -356,18 +383,22 @@ const Settings = () => {
       banStudentButton.style.display = "flex";
 
     }
+    //sets a 30 second timer to ensure admin can't accidentally leave the option open
     clearTimeout(popupTimer);
-    popupTimer = setTimeout(() => { banStudentsPopupContainer.style.display = "none"; }, 30000);
+    popupTimer = setTimeout (() => {banStudentsPopupContainer.style.display = "none"; }, 30000);
 
 
   }
 
-  const banStudent = async (event) => {
+  //bans student
+  const banStudent = async (event) =>{
+    //grabs student info from the students database
     event.preventDefault();
     docRef = await doc(db, "currentStudents", verified_data);
     await getDoc(docRef).then((docSnap) => {
       if (docSnap.exists()) {
-        setDoc(doc(db, "bannedStudents", docSnap.data().ID), {
+        //stores relevent info into the banned students database
+        setDoc(doc(db, "bannedStudents", docSnap.data().ID),{
           ID: docSnap.data().ID,
           FirstName: docSnap.data().FirstName,
           LastName: docSnap.data().LastName,
@@ -377,27 +408,32 @@ const Settings = () => {
       } else {
         displayIdEntryError("error retrieving data from database. Please re-enter ID");
       }
+      //runs the cancel operation function to remove the popup
       cancelOperation(event);
     })
     cancelOperation(event);
 
   }
-
-  const unbanStudent = async (event) => {
+  //unbans student
+  const unbanStudent = async (event) =>{
     event.preventDefault();
+    //checks to see if student is in the banned students database
     docRef = await doc(db, "bannedStudents", verified_data);
-    if (docRef) {
+    if (docRef){
+      //deletes student from database
       deleteDoc(docRef);
     }
     else {
       displayIdEntryError("error retrieving data from database. Please re-enter ID");
 
     }
-    cancelOperation(event);
-  }
+          //runs the cancel operation function to remove the popup
+      cancelOperation(event);
+    }
 
 
-  const cancelOperation = async (event) => {
+  const cancelOperation = async (event) =>{
+    //removes the popup that displays option to ban/unban student
     event.preventDefault();
     const banStudentsPopupContainer = document.getElementById("banStudentsPopupContainer");
     event.preventDefault();
@@ -405,29 +441,7 @@ const Settings = () => {
     updateBannedStudentsList();
   }
 
-  document.addEventListener('readystatechange', event => {
 
-    // When window loaded ( external resources are loaded too- `css`,`src`, etc...) 
-    if (event.target.readyState === "complete") {
-      console.log("window load")
-      updateBannedStudentsList();
-    }
-    if (event.target.readyState === "interactive") {   //does same as:  ..addEventListener("DOMContentLoaded"..
-      updateBannedStudentsList();
-      console.log("DOM load");
-    }
-  });
-
-  function updateBannedStudentsList() {
-    const bannedStudentsList = document.getElementById("bannedStudentsList");
-    getDocs(bannedStudentsRef).then((docSnap) => {
-      let bannedList = [];
-      docSnap.docs.forEach((doc) => {
-        bannedList.push(doc.data().FirstName + " " + doc.data().LastName + "\n")
-      })
-      bannedStudentsList.textContent = bannedList;
-    })
-  }
 
   return (
     <>
