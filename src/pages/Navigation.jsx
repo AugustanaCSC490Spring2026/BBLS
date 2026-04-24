@@ -68,7 +68,9 @@ function Navbar({ currentGym, onGymCxhange, onAwayMode }) {
                                 </Link>
                             )}
                         </div>
-                        <button onClick={onAwayMode}><img src={awayModeIcon} alt="Away Mode"/ ></button>
+                        {location.pathname == "/dashboard" && (
+                            <button onClick={onAwayMode}><img src={awayModeIcon} alt="Away Mode"/ ></button>
+                        )}
                         <button className="sign-out-button" onClick={handleSignOut}>
                             Sign Out  <img src={signOutIcon} alt="Sign Out" />
                         </button>
