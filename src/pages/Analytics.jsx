@@ -48,6 +48,9 @@ function Analytics({ gym, updateGym }) {
   // 🆕 Export dropdown state
   const [exportFormat, setExportFormat] = useState("");
 
+  // State to handle weekly/monthly/daily grouping
+  const [groupBy, setGroupBy] = useState("none");
+
   const chartRef = useRef(null);
 
   // Maps dropdown names to Firestore field names
@@ -571,9 +574,65 @@ function Analytics({ gym, updateGym }) {
     setChartData(formatted);
   }
 
+  function processGroupedData() {
+    const { start, end } = getDateRange();
+
+    let buckets = {};
+    let labels = [];
+
+    if (groupBy === "dayOfWeek") {
+      labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      labels.forEach((_, i) => (buckets[i] = 0));
+    }
+    else if (groupBy === "hourOfDay") {
+      labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+      labels.forEach((_, i) => (buckets[i] = 0));
+    }
+    else if (groupBy === "dayOfMonth") {
+      labels = Array.from({ length: 31 }, (_, i) => `${i + 1}`);
+      labels.forEach((_, i) => (buckets[i + 1] = 0));
+    }
+    else if (groupBy === "monthOfYear") {
+      labels = [
+        "Jan","Feb","Mar","Apr","May","Jun",
+        "Jul","Aug","Sep","Oct","Nov","Dec"
+      ];
+      labels.forEach((_, i) => (buckets[i] = 0));
+    }
+
+    swipeData.forEach((swipe) => {
+      const date = swipe.time instanceof Date ? swipe.time : new Date(swipe.time);
+
+      if (isNaN(date) || date < start || date > end) return;
+
+      let key;
+
+      if (groupBy === "dayOfWeek") key = date.getDay();
+      else if (groupBy === "hourOfDay") key = date.getHours();
+      else if (groupBy === "dayOfMonth") key = date.getDate();
+      else if (groupBy === "monthOfYear") key = date.getMonth();
+
+      if (buckets[key] !== undefined) buckets[key] += 1;
+    });
+
+    const formatted = labels.map((label, i) => ({
+      interval: label,
+      swipes:
+        groupBy === "dayOfMonth"
+          ? buckets[i + 1] || 0
+          : buckets[i] || 0
+    }));
+
+    setChartData(formatted);
+  }
+
   useEffect(() => {
-    processData();
-  }, [timeRange, interval, startDate, endDate, swipeData]);
+    if (groupBy === "none") {
+      processData();
+    } else {
+      processGroupedData();
+    }
+  }, [timeRange, interval, startDate, endDate, swipeData, groupBy]);
 
   const { start, end } = getDateRange();
 
@@ -729,19 +788,39 @@ function Analytics({ gym, updateGym }) {
             {/* Interval / Demographic */}
             <div className="control-content">
               {chartType === "swipe" ? (
-                <>
-                  <h3>Interval</h3>
-                  <select
-                    value={interval}
-                    onChange={(e) => setInterval(e.target.value)}
-                  >
-                    <option value="hours">Hours</option>
-                    <option value="days">Days</option>
-                    <option value="weeks">Weeks</option>
-                    <option value="months">Months</option>
-                    <option value="years">Years</option>
-                  </select>
-                </>
+                <div className="interval-group-row">
+
+                  <div className="control-item">
+                    <h3>Interval</h3>
+                    <select
+                      value={interval}
+                      onChange={(e) => setInterval(e.target.value)}
+                      disabled={groupBy !== "none"} // makes the interval selector disabled (unable to click) when we are grouping data
+                    >
+                      <option value="hours">Hours</option>
+                      <option value="days">Days</option>
+                      <option value="weeks">Weeks</option>
+                      <option value="months">Months</option>
+                      <option value="years">Years</option>
+                    </select>
+                  </div>
+
+                  {/* Handles grouping by week, day, month, etc ... */}
+                  <div className="control-item">
+                    <h3>Group By</h3>
+                    <select
+                      value={groupBy}
+                      onChange={(e) => setGroupBy(e.target.value)}
+                    >
+                      <option value="none">None</option>
+                      <option value="hourOfDay">Hour of Day</option>
+                      <option value="dayOfWeek">Day of Week</option>
+                      <option value="dayOfMonth">Day of Month</option>
+                      <option value="monthOfYear">Month of Year</option>
+                    </select>
+                  </div>
+
+                </div>
               ) : (
                 <>
                   <h3>Demographic Type</h3>

@@ -57,3 +57,11 @@
 .analyatics-card {
     text-align: center;
 }
+
+.interval-group-row {
+  display: flex;
+}
+
+.control-item {
+  display: flex;
+}
