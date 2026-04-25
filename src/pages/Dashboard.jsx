@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { db } from "../Firebase.js";
+import ToastContainer from "../components/ToastContainer";
 
 // NEW: added serverTimestamp for accurate backend time
 import { addDoc, collection, serverTimestamp, getDoc, doc } from "firebase/firestore";
@@ -15,7 +16,6 @@ const invalidSwipeInRef = collection(db, 'invalidSwipeIns');
 const currentStudentsRef = collection(db, "currentStudents");
 const bannedStudentsRef = collection(db, "bannedStudents");
 const guestEntranceRef = collection(db, "guestEntrance");
-let alertTimer;
 
 import awayModeIcon from "../assets/moon.png";
 
@@ -25,14 +25,17 @@ function Dashboard({ gym, updateGym }) {
   const inputRef = useRef(null);
   const overlaySwipeRef = useRef(null);
   const [awayMode, setAwayMode] = useState(false);
+  const [toasts, setToasts] = useState([]);
+  const toastIdRef = useRef(0);
+
   // Auto-focus on load
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-useEffect(() => {
-  overlaySwipeRef.current = handleOverlaySwipe;
-}, [gym]);
+  useEffect(() => {
+    overlaySwipeRef.current = handleOverlaySwipe;
+  }, [gym]);
 
   // Keeps input focused every 5 seconds
   useEffect(() => {
@@ -69,6 +72,20 @@ useEffect(() => {
       handleSubmission();
     }
   };
+
+  const addToast = (type, title, message) => {
+    const newToast = {
+      id: toastIdRef.current++,
+      type,
+      title,
+      message,
+    };
+    setToasts((prev) => [...prev, newToast]);
+  };
+
+  const removeToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
 
   const handleSubmission = async (event) => {
     if (event) event.preventDefault();
@@ -120,44 +137,19 @@ useEffect(() => {
   }
   //saves data to firebase
   function storeSwipeIn(gym, swipeValid, verified_data, timeStamp, reasonSwipeDenied, studentName) {
-
-    const customAlert = document.getElementById("customAlert");
-    const alertHeading = document.getElementById("alertHeading");
-    const alertText = document.getElementById("alertText");
-
-    if (!customAlert || !alertHeading || !alertText) return;
-
     if (swipeValid && gym !== "None Selected") {
-      alertHeading.textContent = "ID Accepted";
-      alertHeading.style.color = "#14AB00";
-      alertText.textContent = "Welcome, " + studentName + "!";
+      addToast("success", "ID Accepted", `Welcome, ${studentName}!`);
+
       if (gym === "Pepsi-Co Center") {
-        addDoc(pepsicoCenterRef, {
-          ID: verified_data,
-          swipeInTime: timeStamp,
-        })
+        addDoc(pepsicoCenterRef, { ID: verified_data, swipeInTime: timeStamp });
       } else if (gym === "Westerlin Gym") {
-        addDoc(westerlinGymRef, {
-          ID: verified_data,
-          swipeInTime: timeStamp,
-        })
+        addDoc(westerlinGymRef, { ID: verified_data, swipeInTime: timeStamp });
       }
+
+    } else if (!swipeValid) {
+      addToast("error", "ID Denied", reasonSwipeDenied);
+      addDoc(invalidSwipeInRef, { gym: gym, ID: verified_data, swipeInTime: timeStamp });
     }
-    else if (!swipeValid) {
-      alertHeading.textContent = "ID Denied";
-      alertHeading.style.color = "#E80000";
-      alertText.textContent = reasonSwipeDenied;
-      console.log("Invalid swipe in");
-      console.log(verified_data, timeStamp);
-      addDoc(invalidSwipeInRef, {
-        gym: gym,
-        ID: verified_data,
-        swipeInTime: timeStamp,
-      })
-    }
-    customAlert.style.display = 'flex';
-    clearTimeout(alertTimer);
-    alertTimer = setTimeout(() => { customAlert.style.display = 'none'; }, 4500);
   }
 
 
@@ -175,12 +167,7 @@ useEffect(() => {
           onDismiss={() => setAwayMode(false)}
           onSwipe={(id) => overlaySwipeRef.current?.(id)}
         />
-        <div className="customAlert" id="customAlert">
-          <div className="alertContent" id="alertContent">
-            <h2 id="alertHeading"> If you can see this there is a bug</h2>
-            <p id="alertText"></p>
-          </div>
-        </div>
+
         <div className="swipe-card">
           {/* <h1>{gym}</h1> */}
           <h2>Swipe In</h2>
@@ -217,6 +204,12 @@ useEffect(() => {
         onClose={() => setIsGuestPopupOpen(false)}
         onSubmitGuest={processGuestEntry} // Pass the new bridge function
       />
+      {!awayMode && (
+        <ToastContainer
+          toasts={toasts}
+          removeToast={removeToast}
+        />
+      )}
     </>
   );
 }
