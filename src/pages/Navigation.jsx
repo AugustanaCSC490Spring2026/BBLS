@@ -29,7 +29,7 @@ function Navbar({ currentGym, onGymCxhange, onAwayMode }) {
     const navigate = useNavigate();
     const hideNavbarRoutes = ["/", "/Location"];
     const shouldShowNavbar = !hideNavbarRoutes.includes(location.pathname);
-
+    
     useEffect(() => {
         const storedRole = localStorage.getItem("role");
         setRole(storedRole);

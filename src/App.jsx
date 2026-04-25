@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
@@ -22,6 +22,7 @@ function App() {
     localStorage.setItem("selectedGym", newGym);
   };
   const [awayMode, setAwayMode] = useState(false);
+  const overlaySwipeRef = useRef(null);
   return (
     <>
       <title>Augustana Recreation</title>
@@ -29,15 +30,16 @@ function App() {
       <AuthProvider>
         <BrowserRouter>
           <Navbar
-  currentGym={selectedGym}
-  onGymChange={handleGymChange}
-  onAwayMode={() => setAwayMode(true)}
-/>
-<AwayModeOverlay
-  isActive={awayMode}
-  onDismiss={() => setAwayMode(false)}
-/>
-          
+            currentGym={selectedGym}
+            onGymChange={handleGymChange}
+            onAwayMode={() => setAwayMode(true)}
+          />
+          <AwayModeOverlay
+            isActive={awayMode}
+            onDismiss={() => setAwayMode(false)}
+            onSwipe={(id) => overlaySwipeRef.current?.(id)}
+          />
+
           <Routes>
             <Route path="/" element={<Login />} />
 
@@ -54,7 +56,11 @@ function App() {
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <Dashboard gym={selectedGym} updateGym={handleGymChange} />
+                  <Dashboard
+                    gym={selectedGym}
+                    updateGym={handleGymChange}
+                    registerOverlaySwipe={(fn) => { overlaySwipeRef.current = fn; }}  
+                  />
                 </ProtectedRoute>
               }
             />
