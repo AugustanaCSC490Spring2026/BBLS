@@ -18,35 +18,27 @@ import "../components/Settings.css";
 
 const bannedStudentsRef = collection(db, "bannedStudents");
 
+import { useEffect } from "react";
 
-document.addEventListener("DOMContentLoaded", function() {
 
-  console.log("page loaded");
-  setTimeout (() => {loadPage();}, 500)
-});
 
-function loadPage() {
-  updateBannedStudentsList();
-}
-
-  function updateBannedStudentsList(){
-      const bannedStudentsList = document.getElementById("bannedStudentsList");
-    //grabs the list of all documents from the database
-    getDocs(bannedStudentsRef).then((docSnap) =>{
-      //loopes through each doc in the list and adds them to html element
-      let bannedList = [];
-      docSnap.docs.forEach((doc) =>{
-        bannedList.push(doc.data().FirstName + " " + doc.data().LastName + "\n")
-      })
-        console.log(bannedStudentsList);
-
-      bannedStudentsList.textContent = bannedList;
-    })
-  }
 
 const Settings = () => {
   const [showGymPopup, setShowGymPopup] = useState(false);
   const [selectedGym, setSelectedGym] = useState(null);
+  const [bannedStudents, setBannedStudents] = useState([]);
+
+  useEffect(() => {
+    updateBannedStudentsList();
+  }, []);
+
+  const updateBannedStudentsList = async () => {
+    const docSnap = await getDocs(bannedStudentsRef);
+    const bannedList = docSnap.docs.map(
+      (doc) => doc.data().FirstName + " " + doc.data().LastName
+    );
+    setBannedStudents(bannedList); // use state instead of direct DOM manipulation
+  };
 
   // Helper function to clear the currentStudents collection within firestore when a CSV is uploaded
   const clearCollection = async (collectionName) => {
@@ -368,9 +360,9 @@ const Settings = () => {
     const banStudentsPopupText = document.getElementById("banStudentsPopupText");
 
     banStudentsPopupContainer.style.display = "flex";
-      //if the student is banned displays only the unban and cancel buttons
+    //if the student is banned displays only the unban and cancel buttons
     //if the student is not banned displays only the ban and cancel buttons
-    if(isbanned){
+    if (isbanned) {
       banStudentsPopupHeader.textContent = studentName + " is currently banned.";
       banStudentsPopupText.textContent = "Would you like to unban this student?";
       unbanStudentButton.style.display = "flex";
@@ -385,20 +377,20 @@ const Settings = () => {
     }
     //sets a 30 second timer to ensure admin can't accidentally leave the option open
     clearTimeout(popupTimer);
-    popupTimer = setTimeout (() => {banStudentsPopupContainer.style.display = "none"; }, 30000);
+    popupTimer = setTimeout(() => { banStudentsPopupContainer.style.display = "none"; }, 30000);
 
 
   }
 
   //bans student
-  const banStudent = async (event) =>{
+  const banStudent = async (event) => {
     //grabs student info from the students database
     event.preventDefault();
     docRef = await doc(db, "currentStudents", verified_data);
     await getDoc(docRef).then((docSnap) => {
       if (docSnap.exists()) {
         //stores relevent info into the banned students database
-        setDoc(doc(db, "bannedStudents", docSnap.data().ID),{
+        setDoc(doc(db, "bannedStudents", docSnap.data().ID), {
           ID: docSnap.data().ID,
           FirstName: docSnap.data().FirstName,
           LastName: docSnap.data().LastName,
@@ -415,11 +407,11 @@ const Settings = () => {
 
   }
   //unbans student
-  const unbanStudent = async (event) =>{
+  const unbanStudent = async (event) => {
     event.preventDefault();
     //checks to see if student is in the banned students database
     docRef = await doc(db, "bannedStudents", verified_data);
-    if (docRef){
+    if (docRef) {
       //deletes student from database
       deleteDoc(docRef);
     }
@@ -427,12 +419,12 @@ const Settings = () => {
       displayIdEntryError("error retrieving data from database. Please re-enter ID");
 
     }
-          //runs the cancel operation function to remove the popup
-      cancelOperation(event);
-    }
+    //runs the cancel operation function to remove the popup
+    cancelOperation(event);
+  }
 
 
-  const cancelOperation = async (event) =>{
+  const cancelOperation = async (event) => {
     //removes the popup that displays option to ban/unban student
     event.preventDefault();
     const banStudentsPopupContainer = document.getElementById("banStudentsPopupContainer");
@@ -587,6 +579,9 @@ const Settings = () => {
             </div>
 
             <div className="bannedStudentsList" id="bannedStudentsList">
+              {bannedStudents.map((name, i) => (
+                <p key={i}>{name}</p>
+              ))}
             </div>
           </div>
         </section>

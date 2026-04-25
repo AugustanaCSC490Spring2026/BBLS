@@ -1,12 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { db } from "../Firebase.js";
-import { useLocation } from 'react-router-dom';
 
 // NEW: added serverTimestamp for accurate backend time
 import { addDoc, collection, serverTimestamp, getDoc, doc } from "firebase/firestore";
 
 import "../components/Dashboard.css";
-import { FunnelChart } from "recharts";
+
 import GuestPopup from "../components/GuestTab.jsx";
 import ValidateSwipe from "../components/ValidateSwipe.js";
 import AwayModeOverlay from "../components/AwayModeOverlay.jsx";
@@ -20,22 +19,19 @@ let alertTimer;
 
 import awayModeIcon from "../assets/moon.png";
 
-function Dashboard({ gym, updateGym, onAwayMode, registerOverlaySwipe }) {
+function Dashboard({ gym, updateGym }) {
   const [isGuestPopupOpen, setIsGuestPopupOpen] = useState(false);
   const [studentId, setStudentId] = useState("");
   const inputRef = useRef(null);
   const overlaySwipeRef = useRef(null);
-  const locationState = useLocation();
   const [awayMode, setAwayMode] = useState(false);
   // Auto-focus on load
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  // Register overlay swipe handler
 useEffect(() => {
-  overlaySwipeRef.current = handleOverlaySwipe; // keep ref in sync
-  registerOverlaySwipe(handleOverlaySwipe);
+  overlaySwipeRef.current = handleOverlaySwipe;
 }, [gym]);
 
   // Keeps input focused every 5 seconds
@@ -138,7 +134,7 @@ useEffect(() => {
       if (gym === "Pepsi-Co Center") {
         addDoc(pepsicoCenterRef, {
           ID: verified_data,
-          swipeInTixme: timeStamp,
+          swipeInTime: timeStamp,
         })
       } else if (gym === "Westerlin Gym") {
         addDoc(westerlinGymRef, {
@@ -168,7 +164,7 @@ useEffect(() => {
   return (
     <>
       <div className="top-dashboard">
-        <button onClick={() => { setAwayMode(true); onAwayMode?.(); }}>
+        <button onClick={() => setAwayMode(true)}>
           <img src={awayModeIcon} alt="Away Mode" />
         </button>
       </div>

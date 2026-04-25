@@ -21,6 +21,7 @@ function App() {
     setSelectedGym(newGym);
     localStorage.setItem("selectedGym", newGym);
   };
+
   const overlaySwipeRef = useRef(null);
   return (
     <>
@@ -31,7 +32,6 @@ function App() {
           <Navbar
             currentGym={selectedGym}
             onGymChange={handleGymChange}
-            onAwayMode={() => setAwayMode(true)}
           />
 
 
@@ -54,7 +54,6 @@ function App() {
                   <Dashboard
                     gym={selectedGym}
                     updateGym={handleGymChange}
-                    registerOverlaySwipe={(fn) => { overlaySwipeRef.current = fn; }}  
                   />
                 </ProtectedRoute>
               }
