@@ -9,7 +9,7 @@ import "../components/Dashboard.css";
 import { FunnelChart } from "recharts";
 import GuestPopup from "../components/GuestTab.jsx";
 import ValidateSwipe from "../components/ValidateSwipe.js";
-
+import AwayModeOverlay from "../components/AwayModeOverlay.jsx";
 const pepsicoCenterRef = collection(db, 'pepsicoCenter')
 const westerlinGymRef = collection(db, 'westerlinGym')
 const invalidSwipeInRef = collection(db, 'invalidSwipeIns');
@@ -18,22 +18,25 @@ const bannedStudentsRef = collection(db, "bannedStudents");
 const guestEntranceRef = collection(db, "guestEntrance");
 let alertTimer;
 
+import awayModeIcon from "../assets/moon.png";
 
-function Dashboard({ gym, updateGym, registerOverlaySwipe }) {
+function Dashboard({ gym, updateGym, onAwayMode, registerOverlaySwipe }) {
   const [isGuestPopupOpen, setIsGuestPopupOpen] = useState(false);
   const [studentId, setStudentId] = useState("");
   const inputRef = useRef(null);
+  const overlaySwipeRef = useRef(null);
   const locationState = useLocation();
-
+  const [awayMode, setAwayMode] = useState(false);
   // Auto-focus on load
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
   // Register overlay swipe handler
-  useEffect(() => {
-    registerOverlaySwipe(handleOverlaySwipe);
-  }, [gym]);
+useEffect(() => {
+  overlaySwipeRef.current = handleOverlaySwipe; // keep ref in sync
+  registerOverlaySwipe(handleOverlaySwipe);
+}, [gym]);
 
   // Keeps input focused every 5 seconds
   useEffect(() => {
@@ -98,7 +101,7 @@ function Dashboard({ gym, updateGym, registerOverlaySwipe }) {
     } catch (err) {
       console.error("Error saving swipe:", err);
     }
- 
+
     setStudentId("");
 
     requestAnimationFrame(() => {
@@ -164,7 +167,18 @@ function Dashboard({ gym, updateGym, registerOverlaySwipe }) {
 
   return (
     <>
+      <div className="top-dashboard">
+        <button onClick={() => { setAwayMode(true); onAwayMode?.(); }}>
+          <img src={awayModeIcon} alt="Away Mode" />
+        </button>
+      </div>
       <div className="Dashboard">
+
+        <AwayModeOverlay
+          isActive={awayMode}
+          onDismiss={() => setAwayMode(false)}
+          onSwipe={(id) => overlaySwipeRef.current?.(id)}
+        />
         <div className="customAlert" id="customAlert">
           <div className="alertContent" id="alertContent">
             <h2 id="alertHeading"> If you can see this there is a bug</h2>
@@ -179,7 +193,6 @@ function Dashboard({ gym, updateGym, registerOverlaySwipe }) {
             <label>Student ID</label>
 
             <input
-              type="password"
               ref={inputRef}
               placeholder="Enter Student ID"
               value={studentId}

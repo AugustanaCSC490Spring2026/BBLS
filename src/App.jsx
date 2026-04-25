@@ -10,7 +10,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import Location from "./pages/Location";
 import logo from './assets/logo.png';
 import Navbar from "./pages/Navigation.jsx";
-import AwayModeOverlay from "./components/AwayModeOverlay.jsx";
+
 
 
 function App() {
@@ -21,7 +21,6 @@ function App() {
     setSelectedGym(newGym);
     localStorage.setItem("selectedGym", newGym);
   };
-  const [awayMode, setAwayMode] = useState(false);
   const overlaySwipeRef = useRef(null);
   return (
     <>
@@ -34,11 +33,7 @@ function App() {
             onGymChange={handleGymChange}
             onAwayMode={() => setAwayMode(true)}
           />
-          <AwayModeOverlay
-            isActive={awayMode}
-            onDismiss={() => setAwayMode(false)}
-            onSwipe={(id) => overlaySwipeRef.current?.(id)}
-          />
+
 
           <Routes>
             <Route path="/" element={<Login />} />

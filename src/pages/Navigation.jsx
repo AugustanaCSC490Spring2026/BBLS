@@ -6,10 +6,10 @@ import { NavDropdown } from "../components/NavDropdown.jsx";
 import { useAuth } from "../AuthContext.jsx";
 import { useNavigate } from 'react-router-dom';
 import { getAuth, signOut } from "firebase/auth";
-import awayModeIcon from "../assets/moon.png";
+
 import signOutIcon from "../assets/signout.png";
 
-function Navbar({ currentGym, onGymCxhange, onAwayMode }) {
+function Navbar({ currentGym }) {
     const auth = getAuth();
     // handleSignOut will sign the user out and navigate them back to the login page
     const handleSignOut = () => {
@@ -29,7 +29,7 @@ function Navbar({ currentGym, onGymCxhange, onAwayMode }) {
     const navigate = useNavigate();
     const hideNavbarRoutes = ["/", "/Location"];
     const shouldShowNavbar = !hideNavbarRoutes.includes(location.pathname);
-    
+
     useEffect(() => {
         const storedRole = localStorage.getItem("role");
         setRole(storedRole);
@@ -68,9 +68,6 @@ function Navbar({ currentGym, onGymCxhange, onAwayMode }) {
                                 </Link>
                             )}
                         </div>
-                        {location.pathname == "/dashboard" && (
-                            <button onClick={onAwayMode}><img src={awayModeIcon} alt="Away Mode"/ ></button>
-                        )}
                         <button className="sign-out-button" onClick={handleSignOut}>
                             Sign Out  <img src={signOutIcon} alt="Sign Out" />
                         </button>
