@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { db } from "../Firebase.js";
 import ToastContainer from "../components/ToastContainer";
+import ValidateStaffSwipe from "../components/ValidateStaffSwipe.js";
 
 // NEW: added serverTimestamp for accurate backend time
 import { addDoc, collection, serverTimestamp, getDoc, doc } from "firebase/firestore";
@@ -108,8 +109,6 @@ function Dashboard({ gym, updateGym }) {
 
 
     try {
-      // CHANGED: using serverTimestamp instead of string date
-      // This allows Firebase to store a real timestamp, so we can filter in analytics.jsx (written with ChatGPT)
       storeSwipeIn(gym, swipeValid, verified_data, serverTimestamp(), reasonSwipeDenied, studentName);
     } catch (err) {
       console.error("Error saving swipe:", err);
@@ -122,19 +121,44 @@ function Dashboard({ gym, updateGym }) {
     });
 
   }
-  const processGuestEntry = (guestData) => {
-    // guestData is now the object { name, category, gradYear, etc. }
-    storeGuestSwipeIn(gym, guestData, serverTimestamp());
-    setIsGuestPopupOpen(false);
+
+  async function processGuestEntry(guestData) {
+    const timeStamp = serverTimestamp();
+    let validBool = true;
+    let reasonDenied = "No reason given";
+    let overallName = "No staff name";
+
+    if (guestData.category === "Staff") {
+      const isValidData = await ValidateStaffSwipe(guestData.staffId, getDoc, doc, db);
+      validBool = isValidData.isValid;
+      reasonDenied = isValidData.reasonDenied;
+      overallName = isValidData.name;
+    
+      if (validBool) {
+        addDoc(guestEntranceRef, {
+        location: gym,
+        timestamp: timeStamp,
+        ...guestData // This "spreads" the object into separate Firestore fields
+      }); 
+      }
+    } else{
+      overallName = guestData.name;
+      validBool = true;
+      addDoc(guestEntranceRef, {
+        location: gym,
+        timestamp: timeStamp,
+        ...guestData // This "spreads" the object into separate Firestore fields
+      }); 
+    }
+    if (validBool) {
+      addToast("success", "ID Accepted", `Welcome, ${overallName}!`);
+    } else{
+      addToast("error", "ID Denied", reasonDenied);
+    }
   };
 
-  function storeGuestSwipeIn(gym, guestData, timeStamp) {
-    addDoc(guestEntranceRef, {
-      location: gym,
-      timestamp: timeStamp,
-      ...guestData // This "spreads" the object into separate Firestore fields
-    });
-  }
+
+  
   //saves data to firebase
   function storeSwipeIn(gym, swipeValid, verified_data, timeStamp, reasonSwipeDenied, studentName) {
     if (swipeValid && gym !== "None Selected") {

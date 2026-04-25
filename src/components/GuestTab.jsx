@@ -26,6 +26,8 @@ function GuestPopup({ isOpen, onClose, onSubmitGuest }) {
   if (!isOpen) return null;
 
   // 3. Handling the Data Payload
+  // src/components/GuestTab.jsx
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -43,8 +45,10 @@ function GuestPopup({ isOpen, onClose, onSubmitGuest }) {
     }
 
     const isNameValid = guestCategory === "Staff" || guestName.trim();
+    
     if (guestCategory && isNameValid) {
       onSubmitGuest(guestData);
+      onClose(); // This triggers the popup to close
     }
   };
 
@@ -162,7 +166,7 @@ function GuestPopup({ isOpen, onClose, onSubmitGuest }) {
               </div>
             )}
 
-            <button type="submit" className="guest-submit-btn" onClick ={handleSubmit}>
+            <button type="submit" className="guest-submit-btn">
               Sign In Guest
             </button>
           </div>
