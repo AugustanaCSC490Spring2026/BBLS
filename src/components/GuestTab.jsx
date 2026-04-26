@@ -1,3 +1,4 @@
+// gemini helped create this code.
 import React, { useState, useEffect } from "react";
 import "./Dashboard.css";
 
@@ -25,26 +26,29 @@ function GuestPopup({ isOpen, onClose, onSubmitGuest }) {
   if (!isOpen) return null;
 
   // 3. Handling the Data Payload
+  // src/components/GuestTab.jsx
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    const guestData = {
-      name: guestName,
-      category: guestCategory,
-    };
 
-    // Only attach extra fields if they are relevant to the category
-    if (guestCategory === "Alumni") {
-      guestData.gradYear = Number(gradYear);
-    } else if (guestCategory === "Staff") {
+    const guestData = {
+      category: guestCategory,
+      name: guestName.trim(),
+    };
+    
+    if (guestCategory === "Staff") {
       guestData.staffId = staffId;
+    } else if (guestCategory === "Alumni") {
+      guestData.gradYear = Number(gradYear);
     } else if (guestCategory === "Other") {
       guestData.otherReason = otherReason;
     }
 
-    if (guestName.trim() && guestCategory) {
+    const isNameValid = guestCategory === "Staff" || guestName.trim();
+    
+    if (guestCategory && isNameValid) {
       onSubmitGuest(guestData);
-      // Form resets automatically via the useEffect once Dashboard closes it
+      onClose(); // This triggers the popup to close
     }
   };
 
@@ -89,20 +93,18 @@ function GuestPopup({ isOpen, onClose, onSubmitGuest }) {
 
         {guestCategory && (
           <div className="guest-details-animation">
-            <div className="input-group">
-              <label>Full Name</label>
-              <input
-                type="text"
-                value={guestName}
-                onChange={(e) => setGuestName(e.target.value)}
-                placeholder="Enter guest name"
-                required
-                autoFocus
-              />
-            </div>
 
             {guestCategory === "Alumni" && (
               <div className="input-group">
+                <label>Full Name</label>
+                <input
+                  type="text"
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  placeholder="Enter guest name"
+                  required
+                  autoFocus
+                />
                 <label>Graduation Year</label>
                 <input
                   type="number"
@@ -128,8 +130,31 @@ function GuestPopup({ isOpen, onClose, onSubmitGuest }) {
               </div>
             )}
 
+            {guestCategory === "Physical Therapy" && (
+              <div className="input-group">
+                <label>Full Name</label>
+                <input
+                  type="text"
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  placeholder="Enter guest name"
+                  required
+                  autoFocus
+                />
+              </div>
+            )}
+
             {guestCategory === "Other" && (
               <div className="input-group">
+                <label>Full Name</label>
+                <input
+                  type="text"
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  placeholder="Enter guest name"
+                  required
+                  autoFocus
+                />
                 <label>Reason for Visit</label>
                 <input
                   type="text"
