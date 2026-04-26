@@ -33,6 +33,7 @@ function Location( { onSelectGym } ) {
         style={{ fontSize: "2rem" }}
       >
         Westerlin Gym
+        (WAC)
       </button>
     </div>
     </>
