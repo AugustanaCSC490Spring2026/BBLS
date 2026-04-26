@@ -5,7 +5,7 @@
   display: flex;               /* Enables Flexbox */
   justify-content: center;     /* Centers horizontally */
   align-items: center;         /* Centers vertically */
-  gap: 2rem;                   /* Puts space between the buttons */
+  gap: 4rem;                   /* Puts space between the buttons */
   
   /* These two lines are likely what was missing */
   height: 100vh;               /* Makes the container 100% of the screen height */
@@ -19,8 +19,8 @@
 
 /* Button styles */
 .gym-button {
-  width: 200px;
-  height: 200px;
+  width: 350px;
+  height: 350px;
   font-size: 1.25rem;
   font-weight: bold;
   border-radius: 24px;
