@@ -1,6 +1,4 @@
 :root {
-  color-scheme: light dark;
-  background-color: white;
   font-family: "Montserrat", sans-serif;
 }
 
@@ -36,6 +34,7 @@ button:hover {
   border-color: #004a99;
 }
 .card {
+  color: black;
   background: white;
   border-radius: 12px;
   padding: 20px;

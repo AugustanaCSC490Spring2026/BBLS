@@ -1,6 +1,10 @@
+.logo h1 {
+  color: white;
+}
+
+
 
 .navbar{
-color: white;
 background:#002F6C;
 width:100%;
 border-bottom: 10px solid #FFDD00;
