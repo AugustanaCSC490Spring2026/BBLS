@@ -374,13 +374,12 @@ export default function Equipment({ gym, updateGym }) {
                         </div>
 
                         {availableEquipment.map(item => (
-                            <div
-                                key={item.name}
-                                className="inventory-item"
-                            >
+                            <div key={item.name} className="inventory-item">
                                 <span>{item.name}</span>
-                                <span>
-                                    {item.available}/{item.total}
+                                <span className={item.available === 0 ? "out-of-stock" : ""}>
+                                    {item.available > 0 
+                                        ? `${item.available}/${item.total} available` 
+                                        : "All checked out"}
                                 </span>
                             </div>
                         ))}

@@ -22,6 +22,7 @@ function Location( { onSelectGym } ) {
       <button 
         onClick={() => handleSelection("Pepsi-Co Center")}
         className="gym-button pepsi-color"
+        style={{ fontSize: "2rem" }}
       >
         Pepsi-Co
       </button>
@@ -29,8 +30,10 @@ function Location( { onSelectGym } ) {
       <button
         onClick={() => handleSelection("Westerlin Gym")}
         className="gym-button westerlin-color"
+        style={{ fontSize: "2rem" }}
       >
         Westerlin Gym
+        (WAC)
       </button>
     </div>
     </>
