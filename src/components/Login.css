@@ -4,7 +4,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 24px;
 }
 .logo {
   font-size: 24px;
@@ -12,13 +11,14 @@
 
 .card {
   border: 6px solid #FFDD00;
-  width: 100%;
-  max-width: 33%;
-  max-height: 45%;
+  min-height: 45%;
   background-color: #ffffff;
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
   padding: 32px;
+
+  width: 100%;
+  width: 33vw;
 }
 
 .card-header {

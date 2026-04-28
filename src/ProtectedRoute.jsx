@@ -1,12 +1,17 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
+import Location from "./pages/Location";
 
-const ProtectedRoute = ({ children, requireAdmin }) => {
+const ProtectedRoute = ({ children, requireAdmin = false }) => {
   const { user, isAdmin, loading } = useAuth();
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
-  if (!user) return <Navigate to="/" />;
+  if (!user) {
+    return <Navigate to="/" />;
+  }
 
   if (requireAdmin && !isAdmin) {
     return <Navigate to="/dashboard" />;
