@@ -317,8 +317,6 @@ const Settings = () => {
       verified_data = studentEmail;
       let studentList = await getDocs(currentStudentsRef);
       studentList.forEach ((student) => {
-        console.log(student.data().Email + "  " + studentEmail);
-        console.log(student.data().Email == studentEmail);
         if (student.data().Email == studentEmail){
           studentEntered = student;
         }
@@ -390,7 +388,6 @@ const Settings = () => {
   const banStudent = async (event) => {
     //grabs student info from the students database
     event.preventDefault();
-    console.log(studentEnteredID);
     docRef = await doc(db, "currentStudents", studentEnteredID);
     await getDoc(docRef).then((docSnap) => {
       if (docSnap.exists()) {
@@ -404,7 +401,7 @@ const Settings = () => {
         })
 
       } else {
-        displayIdEntryError("error retrieving data from database. Please try again or contact support it error persists");
+        displayIdEntryError("error retrieving data from database. Please try again or contact support if error persists");
       }
       //runs the cancel operation function to remove the popup
       cancelOperation(event);
@@ -422,7 +419,7 @@ const Settings = () => {
       deleteDoc(docRef);
     }
     else {
-      displayIdEntryError("error retrieving data from database. Please re-enter ID");
+      displayIdEntryError("error retrieving data from database. Please try again or contact support if error persists");
 
     }
     //runs the cancel operation function to remove the popup
@@ -537,7 +534,7 @@ const Settings = () => {
             <input
               id="studentInputForm"
               className="studentInputForm"
-              type="password"
+              type="text"
               ref={null}
               value={studentEmail}
               placeholder="Enter Student username"
@@ -552,7 +549,7 @@ const Settings = () => {
           <div id="banStudentsPopupContainer" className="banStudentsPopupContainer">
             <div className="banStudentsPopupBackground">
               <div className="banStudentsPopup">
-                <h2 id="banStudentsPopupHeader"></h2>
+                <h2 id="banStudentsPopupHeader">test text is currently testing</h2>
                 <p id="banStudentsPopupText"></p>
                 {/* Wrap buttons in this new div */}
                 <div className="popup-button-group">
