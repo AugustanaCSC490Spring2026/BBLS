@@ -17,6 +17,7 @@ import { doc, writeBatch, collection, serverTimestamp, getDoc, deleteDoc, setDoc
 import "../components/Settings.css";
 
 const bannedStudentsRef = collection(db, "bannedStudents");
+const currentStudentsRef = collection(db, "currentStudents");
 
 import { useEffect } from "react";
 
@@ -275,9 +276,11 @@ const Settings = () => {
       }
     });
   };
-  let studentId;
+  let studentEmail;
   let studentName;
   let verified_data;
+  let studentEntered;
+  let studentEnteredID;
   let swipeOutput;
   let docRef;
   let popupTimer;
@@ -289,41 +292,47 @@ const Settings = () => {
       handleSubmission();
     }
   }
-  function updateStudentID(input) {
-    studentId = input;
+  function updateStudentEmail(input) {
+    studentEmail = input;
   }
   const handleSubmission = async (event) => {
     event.preventDefault();
-
-    let temp_input;
+    
+    /*
     try {
-      temp_input = studentId.trim();
+      studentEmail = studentEmail.trim();
     } catch {
       console.log("error");
       swipeOutput = "no ID entered";
       displayIdEntryError(swipeOutput);
       return;
     }
+      */
 
-    updateStudentID(temp_input);
+
+    updateStudentEmail(studentEmail);
+
     let isbanned;
     // checks ID to ensure it has the right number of characters
-    if (temp_input.length !== 7 && temp_input.length !== 16) {
-      verified_data = temp_input;
-      swipeOutput = "invalid ID format";
-      displayIdEntryError(swipeOutput);
-
-    } else if (temp_input.length == 7) {
-      verified_data = temp_input;
-      docRef = await doc(db, "currentStudents", verified_data);
-      await getDoc(docRef).then((docSnap) => {
-        if (!docSnap.exists()) {
-          swipeOutput = "Entered ID not in student Database"
-          displayIdEntryError(swipeOutput);
+      verified_data = studentEmail;
+      let studentList = await getDocs(currentStudentsRef);
+      studentList.forEach ((student) => {
+        console.log(student.data().Email + "  " + studentEmail);
+        console.log(student.data().Email == studentEmail);
+        if (student.data().Email == studentEmail){
+          studentEntered = student;
+        }
+      })
+        if (studentEntered == null){
+          displayIdEntryError("No student has the entered email");
+          document.getElementById("studentInputForm").value = "";
+          updateStudentEmail("");
+          return;
         }
         else {
-          studentName = docSnap.data().FirstName + " " + docSnap.data().LastName;
-          docRef = doc(db, "bannedStudents", verified_data);
+          studentName = studentEntered.data().FirstName + " " + studentEntered.data().LastName;
+          studentEnteredID = studentEntered.data().ID;
+          docRef = doc(db, "bannedStudents", studentEnteredID);
           getDoc(docRef).then((docSnap) => {
             if (!docSnap.exists()) {
               isbanned = false;
@@ -335,13 +344,8 @@ const Settings = () => {
             }
           })
         }
-      })
-    } else {
-      verified_data = temp_input.slice(3, 10);
-      //currently not supporting card swipes but can change if don wants
-    }
     document.getElementById("studentInputForm").value = "";
-    updateStudentID("");
+    updateStudentEmail("");
   }
 
   function displayIdEntryError(swipeOutput) {
@@ -386,19 +390,21 @@ const Settings = () => {
   const banStudent = async (event) => {
     //grabs student info from the students database
     event.preventDefault();
-    docRef = await doc(db, "currentStudents", verified_data);
+    console.log(studentEnteredID);
+    docRef = await doc(db, "currentStudents", studentEnteredID);
     await getDoc(docRef).then((docSnap) => {
       if (docSnap.exists()) {
         //stores relevent info into the banned students database
         setDoc(doc(db, "bannedStudents", docSnap.data().ID), {
           ID: docSnap.data().ID,
+          Email: docSnap.data().Email,
           FirstName: docSnap.data().FirstName,
           LastName: docSnap.data().LastName,
           dateBanned: serverTimestamp()
         })
 
       } else {
-        displayIdEntryError("error retrieving data from database. Please re-enter ID");
+        displayIdEntryError("error retrieving data from database. Please try again or contact support it error persists");
       }
       //runs the cancel operation function to remove the popup
       cancelOperation(event);
@@ -410,7 +416,7 @@ const Settings = () => {
   const unbanStudent = async (event) => {
     event.preventDefault();
     //checks to see if student is in the banned students database
-    docRef = await doc(db, "bannedStudents", verified_data);
+    docRef = await doc(db, "bannedStudents", studentEnteredID);
     if (docRef) {
       //deletes student from database
       deleteDoc(docRef);
@@ -533,9 +539,9 @@ const Settings = () => {
               className="studentInputForm"
               type="password"
               ref={null}
-              value={studentId}
-              placeholder="Enter Student ID"
-              onChange={(e) => updateStudentID(e.target.value)}
+              value={studentEmail}
+              placeholder="Enter Student username"
+              onChange={(e) => updateStudentEmail(e.target.value)}
               onKeyDown={handleKeyDown}
 
             />
