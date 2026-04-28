@@ -27,11 +27,9 @@ export const AuthProvider = ({ children }) => {
         if (snap.exists()) {
           setUser(currentUser);
 
-          // Safe admin check
           const data = snap.data();
           setIsAdmin(data?.isAdmin === true);
         } else {
-          // Not authorized → force logout
           setUser(null);
           setIsAdmin(false);
           await auth.signOut();
