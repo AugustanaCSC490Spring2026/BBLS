@@ -372,7 +372,7 @@ export default function Equipment({ gym, updateGym }) {
                         <div className="card-header">
                             <h2>Inventory Status</h2>
                         </div>
-
+                        {/* gemini helped me with this next div */}
                         {availableEquipment.map(item => (
                             <div key={item.name} className="inventory-item">
                                 <span>{item.name}</span>

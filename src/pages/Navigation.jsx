@@ -40,7 +40,7 @@ function Navbar({ currentGym }) {
             <div className="nav-content">
                 <div className="logo">
                     <img src={logo} alt="Logo" width={60} height={60} />
-                    <h1>Augustana Campus Recreation</h1>
+                    <h1>Campus Rec</h1>
                 </div>
                 {shouldShowNavbar && (
                     <>
@@ -54,9 +54,11 @@ function Navbar({ currentGym }) {
                             <Link to="/dashboard" className="nav-item">
                                 Swipe In
                             </Link>
+                            
                             <Link to="/equipment" className="nav-item">
-                                Equipment Checkout
+                                Equipment
                             </Link>
+                            
                             {isAdmin && (
                                 <Link to="/analytics">
                                     Analytics
