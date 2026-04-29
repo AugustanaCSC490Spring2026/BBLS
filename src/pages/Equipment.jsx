@@ -164,13 +164,8 @@ export default function Equipment({ gym, updateGym }) {
    return (
        <>
            <div className="page">
-               <div className="page-header">
-                   <div className="left">
-                       <h2>Equipment Checkout — {gym}</h2>
-                   </div>
-               </div>
 
-               <div className="layout" style={{ display: "flex", flexDirection: "column", gap: "20px", padding: "20px" }}>
+               <div className="layout" style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "20px" }}>
                    
                    {/* Top Row: Form and Inventory Side-by-Side */}
                    <div style={{ display: "flex", gap: "20px", width: "100%", alignItems: "stretch" }}>
