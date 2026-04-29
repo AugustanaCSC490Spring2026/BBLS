@@ -52,3 +52,43 @@ select {
     padding: 8px;
     border-bottom: 1px solid #eee;
 }
+
+/* Styling for all cards */
+.card {
+  /* ... existing styles like border, padding ... */
+  display: flex;
+  flex-direction: column;
+  min-height: 350px; /* Adjust this value as needed to fit all data */
+}
+
+/* Styling for input, select, and textarea elements */
+input[type="password"],
+input[type="number"],
+select.equipment-select,
+textarea {
+  /* ... existing styles like padding, border ... */
+  border-radius: 5px; /* Adjust this value for desired rounding */
+}
+
+/* Specific styling for textareas, if any */
+textarea {
+  /* You might want a different border-radius or other properties for textareas */
+}
+
+/* Ensure the cards take up the full available width in their row */
+.card-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px; /* Space between the cards */
+}
+
+/* Adjust the checkout and inventory cards to each take half the width */
+.card.checkout-card,
+.card.inventory-card {
+  width: calc(50% - 10px); /* 50% width minus half the gap */
+}
+
+/* For the Active Checkouts card, make it full width */
+.card.active-checkouts-card {
+  width: 100%;
+}
