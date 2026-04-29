@@ -27,8 +27,10 @@ function Navbar({ currentGym }) {
     const [role, setRole] = useState("");
     const location = useLocation();
     const navigate = useNavigate();
-    const hideNavbarRoutes = ["/", "/Location"];
-    const shouldShowNavbar = !hideNavbarRoutes.includes(location.pathname);
+    const hideNavbarRoutes = ["/Location"];
+    const hideNavbar = ['/'];
+    const shouldShowNavbar = !hideNavbar.includes(location.pathname);
+    const shouldShowNavbarRoutes = !hideNavbarRoutes.includes(location.pathname);
 
     useEffect(() => {
         const storedRole = localStorage.getItem("role");
@@ -36,47 +38,50 @@ function Navbar({ currentGym }) {
     }, []);
 
     return (
-        <nav className="navbar">
-            <div className="nav-content">
-                <div className="logo">
-                    <img src={logo} alt="Logo" width={60} height={60} />
-                    <h1>Campus Rec</h1>
+        <>
+        { shouldShowNavbar && (
+            <nav className="navbar">
+                <div className="nav-content">
+                    <div className="logo">
+                        <img src={logo} alt="Logo" width={60} height={60} />
+                        <h1>Augie Campus Rec</h1>
+                    </div>
+                    {shouldShowNavbarRoutes && (
+                        <>
+                            <div className="nav-links">
+                                {location.pathname !== "/analytics" && location.pathname !== "/settings" && (
+                                    <NavDropdown
+                                        options={["Pepsi-Co Center", "Westerlin Gym"]}
+                                        defaultOption={currentGym}
+                                    />
+                                )}
+                                <Link to="/dashboard" className="nav-item">
+                                    Swipe In
+                                </Link>
+                                <Link to="/equipment" className="nav-item">
+                                    Equipment Checkout
+                                </Link>
+                                {isAdmin && (
+                                    <Link to="/analytics">
+                                        Analytics
+                                    </Link>
+                                )}
+                                {isAdmin && (
+                                    <Link to="/settings">
+                                        Settings
+                                    </Link>
+                                )}
+                            </div>
+                            <button className="sign-out-button" onClick={handleSignOut}>
+                                Sign Out  <img src={signOutIcon} alt="Sign Out" />
+                            </button>
+                        </>
+                    )}
                 </div>
-                {shouldShowNavbar && (
-                    <>
-                        <div className="nav-links">
-                            {location.pathname !== "/analytics" && location.pathname !== "/settings" && (
-                                <NavDropdown
-                                    options={["Pepsi-Co Center", "Westerlin Gym"]}
-                                    defaultOption={currentGym}
-                                />
-                            )}
-                            <Link to="/dashboard" className="nav-item">
-                                Swipe In
-                            </Link>
-                            
-                            <Link to="/equipment" className="nav-item">
-                                Equipment
-                            </Link>
-                            
-                            {isAdmin && (
-                                <Link to="/analytics">
-                                    Analytics
-                                </Link>
-                            )}
-                            {isAdmin && (
-                                <Link to="/settings">
-                                    Settings
-                                </Link>
-                            )}
-                        </div>
-                        <button className="sign-out-button" onClick={handleSignOut}>
-                            Sign Out  <img src={signOutIcon} alt="Sign Out" />
-                        </button>
-                    </>
-                )}
-            </div>
-        </nav>
+            </nav>
+            
+        )}
+        </>
     );
 }
 

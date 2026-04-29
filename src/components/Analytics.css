@@ -60,8 +60,12 @@
 
 .interval-group-row {
   display: flex;
+  gap: 15px;
+  width: 100%;
 }
 
 .control-item {
   display: flex;
+  flex-direction: column;
+  flex: 1; 
 }
