@@ -292,7 +292,7 @@ const Settings = () => {
       handleSubmission();
     }
   }
-  function updateStudentEmail(input) {
+  function updateStudentIdentifier(input) {
     studentEmail = input;
   }
   const handleSubmission = async (event) => {
@@ -310,7 +310,7 @@ const Settings = () => {
       */
 
 
-    updateStudentEmail(studentEmail);
+    updateStudentIdentifier(studentEmail);
 
     let isbanned;
     // checks ID to ensure it has the right number of characters
@@ -322,9 +322,9 @@ const Settings = () => {
         }
       })
         if (studentEntered == null){
-          displayIdEntryError("No student has the entered email");
+          displayIdEntryError("No student has the entered id or username");
           document.getElementById("studentInputForm").value = "";
-          updateStudentEmail("");
+          updateStudentIdentifier("");
           return;
         }
         else {
@@ -342,8 +342,7 @@ const Settings = () => {
             }
           })
         }
-    document.getElementById("studentInputForm").value = "";
-    updateStudentEmail("");
+    updateStudentIdentifier("");
   }
 
   function displayIdEntryError(swipeOutput) {
@@ -360,6 +359,7 @@ const Settings = () => {
     const unbanStudentButton = document.getElementById("unbanStudentButton");
     const banStudentsPopupHeader = document.getElementById("banStudentsPopupHeader");
     const banStudentsPopupText = document.getElementById("banStudentsPopupText");
+    const banStudentReasonForm=  document.getElementById("banStudentReasonForm");
 
     banStudentsPopupContainer.style.display = "flex";
     //if the student is banned displays only the unban and cancel buttons
@@ -369,12 +369,14 @@ const Settings = () => {
       banStudentsPopupText.textContent = "Would you like to unban this student?";
       unbanStudentButton.style.display = "flex";
       banStudentButton.style.display = "none";
+      banStudentReasonForm.style.display = "none";
     }
     else {
       banStudentsPopupHeader.textContent = studentName + " is currently not banned.";
       banStudentsPopupText.textContent = "Would you like to ban this student?";
       unbanStudentButton.style.display = "none";
       banStudentButton.style.display = "flex";
+      banStudentReasonForm.style.display = "flex";
 
     }
     //sets a 30 second timer to ensure admin can't accidentally leave the option open
@@ -384,9 +386,19 @@ const Settings = () => {
 
   }
 
+  let reasonStudentBanned;
+
+  function updateReasonBanned(input){
+    reasonStudentBanned = input;
+  }
+
   //bans student
   const banStudent = async (event) => {
     //grabs student info from the students database
+    if (reasonStudentBanned == undefined){
+      reasonStudentBanned = "no reason given";
+    }
+
     event.preventDefault();
     docRef = await doc(db, "currentStudents", studentEnteredID);
     await getDoc(docRef).then((docSnap) => {
@@ -397,9 +409,9 @@ const Settings = () => {
           Email: docSnap.data().Email,
           FirstName: docSnap.data().FirstName,
           LastName: docSnap.data().LastName,
+          reasonBanned: reasonStudentBanned,
           dateBanned: serverTimestamp()
         })
-
       } else {
         displayIdEntryError("error retrieving data from database. Please try again or contact support if error persists");
       }
@@ -433,7 +445,13 @@ const Settings = () => {
     const banStudentsPopupContainer = document.getElementById("banStudentsPopupContainer");
     event.preventDefault();
     banStudentsPopupContainer.style.display = "none";
+    //refresh the list of banned students
     updateBannedStudentsList();
+    //clear input forms and set values default
+    document.getElementById("studentInputForm").value = "";
+    document.getElementById("banStudentReasonForm").value = "";
+    updateReasonBanned("no reason given");
+    updateStudentIdentifier("")
   }
 
 
@@ -528,6 +546,12 @@ const Settings = () => {
           </div>
 
         )}
+        <div className="customAlert" id="customAlert">
+          <div className="alertContent" id="alertContent">
+            <h2 className="alertHeading">ID entry error</h2>
+            <p id="alertText"></p>
+          </div>
+        </div>
         <section className="banStudentsButtonContainer">
           <h2 className="banStudentsHeader"> Ban/Unban students </h2>
           <form className="IDSearchForm" onSubmit={handleSubmission}>
@@ -538,7 +562,7 @@ const Settings = () => {
               ref={null}
               value={studentEmail}
               placeholder="Enter Student username"
-              onChange={(e) => updateStudentEmail(e.target.value)}
+              onChange={(e) => updateStudentIdentifier(e.target.value)}
               onKeyDown={handleKeyDown}
 
             />
@@ -549,8 +573,16 @@ const Settings = () => {
           <div id="banStudentsPopupContainer" className="banStudentsPopupContainer">
             <div className="banStudentsPopupBackground">
               <div className="banStudentsPopup">
-                <h2 id="banStudentsPopupHeader">test text is currently testing</h2>
+                <h2 id="banStudentsPopupHeader">If you see this there is a bug</h2>
                 <p id="banStudentsPopupText"></p>
+                <input 
+                className="banStudentReasonForm"
+                id="banStudentReasonForm"
+                type="text"
+                value={reasonStudentBanned}
+                placeholder="Enter reason Student was banned"
+                onChange={(e) => updateReasonBanned(e.target.value)}
+                ></input>
                 {/* Wrap buttons in this new div */}
                 <div className="popup-button-group">
                   <button
@@ -588,13 +620,6 @@ const Settings = () => {
             </div>
           </div>
         </section>
-        <div className="customAlert" id="customAlert">
-          <div className="alertContent" id="alertContent">
-            <h2 className="alertHeading">ID entry error</h2>
-            <p id="alertText"></p>
-          </div>
-        </div>
-
       </div>
     </>
   );
