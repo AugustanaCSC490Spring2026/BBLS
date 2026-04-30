@@ -7,26 +7,20 @@
 }
 
 .page {
-    padding: 20px 30px;
     background-color: #f8f9fa; /* Light grey background to make cards pop */
     min-height: 100vh;
 }
 
 .page-header {
     max-width: 1200px;
-    margin: 0 auto 30px auto;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.page-header h2 {
-    color: #1a1a1a;
-    font-weight: 600;
-}
-
 /* Card Container Styling */
 .card {
+    margin-top: 0px;
     background: white;
     border-radius: 12px; /* Smooth rounded corners */
     padding: 24px;

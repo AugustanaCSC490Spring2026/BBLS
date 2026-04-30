@@ -21,6 +21,7 @@ const guestEntranceRef = collection(db, "guestEntrance");
 import awayModeIcon from "../assets/moon.png";
 
 function Dashboard({ gym, updateGym }) {
+  const [isProcessing, setIsProcessing] = useState(false);
   const [isGuestPopupOpen, setIsGuestPopupOpen] = useState(false);
   const [studentId, setStudentId] = useState("");
   const inputRef = useRef(null);
@@ -76,13 +77,22 @@ function Dashboard({ gym, updateGym }) {
 
   const addToast = (type, title, message) => {
     const newToast = {
-      id: toastIdRef.current++,
-      type,
-      title,
-      message,
+        id: toastIdRef.current++,
+        type,
+        title,
+        message,
     };
-    setToasts((prev) => [...prev, newToast]);
-  };
+
+    setToasts((prev) => {
+        const updated = [...prev, newToast];
+        if (updated.length > 7) {
+            // This keeps the 7 newest items. 
+            // The "oldest" of these 7 stays at index 0 (the top).
+            return updated.slice(-7); 
+        }
+        return updated;
+    });
+};
 
   const removeToast = useCallback((id) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
@@ -90,37 +100,41 @@ function Dashboard({ gym, updateGym }) {
 
   const handleSubmission = async (event) => {
     if (event) event.preventDefault();
+    
+    // 1. EXIT if already processing
+    if (isProcessing) return;
 
     const temp_input = studentId.trim();
-    setStudentId(temp_input);
+    if (!temp_input) return; // Don't process empty strings
 
-    let verified_data;
-    let swipeValid = false;
-    let reasonSwipeDenied;
-    let docRef;
-    let studentName;
-
-    //validating the swipe input
-    const validationResult = await ValidateSwipe(temp_input, getDoc, doc, db);
-    swipeValid = validationResult.isValid;
-    verified_data = validationResult.studentId;
-    studentName = validationResult.name;
-    reasonSwipeDenied = validationResult.reasonDenied;
-
+    // 2. SET to true to lock the button
+    setIsProcessing(true);
 
     try {
-      storeSwipeIn(gym, swipeValid, verified_data, serverTimestamp(), reasonSwipeDenied, studentName);
+      // Validating the swipe input
+      const validationResult = await ValidateSwipe(temp_input, getDoc, doc, db);
+      const swipeValid = validationResult.isValid;
+      const verified_data = validationResult.studentId;
+      const studentName = validationResult.name;
+      const reasonSwipeDenied = validationResult.reasonDenied;
+
+      // Save to firebase
+      await storeSwipeIn(gym, swipeValid, verified_data, serverTimestamp(), reasonSwipeDenied, studentName);
+
+      setStudentId("");
+      
+      requestAnimationFrame(() => {
+        inputRef.current?.focus();
+      });
+
     } catch (err) {
       console.error("Error saving swipe:", err);
+      addToast("error", "System Error", "Failed to process swipe. Please try again.");
+    } finally {
+      // 3. ALWAYS unlock the button when finished
+      setIsProcessing(false);
     }
-
-    setStudentId("");
-
-    requestAnimationFrame(() => {
-      inputRef.current?.focus();
-    });
-
-  }
+  };
 
   async function processGuestEntry(guestData) {
     const timeStamp = serverTimestamp();
@@ -207,8 +221,17 @@ function Dashboard({ gym, updateGym }) {
               onKeyDown={handleKeyDown}
             />
 
-            <button type="submit" className="swipe-button">
-              Check In
+            <button 
+              type="submit" 
+              className="swipe-button"
+              disabled={isProcessing}
+              style={{
+                opacity: isProcessing ? 0.6 : 1,
+                cursor: isProcessing ? "not-allowed" : "pointer",
+                transition: "all 0.2s ease"
+              }}
+            >
+              {isProcessing ? "Processing..." : "Check In"}
             </button>
 
           </form>
