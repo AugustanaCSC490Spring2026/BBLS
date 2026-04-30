@@ -9,7 +9,7 @@ import { getAuth, signOut } from "firebase/auth";
 
 import signOutIcon from "../assets/signout.png";
 
-function Navbar({ currentGym }) {
+function Navbar({ currentGym, onGymChange}) {
     const auth = getAuth();
     // handleSignOut will sign the user out and navigate them back to the login page
     const handleSignOut = () => {
@@ -53,6 +53,7 @@ function Navbar({ currentGym }) {
                                     <NavDropdown
                                         options={["Pepsi-Co Center", "Westerlin Gym"]}
                                         defaultOption={currentGym}
+                                        onChange={onGymChange} 
                                     />
                                 )}
                                 <Link to="/dashboard" className="nav-item">

@@ -18,7 +18,8 @@ const currentStudentsRef = collection(db, "currentStudents");
 
 
 export default function Equipment({ gym, updateGym }) {
-   const onGymChange = { updateGym };
+    const [isProcessing, setIsProcessing] = useState(false);
+   const [returningId, setReturningId] = useState(null);   
    const [studentId, setStudentId] = useState("");
    const [selectedEquipment, setSelectedEquipment] = useState("");
    const [quantity, setQuantity] = useState(1);
@@ -130,31 +131,66 @@ export default function Equipment({ gym, updateGym }) {
        }
    };
 
+const handleReturn = async (id) => {
+    if (returningId) return; // Prevent any other clicks while one is processing
 
-   const handleReturn = async (id) => {
-       const checkoutRef = getCheckoutCollection();
-       const inventoryRef = getInventoryCollection();
-       try {
-           const checkoutDocRef = doc(checkoutRef, id);
-           const checkoutSnap = await getDoc(checkoutDocRef);
-           const checkoutData = checkoutSnap.data();
-           const equipmentDocRef = doc(inventoryRef, checkoutData.equipment);
-           const equipmentSnap = await getDoc(equipmentDocRef);
-           const equipmentData = equipmentSnap.data();
+    try {
+        setReturningId(id); // Set the specific ID being processed
+        const checkoutRef = getCheckoutCollection();
+        const inventoryRef = getInventoryCollection();
+        
+        const checkoutDocRef = doc(checkoutRef, id);
+        const checkoutSnap = await getDoc(checkoutDocRef);
+        const checkoutData = checkoutSnap.data();
 
-           await updateDoc(equipmentDocRef, {
-               available: equipmentData.available + checkoutData.quantity
-           });
-           await updateDoc(checkoutDocRef, {
-               returned: true,
-               returnTime: serverTimestamp()
-           });
-           fetchInventory();
-           fetchCheckouts();
-       } catch (error) {
-           console.error(error);
-       }
-   };
+        if (checkoutData.returned) return;
+
+        const equipmentDocRef = doc(inventoryRef, checkoutData.equipment);
+        const equipmentSnap = await getDoc(equipmentDocRef);
+        const equipmentData = equipmentSnap.data();
+
+        await updateDoc(equipmentDocRef, {
+            available: equipmentData.available + checkoutData.quantity
+        });
+        await updateDoc(checkoutDocRef, {
+            returned: true,
+            returnTime: serverTimestamp()
+        });
+
+        await fetchInventory();
+        await fetchCheckouts();
+    } catch (error) {
+        console.error(error);
+    } finally {
+        setReturningId(null); // Reset to null so buttons are active again
+    }
+};
+
+
+//    const handleReturn = async (id) => {
+//        const checkoutRef = getCheckoutCollection();
+//        const inventoryRef = getInventoryCollection();
+//        try {
+//            const checkoutDocRef = doc(checkoutRef, id);
+//            const checkoutSnap = await getDoc(checkoutDocRef);
+//            const checkoutData = checkoutSnap.data();
+//            const equipmentDocRef = doc(inventoryRef, checkoutData.equipment);
+//            const equipmentSnap = await getDoc(equipmentDocRef);
+//            const equipmentData = equipmentSnap.data();
+
+//            await updateDoc(equipmentDocRef, {
+//                available: equipmentData.available + checkoutData.quantity
+//            });
+//            await updateDoc(checkoutDocRef, {
+//                returned: true,
+//                returnTime: serverTimestamp()
+//            });
+//            fetchInventory();
+//            fetchCheckouts();
+//        } catch (error) {
+//            console.error(error);
+//        }
+//    };
 
    // Shared styles for form labels and inputs
    const labelStyle = { display: "block", marginBottom: "5px", fontWeight: "600", fontSize: "0.9rem", textAlign: "left" };
@@ -277,8 +313,16 @@ export default function Equipment({ gym, updateGym }) {
                                             <strong>{item.studentName}</strong>
                                             <p>{item.equipment} {" x"}{item.quantity}</p>
                                         </div>
-                                        <button onClick={() => handleReturn(item.id)}>
-                                            Return
+                                        <button 
+                                            onClick={() => handleReturn(item.id)}
+                                            disabled={returningId !== null} // Disable all buttons if ANY return is happening
+                                            style={{
+                                                opacity: returningId !== null ? 0.6 : 1,
+                                                cursor: returningId !== null ? "not-allowed" : "pointer",
+                                                minWidth: "100px" // Keeps the button size stable when text changes
+                                            }}
+                                        >
+                                            {returningId === item.id ? "Returning..." : "Return"}
                                         </button>
                                     </div>
                                 ))}
