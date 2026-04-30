@@ -7,7 +7,7 @@
 }
 
 .page {
-    padding: 40px 20px;
+    padding: 20px 30px;
     background-color: #f8f9fa; /* Light grey background to make cards pop */
     min-height: 100vh;
 }
@@ -38,7 +38,7 @@
     font-size: 1.25rem;
     margin-bottom: 20px;
     color: #333;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: none;
     padding-bottom: 12px;
 }
 
@@ -123,4 +123,82 @@ button:hover {
     text-align: center;
     padding: 40px 0;
     font-style: italic;
+}
+.active-checkouts-card .card-header {
+    padding-top: 5px;   /* Minimal space at the top */
+    text-align: center; /* Center horizontally */
+    margin-bottom: 15px; /* Space between header and the list below */
+}
+
+/* This targets the card specifically */
+.active-checkouts-card {
+    display: flex;
+    flex-direction: column;
+}
+
+/* This targets the header inside that card */
+.active-checkouts-card .card-header {
+    width: 100%;
+    display: flex;
+    justify-content: center; /* Centers the H2 horizontally */
+    padding-top: 0;          /* Moves it to the absolute top */
+    margin-bottom: 20px;
+    border-bottom: none;     /* Optional: removes the line if you want it cleaner */
+}
+
+.active-checkouts-card .card-header h2 {
+    text-align: center;
+    margin: 0;
+    padding: 0;
+}
+
+/* The container for the checkouts */
+.checkout-grid {
+    display: grid;
+    /* This creates 3 equal columns */
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 20px; /* Space between the cards */
+    width: 100%;
+}
+
+/* Update your existing .checkout class */
+.checkout {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background-color: #ffffff;
+    
+    /* 1. Subtle Border */
+    border: 1px solid #eef2f7; 
+    
+    /* 2. Rounded Corners to match the main cards */
+    border-radius: 10px; 
+    
+    /* 3. The Shadow: Horizontal, Vertical, Blur, Spread, Color */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); 
+    
+    /* 4. Smooth hover effect */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    margin-bottom: 0; 
+}
+
+/* Optional: Make it react when you hover over a specific checkout */
+.checkout:hover {
+    transform: translateY(-2px); /* Lifts the card slightly */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Deepens the shadow */
+    border-color: #d1d9e6;
+}
+
+/* Responsive adjustment: if the screen is small, drop to 1 or 2 columns */
+@media (max-width: 900px) {
+    .checkout-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .checkout-grid {
+        grid-template-columns: 1fr;
+    }
 }

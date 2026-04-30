@@ -82,7 +82,7 @@ export default function Equipment({ gym, updateGym }) {
 
    const handleCheckout = async () => {
        if (!studentId || !selectedEquipment || quantity <= 0) {
-           alert("Please fill all fields");
+            alert("Please fill all fields");
            return;
        }
        const validation = await ValidateSwipe(studentId, getDoc, doc, db);
@@ -118,7 +118,7 @@ export default function Equipment({ gym, updateGym }) {
                returned: false
            });
 
-           alert("Checkout successful");
+           //alert("Checkout successful");
            fetchInventory();
            fetchCheckouts();
            setStudentId("");
@@ -165,7 +165,7 @@ export default function Equipment({ gym, updateGym }) {
        <>
            <div className="page">
 
-               <div className="layout" style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "20px" }}>
+               <div className="layout" style={{ display: "flex", flexDirection: "column", gap: "20px", padding: "20px" }}>
                    
                    {/* Top Row: Form and Inventory Side-by-Side */}
                    <div style={{ display: "flex", gap: "20px", width: "100%", alignItems: "stretch" }}>
@@ -261,28 +261,30 @@ export default function Equipment({ gym, updateGym }) {
                    </div>
 
                    {/* Bottom: Full Width Active Checkouts */}
-                   <div className="card" style={{ width: "100%" }}>
-                       <div className="card-header">
-                           <h2>Active Checkouts</h2>
-                       </div>
-                       {activeCheckouts.length === 0 ? (
-                           <p className="empty-message">No active checkouts</p>
-                       ) : (
-                           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                               {activeCheckouts.map(item => (
-                                   <div key={item.id} className="checkout" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                       <div>
-                                           <strong>{item.studentName}</strong>
-                                           <p style={{ margin: "4px 0" }}>{item.equipment} x{item.quantity}</p>
-                                       </div>
-                                       <button onClick={() => handleReturn(item.id)} style={{ borderRadius: "6px" }}>
-                                           Return
-                                       </button>
-                                   </div>
-                               ))}
-                           </div>
-                       )}
-                   </div>
+                   <div className="card active-checkouts-card" style={{ width: "100%" }}>
+                        <div className="card-header">
+                            <h2>Active Checkouts</h2>
+                        </div>
+
+                        {activeCheckouts.length === 0 ? (
+                            <p className="empty-message">No active checkouts</p>
+                        ) : (
+                            /* Add this wrapper class: checkout-grid */
+                            <div className="checkout-grid">
+                                {activeCheckouts.map(item => (
+                                    <div key={item.id} className="checkout">
+                                        <div>
+                                            <strong>{item.studentName}</strong>
+                                            <p>{item.equipment} {" x"}{item.quantity}</p>
+                                        </div>
+                                        <button onClick={() => handleReturn(item.id)}>
+                                            Return
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                </div>
            </div>
        </>
