@@ -1,5 +1,7 @@
+// THIS CODE WAS CODED WITH HELP FROM GEMINI
+
 import Navbar from "./Navigation.jsx";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react"; // Added useRef
 import "../components/Equipment.css";
 import ValidateSwipe from "../components/ValidateSwipe.js";
 import Papa from "papaparse";
@@ -18,13 +20,16 @@ const currentStudentsRef = collection(db, "currentStudents");
 
 
 export default function Equipment({ gym, updateGym }) {
-    const [isProcessing, setIsProcessing] = useState(false);
+   const [isProcessing, setIsProcessing] = useState(false);
    const [returningId, setReturningId] = useState(null);   
    const [studentId, setStudentId] = useState("");
    const [selectedEquipment, setSelectedEquipment] = useState("");
    const [quantity, setQuantity] = useState(1);
    const [availableEquipment, setAvailableEquipment] = useState([]);
    const [activeCheckouts, setActiveCheckouts] = useState([]);
+
+   // 1. Create the Ref for the Student ID input
+   const idInputRef = useRef(null);
 
 
    const pepsicoInventoryRef = collection(db, "pepsicoEquipmentInventory");
@@ -71,6 +76,24 @@ export default function Equipment({ gym, updateGym }) {
            .filter(item => !item.returned);
        setActiveCheckouts(checkoutList);
    };
+
+   // 2. Set up the Auto-Focus Interval (runs every 5 seconds)
+   useEffect(() => {
+       const focusInterval = setInterval(() => {
+           // Only grab focus if the user isn't currently using a different input field
+           if (
+               document.activeElement.tagName !== "INPUT" && 
+               document.activeElement.tagName !== "SELECT"
+           ) {
+               idInputRef.current?.focus();
+           }
+       }, 5000);
+
+       // Focus immediately on page load
+       idInputRef.current?.focus();
+
+       return () => clearInterval(focusInterval); // Cleanup when leaving page
+   }, []);
 
 
    useEffect(() => {
@@ -119,12 +142,15 @@ export default function Equipment({ gym, updateGym }) {
                returned: false
            });
 
-           //alert("Checkout successful");
            fetchInventory();
            fetchCheckouts();
            setStudentId("");
            setSelectedEquipment("");
            setQuantity(1);
+
+           // Refocus ID box after checkout
+           idInputRef.current?.focus();
+
        } catch (error) {
            console.error(error);
            alert("Checkout failed");
@@ -132,10 +158,10 @@ export default function Equipment({ gym, updateGym }) {
    };
 
 const handleReturn = async (id) => {
-    if (returningId) return; // Prevent any other clicks while one is processing
+    if (returningId) return;
 
     try {
-        setReturningId(id); // Set the specific ID being processed
+        setReturningId(id);
         const checkoutRef = getCheckoutCollection();
         const inventoryRef = getInventoryCollection();
         
@@ -162,37 +188,10 @@ const handleReturn = async (id) => {
     } catch (error) {
         console.error(error);
     } finally {
-        setReturningId(null); // Reset to null so buttons are active again
+        setReturningId(null);
     }
 };
 
-
-//    const handleReturn = async (id) => {
-//        const checkoutRef = getCheckoutCollection();
-//        const inventoryRef = getInventoryCollection();
-//        try {
-//            const checkoutDocRef = doc(checkoutRef, id);
-//            const checkoutSnap = await getDoc(checkoutDocRef);
-//            const checkoutData = checkoutSnap.data();
-//            const equipmentDocRef = doc(inventoryRef, checkoutData.equipment);
-//            const equipmentSnap = await getDoc(equipmentDocRef);
-//            const equipmentData = equipmentSnap.data();
-
-//            await updateDoc(equipmentDocRef, {
-//                available: equipmentData.available + checkoutData.quantity
-//            });
-//            await updateDoc(checkoutDocRef, {
-//                returned: true,
-//                returnTime: serverTimestamp()
-//            });
-//            fetchInventory();
-//            fetchCheckouts();
-//        } catch (error) {
-//            console.error(error);
-//        }
-//    };
-
-   // Shared styles for form labels and inputs
    const labelStyle = { display: "block", marginBottom: "5px", fontWeight: "600", fontSize: "0.9rem", textAlign: "left" };
    const inputStyle = { borderRadius: "8px", width: "100%", padding: "10px", marginBottom: "15px", border: "1px solid #ccc", boxSizing: "border-box" };
 
@@ -203,7 +202,6 @@ const handleReturn = async (id) => {
 
                <div className="layout" style={{ display: "flex", flexDirection: "column", gap: "20px", padding: "20px" }}>
                    
-                   {/* Top Row: Form and Inventory Side-by-Side */}
                    <div style={{ display: "flex", gap: "20px", width: "100%", alignItems: "stretch" }}>
                        
                        {/* Left: New Checkout Form */}
@@ -215,6 +213,7 @@ const handleReturn = async (id) => {
                            <div>
                                <label style={labelStyle}>Student ID</label>
                                <input
+                                   ref={idInputRef} // 3. Attached the Ref here
                                    type="password"
                                    placeholder="Scan or Enter ID"
                                    style={inputStyle}
@@ -260,16 +259,14 @@ const handleReturn = async (id) => {
                            </div>
                            <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
                                 {availableEquipment.map(item => {
-                                    // Calculate percentage
                                     const percentage = item.total > 0 ? (item.available / item.total) * 100 : 0;
                                     const barWidth = Math.min(percentage, 100);
 
-                                    // Determine color based on inventory levels
-                                    let barColor = "#52b788"; // Default Green (>= 50%)
+                                    let barColor = "#52b788"; 
                                     if (percentage < 25 || item.available === 0) {
-                                        barColor = "#ff4d4d"; // Red (< 25%)
+                                        barColor = "#ff4d4d"; 
                                     } else if (percentage < 50) {
-                                        barColor = "#ffd166"; // Yellow (< 50%)
+                                        barColor = "#ffd166"; 
                                     }
 
                                     return (
@@ -305,7 +302,6 @@ const handleReturn = async (id) => {
                         {activeCheckouts.length === 0 ? (
                             <p className="empty-message">No active checkouts</p>
                         ) : (
-                            /* Add this wrapper class: checkout-grid */
                             <div className="checkout-grid">
                                 {activeCheckouts.map(item => (
                                     <div key={item.id} className="checkout">
@@ -315,11 +311,11 @@ const handleReturn = async (id) => {
                                         </div>
                                         <button 
                                             onClick={() => handleReturn(item.id)}
-                                            disabled={returningId !== null} // Disable all buttons if ANY return is happening
+                                            disabled={returningId !== null} 
                                             style={{
                                                 opacity: returningId !== null ? 0.6 : 1,
                                                 cursor: returningId !== null ? "not-allowed" : "pointer",
-                                                minWidth: "100px" // Keeps the button size stable when text changes
+                                                minWidth: "100px" 
                                             }}
                                         >
                                             {returningId === item.id ? "Returning..." : "Return"}
