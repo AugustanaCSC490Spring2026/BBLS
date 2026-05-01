@@ -343,6 +343,8 @@ const Settings = () => {
           })
         }
     updateStudentIdentifier("");
+          setStudentId(studentEnteredID);
+
   }
 
   function displayIdEntryError(swipeOutput) {
@@ -353,15 +355,23 @@ const Settings = () => {
     setTimeout(() => { customAlert.style.display = "none"; }, 1000);
 
   }
+
+  let dateStudentIsUnbanned;
+  function setUnbanDate(input){
+    dateStudentIsUnbanned = input;
+  }
+  
   function displayPopup(isbanned) {
     const banStudentsPopupContainer = document.getElementById("banStudentsPopupContainer");
     const banStudentButton = document.getElementById("banStudentButton");
     const unbanStudentButton = document.getElementById("unbanStudentButton");
     const banStudentsPopupHeader = document.getElementById("banStudentsPopupHeader");
     const banStudentsPopupText = document.getElementById("banStudentsPopupText");
+    const banStudentReasonStatememnt = document.getElementById("banStudentReasonStatememnt");
     const banStudentReasonForm=  document.getElementById("banStudentReasonForm");
+    const unbanDateStatement = document.getElementById("unbanDateStatement");
+    const unbanDateInput = document.getElementById("unbaneDateInput");
 
-    banStudentsPopupContainer.style.display = "flex";
     //if the student is banned displays only the unban and cancel buttons
     //if the student is not banned displays only the ban and cancel buttons
     if (isbanned) {
@@ -369,38 +379,57 @@ const Settings = () => {
       banStudentsPopupText.textContent = "Would you like to unban this student?";
       unbanStudentButton.style.display = "flex";
       banStudentButton.style.display = "none";
+      banStudentReasonStatememnt.style.display = "none";
       banStudentReasonForm.style.display = "none";
+      unbanDateStatement.style.display = "none";
+      unbanDateInput.style.display = "none";
+
+      
     }
     else {
       banStudentsPopupHeader.textContent = studentName + " is currently not banned.";
       banStudentsPopupText.textContent = "Would you like to ban this student?";
       unbanStudentButton.style.display = "none";
       banStudentButton.style.display = "flex";
+      banStudentReasonStatememnt.style.display = "flex";
       banStudentReasonForm.style.display = "flex";
-
+      unbanDateStatement.style.display = "flex";
+      unbanDateInput.style.display = "flex";
+      setUnbanDate(new Date().toLocaleDateString('en-CA'));
+      unbanDateInput.value = new Date().toLocaleDateString('en-CA');
     }
+      banStudentsPopupContainer.style.display = "flex";
     //sets a 30 second timer to ensure admin can't accidentally leave the option open
-    clearTimeout(popupTimer);
-    popupTimer = setTimeout(() => { banStudentsPopupContainer.style.display = "none"; }, 30000);
+ //   clearTimeout(popupTimer);
+   // popupTimer = setTimeout(() => { banStudentsPopupContainer.style.display = "none"; }, 30000);
 
 
   }
 
-  let reasonStudentBanned;
+  let studentId
 
+  function setStudentId(input){
+    studentId = input;
+  }
+
+  let reasonStudentBanned;
   function updateReasonBanned(input){
     reasonStudentBanned = input;
   }
 
+  function setUnbanDate(input){
+    dateStudentIsUnbanned = input;
+    console.log(input);
+  }
+
   //bans student
   const banStudent = async (event) => {
+      event.preventDefault();
     //grabs student info from the students database
     if (reasonStudentBanned == undefined){
       reasonStudentBanned = "no reason given";
     }
-
-    event.preventDefault();
-    docRef = await doc(db, "currentStudents", studentEnteredID);
+    docRef = await doc(db, "currentStudents", studentId);
     await getDoc(docRef).then((docSnap) => {
       if (docSnap.exists()) {
         //stores relevent info into the banned students database
@@ -410,7 +439,8 @@ const Settings = () => {
           FirstName: docSnap.data().FirstName,
           LastName: docSnap.data().LastName,
           reasonBanned: reasonStudentBanned,
-          dateBanned: serverTimestamp()
+          dateBanned: new Date().toLocaleDateString('en-CA'),
+          dateToBeUnbanned: dateStudentIsUnbanned
         })
       } else {
         displayIdEntryError("error retrieving data from database. Please try again or contact support if error persists");
@@ -574,15 +604,27 @@ const Settings = () => {
             <div className="banStudentsPopupBackground">
               <div className="banStudentsPopup">
                 <h2 id="banStudentsPopupHeader">If you see this there is a bug</h2>
-                <p id="banStudentsPopupText"></p>
+                <p 
+                id="banStudentReasonStatememnt"
+                className="banStudentReasonStatememnt">Why would you like to ban this student?</p>
                 <input 
                 className="banStudentReasonForm"
                 id="banStudentReasonForm"
                 type="text"
                 value={reasonStudentBanned}
-                placeholder="Enter reason Student was banned"
+                placeholder="Enter reason Student is to be banned"
                 onChange={(e) => updateReasonBanned(e.target.value)}
                 ></input>
+                <p 
+                id="unbanDateStatement"
+                className="unbanDateStatement"> Enter Date Student should be Unbanned</p>
+                <input
+                id="unbaneDateInput"
+                className="unbaneDateInput"
+                type="Date"
+                onChange={(e) => setUnbanDate(e.target.value)}
+></input>
+              <p id="banStudentsPopupText"></p>
                 {/* Wrap buttons in this new div */}
                 <div className="popup-button-group">
                   <button

@@ -7,11 +7,6 @@
     margin-top: 30px;
 }
 
-.studentInputForm{
-  font-size: large;
-}
-
-
 .selectStudentButton{
     padding: 8px;
     background-color: #1a73e8;
@@ -19,7 +14,9 @@
     border-radius: 10px;
 }
 .studentInputForm{
-    width: 40%;
+    font-size: large;
+    height: 30px;
+    width: 27%;
 }
 
 /* 2. Create a container for the buttons */
@@ -35,7 +32,7 @@
 .banStudentButton, .unbanStudentButton, .cancelOperationButton {
   margin-left: 4px;
     margin: 0; 
-    min-width: 100px; /* Optional: makes buttons the same size */
+  /*  min-width: 100px; /* Optional: makes buttons the same size */
 }
 
 .banStudentsPopupContainer {
@@ -72,7 +69,20 @@
     align-items: center;
 }
 
+.banStudentReasonForm{
+  height: 30px;
+  padding: 3px;
+  width: 80%;
+  margin-bottom: 8px;
+  margin-top: 8px;
+}
 
+.unbaneDateInput{
+  margin-top: 8px;
+  margin-bottom: 8px;
+  width: auto;
+  
+}
 
 .customAlert{
   display: none;
