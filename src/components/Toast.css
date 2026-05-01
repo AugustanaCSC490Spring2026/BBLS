@@ -4,7 +4,7 @@
   left: 20px;
   max-height: 76vh;
   display: flex;
-  flex-direction: column-reverse; 
+  flex-direction: column; 
   gap: 12px;
   overflow-y: hidden;
   z-index: 9999;
