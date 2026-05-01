@@ -1,3 +1,9 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 :root {
   font-family: "Montserrat", sans-serif;
 }
@@ -38,6 +44,7 @@ button:hover {
   background: white;
   border-radius: 12px;
   padding: 20px;
+  max-height: 60vh;   
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 

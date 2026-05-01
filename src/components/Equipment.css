@@ -1,11 +1,4 @@
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    /* font-family: "Inter", sans-serif; Cleaner, more modern font */
-}
-
 .page {
     background-color: #f8f9fa; /* Light grey background to make cards pop */
     min-height: 100vh;
@@ -22,6 +15,8 @@
 .card {
     margin-top: 0px;
     background: white;
+    max-height: 45vh;     
+    overflow-y: auto;  
     border-radius: 12px; /* Smooth rounded corners */
     padding: 24px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Soft modern shadow */
@@ -30,10 +25,8 @@
 
 .card-header h2 {
     font-size: 1.25rem;
-    margin-bottom: 20px;
     color: #333;
     border-bottom: none;
-    padding-bottom: 12px;
 }
 
 /* Input Styling */

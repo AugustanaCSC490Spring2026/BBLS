@@ -38,8 +38,8 @@ function Login() {
     <>
       <main className="main">
         <div className='login-page'>
-          <div className="card">
-            <div className="card-header">
+          <div className="login-card">
+            <div className="login-card-header">
               <img src={logo} alt="Logo" className="logo-image" width={200} height={200} />
               <h1>Augustana College </h1>
               <h2> Recreation Center </h2>
