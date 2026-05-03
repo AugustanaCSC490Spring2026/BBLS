@@ -1,4 +1,3 @@
-
 .page {
     background-color: #f8f9fa; /* Light grey background to make cards pop */
     min-height: 100vh;
@@ -6,6 +5,7 @@
 
 .page-header {
     max-width: 1200px;
+    width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -22,8 +22,14 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Soft modern shadow */
     border: 1px solid rgba(0, 0, 0, 0.05); /* Very light border for definition */
 }
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
 
 .card-header h2 {
+    margin-bottom: 30px;
     font-size: 1.25rem;
     color: #333;
     border-bottom: none;

@@ -1,9 +1,10 @@
 .top-dashboard {
   display: flex;
+  justify-content: space-between;
   padding: 20px;
-  align-items: right;
-  justify-content: flex-end;
 }
+
+
 .Dashboard {
   display: flex;
   justify-content: center;
