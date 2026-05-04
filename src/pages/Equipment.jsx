@@ -134,11 +134,11 @@ export default function Equipment({ gym, updateGym }) {
 
 
     const handleCheckout = async () => {
-        <NavDropdown
-            options={["Pepsi-Co Center", "Westerlin Gym"]}
-            defaultOption={currentGym}
-            onChange={onGymChange}
-        />
+        // <NavDropdown
+        //     options={["Pepsi-Co Center", "Westerlin Gym"]}
+        //     defaultOption={currentGym}
+        //     onChange={onGymChange}
+        // />
         if (isProcessing) return;
         if (!studentId || !selectedEquipment || quantity <= 0) {
             addToast("error", "Form Error", "Please fill in all fields");
@@ -148,6 +148,10 @@ export default function Equipment({ gym, updateGym }) {
         const validation = await ValidateSwipe(studentId, getDoc, doc, db);
         if (!validation.isValid) {
             addToast("error", "ID Denied", validation.reasonDenied);
+            setStudentId("");
+            setSelectedEquipment("");
+            setIsProcessing(false);
+            idInputRef.current?.focus();
             return;
         }
 
