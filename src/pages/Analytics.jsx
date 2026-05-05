@@ -53,7 +53,7 @@ function Analytics({ gym, updateGym }) {
 
   const chartRef = useRef(null);
 
-  // Maps dropdown names to Firestore field names
+  // Maps dropdown names that match to Firestore field names
   const demographicFieldMap = {
     Class: "Class",
     Gender: "Gender",
@@ -64,7 +64,7 @@ function Analytics({ gym, updateGym }) {
     Transfer: "Transfer"
   };
 
-  // Gives categories for guest swipes different colors on the graph
+  // Gives categories for guest swipes different colors on the graph. Color codes the guest swipes
   const categoryColorMap = {};
   function getCategoryColor(category) {
     if (categoryColorMap[category]) return categoryColorMap[category];
@@ -180,8 +180,14 @@ function Analytics({ gym, updateGym }) {
       else if (dataFile === "combined") {
         await fetchCombinedCollections();
       }
-      else if (dataFile === "firebase") {
-        await fetchFirebaseData();
+      else if (dataFile === "pepsicoCheckouts") {
+        await fetchCheckoutCollection("pepsicoCheckouts");
+      }
+      else if (dataFile === "westerlinCheckouts") {
+        await fetchCheckoutCollection("westerlinCheckouts");
+      }
+      else if (dataFile === "combinedCheckouts") {
+        await fetchCombinedCheckouts();
       }
       else if (dataFile === "guestEntrance") {
         await fetchGuestEntrance();
@@ -198,6 +204,7 @@ function Analytics({ gym, updateGym }) {
     loadData();
   }, [dataFile, timeRange, startDate, endDate, normalData]);
 
+  // Based on the given time range chosen by a user, this function selects the start/end times
   function getDateRange() {
     const now = new Date();
     let start = new Date();
@@ -347,6 +354,7 @@ function Analytics({ gym, updateGym }) {
     document.body.removeChild(link);
   }
 
+  // Fetches the given collection form firestore
   async function fetchSpecificCollection(collectionName) {
     const { start, end } = getDateRange();
     const ref = collection(db, collectionName);
@@ -373,6 +381,7 @@ function Analytics({ gym, updateGym }) {
     setSwipeData(data);
   }
 
+  // Fetches sspecifically pepsico and westerlin
   async function fetchCombinedCollections() {
     const { start, end } = getDateRange();
     const collections = ["pepsicoCenter", "westerlinGym"];
@@ -404,14 +413,15 @@ function Analytics({ gym, updateGym }) {
     setSwipeData(combined);
   }
 
-  async function fetchFirebaseData() {
+  // Fetches checkout data based off a specific location. Similar to fetchSpecificCollection()
+  async function fetchCheckoutCollection(collectionName) {
     const { start, end } = getDateRange();
-    const swipeRef = collection(db, "swipeIns");
+    const ref = collection(db, collectionName);
 
     const q = query(
-      swipeRef,
-      where("swipeInTime", ">=", start),
-      where("swipeInTime", "<=", end)
+      ref,
+      where("checkoutTime", ">=", start),
+      where("checkoutTime", "<=", end)
     );
 
     const snapshot = await getDocs(q);
@@ -419,17 +429,50 @@ function Analytics({ gym, updateGym }) {
 
     snapshot.forEach((doc) => {
       const d = doc.data();
-      if (!d.swipeInTime) return;
+      if (!d.checkoutTime) return;
 
       data.push({
-        studentId: d.ID,
-        time: d.swipeInTime.toDate()
+        studentId: d.studentId,
+        time: d.checkoutTime.toDate()
       });
     });
 
     setSwipeData(data);
   }
 
+  // Fetches combined checkout data for pepsico and westie.
+  async function fetchCombinedCheckouts() {
+    const { start, end } = getDateRange();
+    const collections = ["pepsicoCheckouts", "westerlinCheckouts"];
+
+    let combined = [];
+
+    for (let name of collections) {
+      const ref = collection(db, name);
+
+      const q = query(
+        ref,
+        where("checkoutTime", ">=", start),
+        where("checkoutTime", "<=", end)
+      );
+
+      const snapshot = await getDocs(q);
+
+      snapshot.forEach((doc) => {
+        const d = doc.data();
+        if (!d.checkoutTime) return;
+
+        combined.push({
+          studentId: d.studentId,
+          time: d.checkoutTime.toDate()
+        });
+      });
+    }
+
+    setSwipeData(combined);
+  }
+
+  // Fetches only guest swipe ins from the "guestEntrance collection"
   async function fetchGuestEntrance() {
     const { start, end } = getDateRange();
     const ref = collection(db, "guestEntrance");
@@ -458,12 +501,13 @@ function Analytics({ gym, updateGym }) {
     setSwipeData(data);
   }
 
+  // Called when a user wants to see Demographic data
   function processDemographics() {
     const { start, end } = getDateRange();
-    const counts = {};
+    const counts = {};    // A map containing a demographic value and the count of students that lie within that demographic value
 
-    swipeData.forEach((swipe) => {
-      if (swipe.studentId === "guest") return;
+    swipeData.forEach((swipe) => { // goes through each swipe that occured in a given time range
+      if (swipe.studentId === "guest") return; // Makes sure the guest data doesn't potentially mess up the grpah since there is no deomgraphics for guests
 
       const date = swipe.time instanceof Date ? swipe.time : new Date(swipe.time);
       if (isNaN(date) || date < start || date > end) return;
@@ -473,7 +517,7 @@ function Analytics({ gym, updateGym }) {
       const fieldName = demographicFieldMap[demographicType];
       let value = student?.[fieldName];
 
-      if (!value || value.trim() === "") value = "N/A";
+      if (!value || value.trim() === "") value = "N/A";   // If the given value (demogrpahic type) doesn't exist for a student, it is assigned "N/A"
 
       counts[value] = (counts[value] || 0) + 1;
     });
@@ -487,6 +531,7 @@ function Analytics({ gym, updateGym }) {
     }
   }, [chartType, demographicType, swipeData, timeRange, startDate, endDate, studentMap]);
 
+  // Generates the "buckets" of time which will display on the x axis. Dependant on the interval the user chooses
   function generateIntervals(start, end) {
     let buckets = {};
     const cursor = new Date(start);
@@ -506,6 +551,7 @@ function Analytics({ gym, updateGym }) {
       cursor.setHours(0, 0, 0, 0);
     }
 
+    // Increments cursor from the start time until the end time, designating the labels for the buckets
     while (cursor <= end) {
       let label = "";
 
@@ -536,10 +582,12 @@ function Analytics({ gym, updateGym }) {
     return buckets;
   }
 
+  // Processes all given swipes for a time range
   function processData() {
     const { start, end } = getDateRange();
     const buckets = generateIntervals(start, end);
 
+    // Takes all swipes, and for each swipe it ensures it is valid, calculates the interval for the swipe in time, and increments the value of "buckets" for that given interval (increments the y-axis)
     swipeData.forEach((swipe) => {
       const date = swipe.time instanceof Date ? swipe.time : new Date(swipe.time);
 
@@ -566,6 +614,7 @@ function Analytics({ gym, updateGym }) {
       if (buckets[label] !== undefined) buckets[label] += 1;
     });
 
+    // Formats it to an array for chart use
     const formatted = Object.keys(buckets).map((key) => ({
       interval: key,
       swipes: buckets[key]
@@ -574,6 +623,7 @@ function Analytics({ gym, updateGym }) {
     setChartData(formatted);
   }
 
+  // This is important for grouping data across time, for instance it can group swipes across a given amount of time based off days of the week (Mon, Tue, Wed, etc...)
   function processGroupedData() {
     const { start, end } = getDateRange();
 
@@ -637,6 +687,7 @@ function Analytics({ gym, updateGym }) {
   const { start, end } = getDateRange();
 
 
+  // Basic chart data for non-guest swipe ins
   let data = {
     labels: chartData.map((d) => d.interval),
     datasets: [
@@ -648,56 +699,125 @@ function Analytics({ gym, updateGym }) {
     ]
   };
 
-  // splits guest swipes based on cateogry
+  // Takes care of guest swipes. The reason this is done separately than normal swipes is so users can see the reason for visit for each guest. 
+  // Otherwise, it functions similarly to normal swipe ins.
   if (dataFile === "guestEntrance") {
-    const buckets = generateIntervals(start, end);
+    const { start, end } = getDateRange();
 
-    const categoryMap = {};
+    const categoryMap = {};   // Stores each guest category and its associated counts
+    let labels = [];          // Labels for the x-axis (depends on grouping type)
 
-    swipeData.forEach((swipe) => {
-      const date =
-        swipe.time instanceof Date ? swipe.time : new Date(swipe.time);
+    // If the user selected a grouping option (day of week, hour, etc...)
+    if (groupBy !== "none") {
 
-      if (isNaN(date) || date < start || date > end) return;
-
-      const category = swipe.category || "N/A";
-
-      if (!categoryMap[category]) {
-        categoryMap[category] = { ...buckets };
+      // Determines what labels should be used for the x-axis
+      if (groupBy === "dayOfWeek") {
+        labels = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+      } else if (groupBy === "hourOfDay") {
+        labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+      } else if (groupBy === "dayOfMonth") {
+        labels = Array.from({ length: 31 }, (_, i) => `${i + 1}`);
+      } else if (groupBy === "monthOfYear") {
+        labels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
       }
 
-      let label = "";
+      // Initializes each category with an array of 0s (one for each label)
+      swipeData.forEach((swipe) => {
+        const category = swipe.category || "N/A";
 
-      if (interval === "hours")
-        label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()} ${date.getHours()}:00`;
-      else if (interval === "days")
-        label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
-      else if (interval === "weeks") {
-        const weekStart = new Date(date);
-        weekStart.setDate(date.getDate() - date.getDay());
-        weekStart.setHours(0, 0, 0, 0);
-        label = `${weekStart.getMonth() + 1}/${weekStart.getDate()}/${weekStart.getFullYear()}`;
-      }
-      else if (interval === "months")
-        label = `${date.getMonth() + 1}/${date.getFullYear()}`;
-      else if (interval === "years")
-        label = `${date.getFullYear()}`;
+        if (!categoryMap[category]) {
+          categoryMap[category] = Array(labels.length).fill(0);
+        }
+      });
 
-      if (categoryMap[category][label] !== undefined) {
-        categoryMap[category][label] += 1;
-      }
-    });
+      // Processes each swipe and increments the correct grouped bucket
+      swipeData.forEach((swipe) => {
+        const date = swipe.time instanceof Date ? swipe.time : new Date(swipe.time);
 
-    data = {
-      labels: Object.keys(buckets),
-      datasets: Object.keys(categoryMap).map((cat) => ({
-        label: cat,
-        data: Object.keys(buckets).map((b) => categoryMap[cat][b] || 0),
-        backgroundColor: getCategoryColor(cat)
-      }))
-    };
+        // Ensures the swipe is valid and within selected date range
+        if (isNaN(date) || date < start || date > end) return;
+
+        const category = swipe.category || "N/A";
+
+        let index;
+
+        // Determines which index to increment based on grouping selection
+        if (groupBy === "dayOfWeek") index = date.getDay();
+        else if (groupBy === "hourOfDay") index = date.getHours();
+        else if (groupBy === "dayOfMonth") index = date.getDate() - 1;
+        else if (groupBy === "monthOfYear") index = date.getMonth();
+
+        // Increments the correct category + grouped bucket
+        if (categoryMap[category] && index !== undefined) {
+          categoryMap[category][index] += 1;
+        }
+      });
+
+      // Formats grouped data for chart display (stacked by category)
+      data = {
+        labels,
+        datasets: Object.keys(categoryMap).map((cat) => ({
+          label: cat,
+          data: categoryMap[cat],
+          backgroundColor: getCategoryColor(cat)
+        }))
+      };
+
+    } else {
+      // ORIGINAL behavior when no grouping is selected (time-based intervals)
+      const buckets = generateIntervals(start, end);
+
+      swipeData.forEach((swipe) => {
+        const date =
+          swipe.time instanceof Date ? swipe.time : new Date(swipe.time);   // Converts to Date if needed
+
+        // Ensures swipe is valid and within selected time range
+        if (isNaN(date) || date < start || date > end) return;
+
+        const category = swipe.category || "N/A";   // Defaults to N/A if category is missing
+
+        // Creates a bucket set for each category
+        if (!categoryMap[category]) {
+          categoryMap[category] = { ...buckets };
+        }
+
+        let label = "";
+
+        // Same interval logic as processData()
+        if (interval === "hours")
+          label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()} ${date.getHours()}:00`;
+        else if (interval === "days")
+          label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+        else if (interval === "weeks") {
+          const weekStart = new Date(date);
+          weekStart.setDate(date.getDate() - date.getDay());
+          weekStart.setHours(0, 0, 0, 0);
+          label = `${weekStart.getMonth() + 1}/${weekStart.getDate()}/${weekStart.getFullYear()}`;
+        }
+        else if (interval === "months")
+          label = `${date.getMonth() + 1}/${date.getFullYear()}`;
+        else if (interval === "years")
+          label = `${date.getFullYear()}`;
+
+        // Increments the correct category + time bucket
+        if (categoryMap[category][label] !== undefined) {
+          categoryMap[category][label] += 1;
+        }
+      });
+
+      // Formats guest data into stacked datasets for chart display
+      data = {
+        labels: Object.keys(buckets),
+        datasets: Object.keys(categoryMap).map((cat) => ({
+          label: cat,
+          data: Object.keys(buckets).map((b) => categoryMap[cat][b] || 0),
+          backgroundColor: getCategoryColor(cat)
+        }))
+      };
+    }
   }
 
+  // Data for demographics
   const pieData = {
     labels: Object.keys(demographicData),
     datasets: [
@@ -744,9 +864,12 @@ function Analytics({ gym, updateGym }) {
                 onChange={(e) => setDataFile(e.target.value)}
               >
                 <option value="normal">Randomly Generated (non-firebase data)</option>
-                <option value="pepsico">PepsiCo Center</option>
-                <option value="westerlin">Westerlin Gym</option>
-                <option value="combined">Combined Gyms</option>
+                <option value="pepsico">PepsiCo Swipes</option>
+                <option value="westerlin">Westerlin Swipes</option>
+                <option value="combined">Combined Gym Swipes</option>
+                <option value="pepsicoCheckouts">PepsiCo Checkouts</option>
+                <option value="westerlinCheckouts">Westerlin Checkouts</option>
+                <option value="combinedCheckouts">Combined Checkouts</option>
 
                 {chartType !== "demographics" && (
                   <option value="guestEntrance">

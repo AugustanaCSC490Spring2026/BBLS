@@ -1,7 +1,6 @@
 // Everything pertaining to importing csv files in this file was generated with help from ChatGPT
 
-import React, { useState } from "react";
-
+import React, { useState, useEffect, useRef, useCallback } from "react";
 // PapaParse is used to read and convert CSV into JavaScript objects
 import Papa from "papaparse";
 
@@ -16,15 +15,42 @@ import { doc, writeBatch, collection, serverTimestamp, getDoc, deleteDoc, setDoc
 
 import "../components/Settings.css";
 
+import ToastContainer from "../components/ToastContainer.jsx";
+
+
 const bannedStudentsRef = collection(db, "bannedStudents");
 const currentStudentsRef = collection(db, "currentStudents");
 
-import { useEffect } from "react";
+import { add } from "firebase/firestore/pipelines";
 
 
 
 
 const Settings = () => {
+  const [toasts, setToasts] = useState([]);
+  const toastIdRef = useRef(0); // Add this to track unique IDs
+
+  const addToast = (type, title, message) => {
+    const newToast = {
+      id: toastIdRef.current++,
+      type,
+      title,
+      message,
+    };
+
+    setToasts((prev) => {
+      const updated = [...prev, newToast];
+      return updated.slice(-7); // Keep only the 7 newest toasts
+    });
+    setTimeout(() => {
+      removeToast(newToast.id);
+    }, 4000);
+  };
+
+  const removeToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, [setToasts]);
+
   const [showGymPopup, setShowGymPopup] = useState(false);
   const [selectedGym, setSelectedGym] = useState(null);
   const [bannedStudents, setBannedStudents] = useState([]);
@@ -36,7 +62,7 @@ const Settings = () => {
   const updateBannedStudentsList = async () => {
     const docSnap = await getDocs(bannedStudentsRef);
     const bannedList = docSnap.docs.map(
-      (doc) => doc.data().FirstName + " " + doc.data().LastName
+      (doc) => doc.data().FirstName + " " + doc.data().LastName + "  | unban Date: " + doc.data().dateToBeUnbanned
     );
     setBannedStudents(bannedList); // use state instead of direct DOM manipulation
   };
@@ -77,7 +103,8 @@ const Settings = () => {
 
     // Validate file type (must be CSV)
     if (file.type !== "text/csv" && !file.name.toLowerCase().endsWith(".csv")) {
-      alert("Please upload a valid .csv file.");
+      addToast("error", "Invalid File", "Please upload a valid .csv file.");
+      // alert("Please upload a valid .csv file.");
       event.target.value = null; // Reset file input
       return;
     }
@@ -97,7 +124,8 @@ const Settings = () => {
         );
 
         if (!confirmUpload) {
-          alert("Upload cancelled.");
+          addToast("error", "Upload Cancelled", "The student body upload has been cancelled.");
+          // alert("Upload cancelled.");
           event.target.value = null; // Removes selected file if cancelled
           return;
         }
@@ -176,9 +204,10 @@ const Settings = () => {
         }
 
         // Notify user of upload results
-        alert(
-          `Upload complete!\nSuccess: ${successCount}\nFailed: ${failCount}`
-        );
+        addToast("success", "Upload Complete", `Success: ${successCount}, Failed: ${failCount}`);
+        // alert(
+        //   `Upload complete!\nSuccess: ${successCount}\nFailed: ${failCount}`
+        // );
 
         // Removes the upload file after upload
         event.target.value = null;
@@ -187,7 +216,8 @@ const Settings = () => {
       // Runs if CSV parsing fails
       error: (err) => {
         console.error("CSV Parse Error:", err);
-        alert("Error parsing CSV file.");
+        addToast("error", "CSV Parse Error", "There was an error parsing the CSV file. Please check the file format and try again.");
+        // alert("Error parsing CSV file.");
       }
     });
   };
@@ -201,7 +231,8 @@ const Settings = () => {
       file.type !== "text/csv" &&
       !file.name.toLowerCase().endsWith(".csv")
     ) {
-      alert("Please upload a valid .csv file.");
+      addToast("error", "Invalid File", "Please upload a valid .csv file.");
+      // alert("Please upload a valid .csv file.");
       event.target.value = null;
       return;
     }
@@ -267,9 +298,10 @@ const Settings = () => {
           await batch.commit();
         }
 
-        alert(
-          `Equipment Upload Complete!\nGym: ${selectedGym} \nFailed: ${failCount}`
-        );
+        addToast("success", "Equipment Upload Complete", `Gym: ${selectedGym} \nFailed: ${failCount}`);
+        // alert(
+        //   `Equipment Upload Complete!\nGym: ${selectedGym} \nFailed: ${failCount}`
+        // );
 
         event.target.value = null;
 
@@ -287,7 +319,8 @@ const Settings = () => {
   //verify ID
   const handleKeyDown = (input) => {
     if (input.key === "enter") {
-      window.alert("enter key");
+      //addToast("error", "Enter Key Pressed", "Please click the 'Search ID' button to submit the student ID.");
+      // window.alert("enter key");
       input.preventDefault();
       handleSubmission();
     }
@@ -297,7 +330,7 @@ const Settings = () => {
   }
   const handleSubmission = async (event) => {
     event.preventDefault();
-    
+
     /*
     try {
       studentEmail = studentEmail.trim();
@@ -314,36 +347,36 @@ const Settings = () => {
 
     let isbanned;
     // checks ID to ensure it has the right number of characters
-      verified_data = studentEmail;
-      let studentList = await getDocs(currentStudentsRef);
-      studentList.forEach ((student) => {
-        if (student.data().Email == studentEmail){
-          studentEntered = student;
-        }
-      })
-        if (studentEntered == null){
-          displayIdEntryError("No student has the entered id or username");
-          document.getElementById("studentInputForm").value = "";
-          updateStudentIdentifier("");
-          return;
+    verified_data = studentEmail;
+    let studentList = await getDocs(currentStudentsRef);
+    studentList.forEach((student) => {
+      if (student.data().Email == studentEmail) {
+        studentEntered = student;
+      }
+    })
+    if (studentEntered == null) {
+      displayIdEntryError("No student has the entered id or username");
+      document.getElementById("studentInputForm").value = "";
+      updateStudentIdentifier("");
+      return;
+    }
+    else {
+      studentName = studentEntered.data().FirstName + " " + studentEntered.data().LastName;
+      studentEnteredID = studentEntered.data().ID;
+      docRef = doc(db, "bannedStudents", studentEnteredID);
+      getDoc(docRef).then((docSnap) => {
+        if (!docSnap.exists()) {
+          isbanned = false;
+          displayPopup(isbanned);
         }
         else {
-          studentName = studentEntered.data().FirstName + " " + studentEntered.data().LastName;
-          studentEnteredID = studentEntered.data().ID;
-          docRef = doc(db, "bannedStudents", studentEnteredID);
-          getDoc(docRef).then((docSnap) => {
-            if (!docSnap.exists()) {
-              isbanned = false;
-              displayPopup(isbanned);
-            }
-            else {
-              isbanned = true;
-              displayPopup(isbanned);
-            }
-          })
+          isbanned = true;
+          displayPopup(isbanned);
         }
+      })
+    }
     updateStudentIdentifier("");
-          setStudentId(studentEnteredID);
+    setStudentId(studentEnteredID);
 
   }
 
@@ -357,10 +390,10 @@ const Settings = () => {
   }
 
   let dateStudentIsUnbanned;
-  function setUnbanDate(input){
+  function setUnbanDate(input) {
     dateStudentIsUnbanned = input;
   }
-  
+
   function displayPopup(isbanned) {
     const banStudentsPopupContainer = document.getElementById("banStudentsPopupContainer");
     const banStudentButton = document.getElementById("banStudentButton");
@@ -368,7 +401,7 @@ const Settings = () => {
     const banStudentsPopupHeader = document.getElementById("banStudentsPopupHeader");
     const banStudentsPopupText = document.getElementById("banStudentsPopupText");
     const banStudentReasonStatememnt = document.getElementById("banStudentReasonStatememnt");
-    const banStudentReasonForm=  document.getElementById("banStudentReasonForm");
+    const banStudentReasonForm = document.getElementById("banStudentReasonForm");
     const unbanDateStatement = document.getElementById("unbanDateStatement");
     const unbanDateInput = document.getElementById("unbaneDateInput");
 
@@ -384,7 +417,7 @@ const Settings = () => {
       unbanDateStatement.style.display = "none";
       unbanDateInput.style.display = "none";
 
-      
+
     }
     else {
       banStudentsPopupHeader.textContent = studentName + " is currently not banned.";
@@ -398,35 +431,35 @@ const Settings = () => {
       setUnbanDate(new Date().toLocaleDateString('en-CA'));
       unbanDateInput.value = new Date().toLocaleDateString('en-CA');
     }
-      banStudentsPopupContainer.style.display = "flex";
+    banStudentsPopupContainer.style.display = "flex";
     //sets a 30 second timer to ensure admin can't accidentally leave the option open
- //   clearTimeout(popupTimer);
-   // popupTimer = setTimeout(() => { banStudentsPopupContainer.style.display = "none"; }, 30000);
+    //   clearTimeout(popupTimer);
+    // popupTimer = setTimeout(() => { banStudentsPopupContainer.style.display = "none"; }, 30000);
 
 
   }
 
   let studentId
 
-  function setStudentId(input){
+  function setStudentId(input) {
     studentId = input;
   }
 
   let reasonStudentBanned;
-  function updateReasonBanned(input){
+  function updateReasonBanned(input) {
     reasonStudentBanned = input;
   }
 
-  function setUnbanDate(input){
+  function setUnbanDate(input) {
     dateStudentIsUnbanned = input;
     console.log(input);
   }
 
   //bans student
   const banStudent = async (event) => {
-      event.preventDefault();
+    event.preventDefault();
     //grabs student info from the students database
-    if (reasonStudentBanned == undefined){
+    if (reasonStudentBanned == undefined) {
       reasonStudentBanned = "no reason given";
     }
     docRef = await doc(db, "currentStudents", studentId);
@@ -604,27 +637,27 @@ const Settings = () => {
             <div className="banStudentsPopupBackground">
               <div className="banStudentsPopup">
                 <h2 id="banStudentsPopupHeader">If you see this there is a bug</h2>
-                <p 
-                id="banStudentReasonStatememnt"
-                className="banStudentReasonStatememnt">Why would you like to ban this student?</p>
-                <input 
-                className="banStudentReasonForm"
-                id="banStudentReasonForm"
-                type="text"
-                value={reasonStudentBanned}
-                placeholder="Enter reason Student is to be banned"
-                onChange={(e) => updateReasonBanned(e.target.value)}
-                ></input>
-                <p 
-                id="unbanDateStatement"
-                className="unbanDateStatement"> Enter Date Student should be Unbanned</p>
+                <p
+                  id="banStudentReasonStatememnt"
+                  className="banStudentReasonStatememnt">Why would you like to ban this student?</p>
                 <input
-                id="unbaneDateInput"
-                className="unbaneDateInput"
-                type="Date"
-                onChange={(e) => setUnbanDate(e.target.value)}
-></input>
-              <p id="banStudentsPopupText"></p>
+                  className="banStudentReasonForm"
+                  id="banStudentReasonForm"
+                  type="text"
+                  value={reasonStudentBanned}
+                  placeholder="Enter reason Student is to be banned"
+                  onChange={(e) => updateReasonBanned(e.target.value)}
+                ></input>
+                <p
+                  id="unbanDateStatement"
+                  className="unbanDateStatement"> Enter Date Student should be Unbanned</p>
+                <input
+                  id="unbaneDateInput"
+                  className="unbaneDateInput"
+                  type="Date"
+                  onChange={(e) => setUnbanDate(e.target.value)}
+                ></input>
+                <p id="banStudentsPopupText"></p>
                 {/* Wrap buttons in this new div */}
                 <div className="popup-button-group">
                   <button
@@ -663,6 +696,10 @@ const Settings = () => {
           </div>
         </section>
       </div>
+      <ToastContainer
+        toasts={toasts}
+        removeToast={removeToast}
+      />
     </>
   );
 };
