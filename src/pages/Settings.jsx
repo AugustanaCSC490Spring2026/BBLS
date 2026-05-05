@@ -62,7 +62,7 @@ const Settings = () => {
   const updateBannedStudentsList = async () => {
     const docSnap = await getDocs(bannedStudentsRef);
     const bannedList = docSnap.docs.map(
-      (doc) => doc.data().FirstName + " " + doc.data().LastName
+      (doc) => doc.data().FirstName + " " + doc.data().LastName + "  | unban Date: " + doc.data().dateToBeUnbanned
     );
     setBannedStudents(bannedList); // use state instead of direct DOM manipulation
   };
