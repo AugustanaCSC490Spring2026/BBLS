@@ -1,75 +1,159 @@
-
-.modify-student-body{
-    margin-top: 20px;
-}
-.banStudentsButtonContainer{
-    padding: 10px;
-    margin-top: 30px;
+/* ── Page layout ─────────────────────────────────────────── */
+.settings-page {
+  padding: 24px;
+  background-color: #f8f9fa;
+  flex: 1;
 }
 
-.selectStudentButton{
-    padding: 8px;
-    background-color: #002F6C;
-    color: white;
-    border-radius: 10px;
-}
-.studentInputForm{
-    font-size: large;
-    height: 30px;
-    width: 27%;
+.settings-title {
+  margin-bottom: 24px;
+  font-size: 1.75rem;
+  color: #333;
 }
 
-/* 2. Create a container for the buttons */
+/* ── Two-column card row ─────────────────────────────────── */
+.settings-cards {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.settings-card {
+  flex: 1;
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.settings-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.settings-card-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+/* ── Sections inside a card ──────────────────────────────── */
+.settings-section {
+  margin-bottom: 28px;
+}
+
+.settings-section:last-child {
+  margin-bottom: 0;
+}
+
+.settings-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #444;
+  margin-bottom: 6px;
+}
+
+.settings-section-desc {
+  font-size: 0.875rem;
+  color: #718096;
+  margin-bottom: 12px;
+}
+
+
+.studentInputForm {
+  font-size: large;
+  height: 30px;
+  width: 60%;
+  margin-right: 8px;
+}
+
+.IDSearchForm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* ── Banned students list ────────────────────────────────── */
+.bannedStudentsHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  margin-top: 16px;
+}
+
+.bannedStudentsHeader h3 {
+  margin: 0;
+}
+
+.bannedStudentsList {
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  height: 180px;
+  overflow-y: auto;
+  background: #f8f9fa;
+}
+
+.bannedStudentsList p {
+  margin: 4px 0;
+  font-size: 0.9rem;
+  color: #444;
+}
+
+/* ── Ban/Unban popup ─────────────────────────────────────── */
 .popup-button-group {
-    display: flex;
-    justify-content: center;
-    gap: 15px; /* Adds space between buttons without messy margins */
-    margin-top: 20px;
-    width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+  width: 100%;
 }
 
-/* 3. Cleanup button margins (let the gap handle it) */
 .banStudentButton, .unbanStudentButton, .cancelOperationButton {
-  margin-left: 4px;
-    margin: 0; 
-  /*  min-width: 100px; /* Optional: makes buttons the same size */
+  margin: 0;
 }
 
 .banStudentsPopupContainer {
-    display: none; /* JS will change this to 'block' or 'flex' */
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 
-.banStudentsPopupBackground{
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-
+.banStudentsPopupBackground {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
 }
 
 .banStudentsPopup {
-    background-color: white;
-    width: 400px;
-    height: auto; /* Changed from 200px to auto */
-    padding: 30px;
-    border-radius: 12px;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  background-color: white;
+  width: 400px;
+  height: auto;
+  padding: 30px;
+  border-radius: 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.banStudentReasonForm{
+.banStudentReasonForm {
   height: 30px;
   padding: 3px;
   width: 80%;
@@ -77,14 +161,14 @@
   margin-top: 8px;
 }
 
-.unbaneDateInput{
+.unbaneDateInput {
   margin-top: 8px;
   margin-bottom: 8px;
   width: auto;
-  
 }
 
-.customAlert{
+/* ── ID entry error alert ────────────────────────────────── */
+.customAlert {
   display: none;
   place-items: center;
   position: fixed;
@@ -97,7 +181,7 @@
   align-items: center;
 }
 
-.alertContent{
+.alertContent {
   position: absolute;
   margin: auto;
   background-color: rgba(255, 255, 255);
@@ -106,13 +190,16 @@
   border-radius: 8px;
   text-align: center;
 }
-.alertHeading{
-    color: red;
+
+.alertHeading {
+  color: red;
 }
 
-.alertContent p{
+.alertContent p {
   padding: 20px;
 }
+
+/* ── Gym selection popup ─────────────────────────────────── */
 .popup-overlay {
   position: fixed;
   top: 0;
@@ -126,19 +213,6 @@
   z-index: 1000;
 }
 
-.settings-container {
-  padding: 20px;
-  background: white;
-  min-height: 100vh;
-}
-
-.settings-container h1 {
-  margin-bottom: 20px;
-}
-
-.settings-container h2{
-  margin-bottom: 15px;
-}
 .popup-box {
   background: white;
   padding: 30px;
@@ -154,22 +228,13 @@
   cursor: pointer;
 }
 
-.bannedStudentsList{
-    padding: 20px;
-    max-width: 60%;
-    border: 1px solid black;
-    height: 200px;
-    width: 400px;
-    overflow: auto;
-}
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .settings-cards {
+    flex-direction: column;
+  }
 
-.bannedStudentsHeader{
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 20px;
-    margin-top: 20px;
-}
-.bannedStudentsHeader h2{
-  margin: 0;
+  .studentInputForm {
+    width: 100%;
+  }
 }

@@ -10,25 +10,26 @@ import Navbar from "./Navigation.jsx";
 // Firebase setup
 import { db } from "../Firebase.js";
 
-// Firestore tools 
-import { doc, writeBatch, collection, serverTimestamp, getDoc, deleteDoc, setDoc, getDocs } from "firebase/firestore";
+// Firestore tools
+import { doc, writeBatch, collection, serverTimestamp, getDoc, deleteDoc, setDoc, getDocs, addDoc, updateDoc } from "firebase/firestore";
 
 import "../components/Settings.css";
 
 import ToastContainer from "../components/ToastContainer.jsx";
+import AddInventoryPopup from "../components/AddInventoryPopup.jsx";
+import RemoveInventoryPopup from "../components/RemoveInventoryPopup.jsx";
+import NavDropdown from "../components/NavDropdown.jsx";
 
 
 const bannedStudentsRef = collection(db, "bannedStudents");
 const currentStudentsRef = collection(db, "currentStudents");
-
-import { add } from "firebase/firestore/pipelines";
 
 
 
 
 const Settings = () => {
   const [toasts, setToasts] = useState([]);
-  const toastIdRef = useRef(0); // Add this to track unique IDs
+  const toastIdRef = useRef(0);
 
   const addToast = (type, title, message) => {
     const newToast = {
@@ -40,7 +41,7 @@ const Settings = () => {
 
     setToasts((prev) => {
       const updated = [...prev, newToast];
-      return updated.slice(-7); // Keep only the 7 newest toasts
+      return updated.slice(-7);
     });
     setTimeout(() => {
       removeToast(newToast.id);
@@ -51,20 +52,116 @@ const Settings = () => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, [setToasts]);
 
-  const [showGymPopup, setShowGymPopup] = useState(false);
-  const [selectedGym, setSelectedGym] = useState(null);
+  const [equipmentGym, setEquipmentGym] = useState("Pepsi-Co Center");
   const [bannedStudents, setBannedStudents] = useState([]);
+  const [isAddInventoryOpen, setIsAddInventoryOpen] = useState(false);
+  const [isRemoveInventoryOpen, setIsRemoveInventoryOpen] = useState(false);
+  const [availableEquipment, setAvailableEquipment] = useState([]);
+
+  const pepsicoInventoryRef = collection(db, "pepsicoEquipmentInventory");
+  const westerlinInventoryRef = collection(db, "westerlinEquipmentInventory");
+
+  const getInventoryCollection = () => {
+    if (equipmentGym === "Pepsi-Co Center") return pepsicoInventoryRef;
+    if (equipmentGym === "Westerlin Gym") return westerlinInventoryRef;
+    return null;
+  };
+
+  const fetchInventory = async () => {
+    const inventoryRef = getInventoryCollection();
+    if (!inventoryRef) return;
+    const snapshot = await getDocs(inventoryRef);
+    const equipmentList = snapshot.docs.map(d => ({
+      id: d.id,
+      ...d.data()
+    }));
+    setAvailableEquipment(equipmentList);
+  };
 
   useEffect(() => {
     updateBannedStudentsList();
   }, []);
+
+  useEffect(() => {
+    fetchInventory();
+  }, [equipmentGym]);
 
   const updateBannedStudentsList = async () => {
     const docSnap = await getDocs(bannedStudentsRef);
     const bannedList = docSnap.docs.map(
       (doc) => doc.data().FirstName + " " + doc.data().LastName + "  | Unban Date: " + doc.data().dateToBeUnbanned
     );
-    setBannedStudents(bannedList); // use state instead of direct DOM manipulation
+    setBannedStudents(bannedList);
+  };
+
+  const handleRemoveInventory = async ({ itemName, quantity: qty }) => {
+    const inventoryRef = getInventoryCollection();
+    if (!inventoryRef) return;
+
+    try {
+      const snapshot = await getDocs(inventoryRef);
+      const existingDoc = snapshot.docs.find(
+        (d) => d.data().name?.toLowerCase() === itemName.toLowerCase()
+      );
+
+      if (!existingDoc) {
+        addToast("error", "Item Not Found", `${itemName} was not found in inventory`);
+        return;
+      }
+
+      const data = existingDoc.data();
+      const newAvailable = data.available - qty;
+      const newTotal = data.total - qty;
+
+      if (newTotal <= 0) {
+        await deleteDoc(doc(inventoryRef, existingDoc.id));
+        addToast("success", "Item Removed", `${itemName} removed from inventory`);
+      } else {
+        await updateDoc(doc(inventoryRef, existingDoc.id), {
+          available: newAvailable,
+          total: newTotal,
+        });
+        addToast("success", "Inventory Updated", `Removed ${qty} ${itemName}(s)`);
+      }
+
+      fetchInventory();
+    } catch (error) {
+      console.error(error);
+      addToast("error", "Update Failed", "Could not update inventory");
+    }
+  };
+
+  const handleAddInventory = async ({ itemName, quantity: qty }) => {
+    const inventoryRef = getInventoryCollection();
+    if (!inventoryRef) return;
+
+    try {
+      const snapshot = await getDocs(inventoryRef);
+      const existingDoc = snapshot.docs.find(
+        (d) => d.data().name?.toLowerCase() === itemName.toLowerCase()
+      );
+
+      if (existingDoc) {
+        const data = existingDoc.data();
+        await updateDoc(doc(inventoryRef, existingDoc.id), {
+          available: data.available + qty,
+          total: data.total + qty,
+        });
+        addToast("success", "Inventory Updated", `Added ${qty} more ${itemName}(s)`);
+      } else {
+        await addDoc(inventoryRef, {
+          name: itemName,
+          available: qty,
+          total: qty,
+        });
+        addToast("success", "New Item Added", `${itemName} added to inventory`);
+      }
+
+      fetchInventory();
+    } catch (error) {
+      console.error(error);
+      addToast("error", "Update Failed", "Could not update inventory");
+    }
   };
 
   // Helper function to clear the currentStudents collection within firestore when a CSV is uploaded
@@ -104,7 +201,6 @@ const Settings = () => {
     // Validate file type (must be CSV)
     if (file.type !== "text/csv" && !file.name.toLowerCase().endsWith(".csv")) {
       addToast("error", "Invalid File", "Please upload a valid .csv file.");
-      // alert("Please upload a valid .csv file.");
       event.target.value = null; // Reset file input
       return;
     }
@@ -125,7 +221,6 @@ const Settings = () => {
 
         if (!confirmUpload) {
           addToast("error", "Upload Cancelled", "The student body upload has been cancelled.");
-          // alert("Upload cancelled.");
           event.target.value = null; // Removes selected file if cancelled
           return;
         }
@@ -185,7 +280,6 @@ const Settings = () => {
             successCount++;
 
             // Firestore allows a maximum of 500 operations per batch
-            // When limit is reached, commit the batch and start a new one
             if (operationCount === 500) {
               await batch.commit();
               batch = writeBatch(db);
@@ -205,9 +299,6 @@ const Settings = () => {
 
         // Notify user of upload results
         addToast("success", "Upload Complete", `Success: ${successCount}, Failed: ${failCount}`);
-        // alert(
-        //   `Upload complete!\nSuccess: ${successCount}\nFailed: ${failCount}`
-        // );
 
         // Removes the upload file after upload
         event.target.value = null;
@@ -217,7 +308,6 @@ const Settings = () => {
       error: (err) => {
         console.error("CSV Parse Error:", err);
         addToast("error", "CSV Parse Error", "There was an error parsing the CSV file. Please check the file format and try again.");
-        // alert("Error parsing CSV file.");
       }
     });
   };
@@ -226,13 +316,12 @@ const Settings = () => {
 
     const file = event.target.files[0];
 
-    if (!file || !selectedGym) return;
+    if (!file || !equipmentGym) return;
     if (
       file.type !== "text/csv" &&
       !file.name.toLowerCase().endsWith(".csv")
     ) {
       addToast("error", "Invalid File", "Please upload a valid .csv file.");
-      // alert("Please upload a valid .csv file.");
       event.target.value = null;
       return;
     }
@@ -251,7 +340,7 @@ const Settings = () => {
 
         // Choose collection
         const collectionName =
-          selectedGym === "westerlin"
+          equipmentGym === "Westerlin Gym"
             ? "westerlinEquipmentInventory"
             : "pepsicoEquipmentInventory";
 
@@ -298,16 +387,14 @@ const Settings = () => {
           await batch.commit();
         }
 
-        addToast("success", "Equipment Upload Complete", `Gym: ${selectedGym} \nFailed: ${failCount}`);
-        // alert(
-        //   `Equipment Upload Complete!\nGym: ${selectedGym} \nFailed: ${failCount}`
-        // );
+        addToast("success", "Equipment Upload Complete", `Gym: ${equipmentGym} \nFailed: ${failCount}`);
 
         event.target.value = null;
 
       }
     });
   };
+
   let studentEmail;
   let studentName;
   let verified_data;
@@ -316,11 +403,9 @@ const Settings = () => {
   let swipeOutput;
   let docRef;
   let popupTimer;
-  //verify ID
+
   const handleKeyDown = (input) => {
     if (input.key === "enter") {
-      //addToast("error", "Enter Key Pressed", "Please click the 'Search ID' button to submit the student ID.");
-      // window.alert("enter key");
       input.preventDefault();
       handleSubmission();
     }
@@ -331,22 +416,9 @@ const Settings = () => {
   const handleSubmission = async (event) => {
     event.preventDefault();
 
-    /*
-    try {
-      studentEmail = studentEmail.trim();
-    } catch {
-      console.log("error");
-      swipeOutput = "no ID entered";
-      displayIdEntryError(swipeOutput);
-      return;
-    }
-      */
-
-
     updateStudentIdentifier(studentEmail);
 
     let isbanned;
-    // checks ID to ensure it has the right number of characters
     verified_data = studentEmail;
     let studentList = await getDocs(currentStudentsRef);
     studentList.forEach((student) => {
@@ -405,8 +477,6 @@ const Settings = () => {
     const unbanDateStatement = document.getElementById("unbanDateStatement");
     const unbanDateInput = document.getElementById("unbaneDateInput");
 
-    //if the student is banned displays only the unban and cancel buttons
-    //if the student is not banned displays only the ban and cancel buttons
     if (isbanned) {
       banStudentsPopupHeader.textContent = studentName + " is currently banned.";
       banStudentsPopupText.textContent = "Would you like to unban this student?";
@@ -416,8 +486,6 @@ const Settings = () => {
       banStudentReasonForm.style.display = "none";
       unbanDateStatement.style.display = "none";
       unbanDateInput.style.display = "none";
-
-
     }
     else {
       banStudentsPopupHeader.textContent = studentName + " is currently not banned.";
@@ -432,11 +500,6 @@ const Settings = () => {
       unbanDateInput.value = new Date().toLocaleDateString('en-CA');
     }
     banStudentsPopupContainer.style.display = "flex";
-    //sets a 30 second timer to ensure admin can't accidentally leave the option open
-    //   clearTimeout(popupTimer);
-    // popupTimer = setTimeout(() => { banStudentsPopupContainer.style.display = "none"; }, 30000);
-
-
   }
 
   let studentId
@@ -455,17 +518,14 @@ const Settings = () => {
     console.log(input);
   }
 
-  //bans student
   const banStudent = async (event) => {
     event.preventDefault();
-    //grabs student info from the students database
     if (reasonStudentBanned == undefined) {
       reasonStudentBanned = "no reason given";
     }
     docRef = await doc(db, "currentStudents", studentId);
     await getDoc(docRef).then((docSnap) => {
       if (docSnap.exists()) {
-        //stores relevent info into the banned students database
         setDoc(doc(db, "bannedStudents", docSnap.data().ID), {
           ID: docSnap.data().ID,
           Email: docSnap.data().Email,
@@ -478,39 +538,28 @@ const Settings = () => {
       } else {
         displayIdEntryError("error retrieving data from database. Please try again or contact support if error persists");
       }
-      //runs the cancel operation function to remove the popup
       cancelOperation(event);
     })
     cancelOperation(event);
-
   }
-  //unbans student
+
   const unbanStudent = async (event) => {
     event.preventDefault();
-    //checks to see if student is in the banned students database
     docRef = await doc(db, "bannedStudents", studentEnteredID);
     if (docRef) {
-      //deletes student from database
       deleteDoc(docRef);
     }
     else {
       displayIdEntryError("error retrieving data from database. Please try again or contact support if error persists");
-
     }
-    //runs the cancel operation function to remove the popup
     cancelOperation(event);
   }
 
-
   const cancelOperation = async (event) => {
-    //removes the popup that displays option to ban/unban student
     event.preventDefault();
     const banStudentsPopupContainer = document.getElementById("banStudentsPopupContainer");
-    event.preventDefault();
     banStudentsPopupContainer.style.display = "none";
-    //refresh the list of banned students
     updateBannedStudentsList();
-    //clear input forms and set values default
     document.getElementById("studentInputForm").value = "";
     document.getElementById("banStudentReasonForm").value = "";
     updateReasonBanned("no reason given");
@@ -521,34 +570,96 @@ const Settings = () => {
 
   return (
     <>
-      <div className="settings-container">
-        <section className="modify-student-body">
-          <h1>Settings</h1>
-          <h2 className="test">Modify Student Body</h2>
-          <button
-            onClick={() =>
-              document.getElementById("studentFileInput").click()
-            }
-          >
-            Import Student Body
-          </button>
-          <input
-            id="studentFileInput"
-            type="file"
-            accept=".csv"
-            style={{ display: "none" }}
-            onChange={handleFileChange}
-          />
+      <div className="settings-page">
+        <div className="settings-cards">
 
+          {/* Left Card: Students */}
+          <div className="settings-card">
+            <div className="settings-card-header">
+              <h2>Students</h2>
+            </div>
 
-          <br /><br />
-          <h2>Modify Equipment</h2>
-          <button
-            onClick={() => setShowGymPopup(true)}
-          >
-            Import Equipment CSV
-          </button>
-        </section>
+            <div className="settings-section">
+              <h3 className="settings-section-title">Import Student Body</h3>
+              <p className="settings-section-desc">Replace the current student list with a new CSV file.</p>
+              <button onClick={() => document.getElementById("studentFileInput").click()}>
+                Import Student CSV
+              </button>
+              <input
+                id="studentFileInput"
+                type="file"
+                accept=".csv"
+                style={{ display: "none" }}
+                onChange={handleFileChange}
+              />
+            </div>
+
+            <div className="settings-section">
+              <h3 className="settings-section-title">Ban / Unban Students</h3>
+              <form className="IDSearchForm" onSubmit={handleSubmission}>
+                <input
+                  id="studentInputForm"
+                  className="studentInputForm"
+                  type="text"
+                  ref={null}
+                  value={studentEmail}
+                  placeholder="Enter Student username"
+                  onChange={(e) => updateStudentIdentifier(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                />
+                <button className="selectStudentButton">Search ID</button>
+              </form>
+
+              <div className="bannedStudentsHeader">
+                <h3 className="bannedStudentsListHeader">Currently Banned Students</h3>
+              </div>
+              <div className="bannedStudentsList" id="bannedStudentsList">
+                {bannedStudents.map((name, i) => (
+                  <p key={i}>{name}</p>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Card: Equipment */}
+          <div className="settings-card">
+            <div className="settings-card-header">
+              <h2>Equipment</h2>
+              <NavDropdown
+                options={["Pepsi-Co Center", "Westerlin Gym"]}
+                defaultOption={equipmentGym}
+                onChange={setEquipmentGym}
+              />
+            </div>
+
+            <div className="settings-section">
+              <h3 className="settings-section-title">Import Equipment CSV</h3>
+              <p className="settings-section-desc">Upload a CSV to set the full inventory for a gym.</p>
+              <button onClick={() => document.getElementById("equipmentFileInput").click()}>
+                Import Equipment CSV
+              </button>
+            </div>
+
+            <div className="settings-section">
+              <h3 className="settings-section-title">Add Inventory</h3>
+              <p className="settings-section-desc">Add individual items to the selected gym's inventory.</p>
+              <button onClick={() => setIsAddInventoryOpen(true)}>
+                Add Inventory
+              </button>
+            </div>
+
+            <div className="settings-section">
+              <h3 className="settings-section-title">Remove from Inventory</h3>
+              <p className="settings-section-desc">Remove individual items from the selected gym's inventory.</p>
+              <button onClick={() => setIsRemoveInventoryOpen(true)}>
+                Remove from Inventory
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Hidden file inputs */}
         <input
           id="equipmentFileInput"
           type="file"
@@ -556,145 +667,78 @@ const Settings = () => {
           style={{ display: "none" }}
           onChange={handleEquipmentImport}
         />
-        {showGymPopup && (
 
-          <div className="popup-overlay">
-
-            <div className="popup-box">
-
-              <h2>Select Gym</h2>
-
-              <button
-                onClick={() => {
-
-                  setSelectedGym("westerlin");
-
-                  setShowGymPopup(false);
-
-                  document
-                    .getElementById("equipmentFileInput")
-                    .click();
-
-                }}
-              >
-                Westerlin Gym
-              </button>
-
-              <button
-                onClick={() => {
-
-                  setSelectedGym("pepsico");
-
-                  setShowGymPopup(false);
-
-                  document
-                    .getElementById("equipmentFileInput")
-                    .click();
-
-                }}
-              >
-                PepsiCo Center
-              </button>
-
-              <br /><br />
-
-              <button
-                onClick={() => setShowGymPopup(false)}
-              >
-                Cancel
-              </button>
-
-            </div>
-
-          </div>
-
-        )}
+        {/* ID entry error alert */}
         <div className="customAlert" id="customAlert">
           <div className="alertContent" id="alertContent">
             <h2 className="alertHeading">ID entry error</h2>
             <p id="alertText"></p>
           </div>
         </div>
-        <section className="banStudentsButtonContainer">
-          <h2 className="banStudentsHeader"> Ban/Unban students </h2>
-          <form className="IDSearchForm" onSubmit={handleSubmission}>
-            <input
-              id="studentInputForm"
-              className="studentInputForm"
-              type="text"
-              ref={null}
-              value={studentEmail}
-              placeholder="Enter Student username"
-              onChange={(e) => updateStudentIdentifier(e.target.value)}
-              onKeyDown={handleKeyDown}
 
-            />
-            <button
-              className="selectStudentButton">Search ID</button>
-          </form>
-
-          <div id="banStudentsPopupContainer" className="banStudentsPopupContainer">
-            <div className="banStudentsPopupBackground">
-              <div className="banStudentsPopup">
-                <h2 id="banStudentsPopupHeader">If you see this there is a bug</h2>
-                <p
-                  id="banStudentReasonStatememnt"
-                  className="banStudentReasonStatememnt">Why would you like to ban this student?</p>
-                <input
-                  className="banStudentReasonForm"
-                  id="banStudentReasonForm"
-                  type="text"
-                  value={reasonStudentBanned}
-                  placeholder="Enter reason Student is to be banned"
-                  onChange={(e) => updateReasonBanned(e.target.value)}
-                ></input>
-                <p
-                  id="unbanDateStatement"
-                  className="unbanDateStatement"> Enter Date Student should be Unbanned</p>
-                <input
-                  id="unbaneDateInput"
-                  className="unbaneDateInput"
-                  type="Date"
-                  onChange={(e) => setUnbanDate(e.target.value)}
-                ></input>
-                <p id="banStudentsPopupText"></p>
-                {/* Wrap buttons in this new div */}
-                <div className="popup-button-group">
-                  <button
-                    className="banStudentButton"
-                    id="banStudentButton"
-                    onClick={banStudent}
-                  >Ban</button>
-
-                  <button
-                    className="unbanStudentButton"
-                    id="unbanStudentButton"
-                    onClick={unbanStudent}
-                  >Unban</button>
-
-                  <button
-                    className="cancelOperationButton"
-                    id="cancelOperationButton"
-                    onClick={cancelOperation}
-                  >Cancel</button>
-                </div>
-
+        {/* Ban/Unban popup */}
+        <div id="banStudentsPopupContainer" className="banStudentsPopupContainer">
+          <div className="banStudentsPopupBackground">
+            <div className="banStudentsPopup">
+              <h2 id="banStudentsPopupHeader">If you see this there is a bug</h2>
+              <p
+                id="banStudentReasonStatememnt"
+                className="banStudentReasonStatememnt">Why would you like to ban this student?</p>
+              <input
+                className="banStudentReasonForm"
+                id="banStudentReasonForm"
+                type="text"
+                value={reasonStudentBanned}
+                placeholder="Enter reason Student is to be banned"
+                onChange={(e) => updateReasonBanned(e.target.value)}
+              />
+              <p
+                id="unbanDateStatement"
+                className="unbanDateStatement"> Enter Date Student should be Unbanned</p>
+              <input
+                id="unbaneDateInput"
+                className="unbaneDateInput"
+                type="Date"
+                onChange={(e) => setUnbanDate(e.target.value)}
+              />
+              <p id="banStudentsPopupText"></p>
+              <div className="popup-button-group">
+                <button
+                  className="banStudentButton"
+                  id="banStudentButton"
+                  onClick={banStudent}
+                >Ban</button>
+                <button
+                  className="unbanStudentButton"
+                  id="unbanStudentButton"
+                  onClick={unbanStudent}
+                >Unban</button>
+                <button
+                  className="cancelOperationButton"
+                  id="cancelOperationButton"
+                  onClick={cancelOperation}
+                >Cancel</button>
               </div>
             </div>
           </div>
-          <div className="bannedStudentsListContainer">
-            <div className="bannedStudentsHeader">
-              <h2 className="bannedStudentsListHeader">Currently Banned Students</h2>
-            </div>
+        </div>
 
-            <div className="bannedStudentsList" id="bannedStudentsList">
-              {bannedStudents.map((name, i) => (
-                <p key={i}>{name}</p>
-              ))}
-            </div>
-          </div>
-        </section>
       </div>
+
+      <AddInventoryPopup
+        isOpen={isAddInventoryOpen}
+        onClose={() => setIsAddInventoryOpen(false)}
+        onSubmit={handleAddInventory}
+        availableEquipment={availableEquipment}
+      />
+
+      <RemoveInventoryPopup
+        isOpen={isRemoveInventoryOpen}
+        onClose={() => setIsRemoveInventoryOpen(false)}
+        onSubmit={handleRemoveInventory}
+        availableEquipment={availableEquipment}
+      />
+
       <ToastContainer
         toasts={toasts}
         removeToast={removeToast}

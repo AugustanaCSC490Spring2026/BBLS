@@ -4,15 +4,12 @@ import Navbar from "./Navigation.jsx";
 import { useState, useEffect, useRef, useCallback } from "react";
 import "../components/Equipment.css";
 import ValidateSwipe from "../components/ValidateSwipe.js";
-import Papa from "papaparse";
 import ToastContainer from "../components/ToastContainer";
 import NavDropdown from "../components/NavDropdown.jsx";
-import AddInventoryPopup from "../components/AddInventoryPopup.jsx"; // ← NEW
 
 import {
     collection,
     doc,
-    setDoc,
     getDocs,
     getDoc,
     updateDoc,
@@ -33,9 +30,6 @@ export default function Equipment({ gym, updateGym }) {
     const [quantity, setQuantity] = useState(1);
     const [availableEquipment, setAvailableEquipment] = useState([]);
     const [activeCheckouts, setActiveCheckouts] = useState([]);
-
-    // ← NEW: controls the Add Inventory popup
-    const [isAddInventoryOpen, setIsAddInventoryOpen] = useState(false);
 
     const idInputRef = useRef(null);
     const toastIdRef = useRef(0);
@@ -229,43 +223,6 @@ export default function Equipment({ gym, updateGym }) {
         }
     };
 
-    // ← NEW: handles submission from the Add Inventory popup
-    const handleAddInventory = async ({ itemName, quantity: qty }) => {
-        const inventoryRef = getInventoryCollection();
-        if (!inventoryRef) return;
-
-        try {
-            // Check if the item already exists in the current gym's DB
-            const snapshot = await getDocs(inventoryRef);
-            const existingDoc = snapshot.docs.find(
-                (d) => d.data().name?.toLowerCase() === itemName.toLowerCase()
-            );
-
-            if (existingDoc) {
-                // Item exists — add to both available and total
-                const data = existingDoc.data();
-                await updateDoc(doc(inventoryRef, existingDoc.id), {
-                    available: data.available + qty,
-                    total: data.total + qty,
-                });
-                addToast("success", "Inventory Updated", `Added ${qty} more ${itemName}(s)`);
-            } else {
-                // Brand-new item — create a new document
-                await addDoc(inventoryRef, {
-                    name: itemName,
-                    available: qty,
-                    total: qty,
-                });
-                addToast("success", "New Item Added", `${itemName} added to inventory`);
-            }
-
-            fetchInventory();
-        } catch (error) {
-            console.error(error);
-            addToast("error", "Update Failed", "Could not update inventory");
-        }
-    };
-
     const labelStyle = { display: "block", marginBottom: "5px", fontWeight: "600", fontSize: "0.9rem", textAlign: "left" };
     const inputStyle = { borderRadius: "8px", width: "100%", padding: "10px", marginBottom: "15px", border: "1px solid #ccc", boxSizing: "border-box" };
 
@@ -346,10 +303,6 @@ export default function Equipment({ gym, updateGym }) {
                         <div className="card" style={{ flex: 1, minHeight: "450px" }}>
                             <div className="card-header">
                                 <h2 style={{ marginBottom: "20px" }}>Inventory Status</h2>
-                                {/* ← WIRED UP: opens the popup */}
-                                <button onClick={() => setIsAddInventoryOpen(true)}>
-                                    Add Inventory
-                                </button>
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
                                 {availableEquipment.map(item => {
@@ -421,14 +374,6 @@ export default function Equipment({ gym, updateGym }) {
                     </div>
                 </div>
             </div>
-
-            {/* ← NEW: Add Inventory Popup */}
-            <AddInventoryPopup
-                isOpen={isAddInventoryOpen}
-                onClose={() => setIsAddInventoryOpen(false)}
-                onSubmit={handleAddInventory}
-                availableEquipment={availableEquipment}
-            />
 
             <ToastContainer
                 toasts={toasts}
