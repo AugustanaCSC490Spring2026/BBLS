@@ -62,7 +62,7 @@ const Settings = () => {
   const updateBannedStudentsList = async () => {
     const docSnap = await getDocs(bannedStudentsRef);
     const bannedList = docSnap.docs.map(
-      (doc) => doc.data().FirstName + " " + doc.data().LastName + "  | unban Date: " + doc.data().dateToBeUnbanned
+      (doc) => doc.data().FirstName + " " + doc.data().LastName + "  | Unban Date: " + doc.data().dateToBeUnbanned
     );
     setBannedStudents(bannedList); // use state instead of direct DOM manipulation
   };
@@ -685,7 +685,6 @@ const Settings = () => {
           <div className="bannedStudentsListContainer">
             <div className="bannedStudentsHeader">
               <h2 className="bannedStudentsListHeader">Currently Banned Students</h2>
-              <button className="bannedStudentsListRefreshButton" onClick={updateBannedStudentsList}>Refresh</button>
             </div>
 
             <div className="bannedStudentsList" id="bannedStudentsList">
