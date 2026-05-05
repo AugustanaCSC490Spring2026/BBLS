@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import "../components/Navbar.css";
 import logo from '../assets/logo.png';
 import { useAuth } from "../AuthContext.jsx";
@@ -48,21 +49,21 @@ function Navbar({}) {
                     {shouldShowNavbarRoutes && (
                         <>
                             <div className="nav-links">
-                                <Link to="/dashboard" className="nav-item">
+                                <NavLink to="/dashboard" className="nav-item">
                                     Swipe In
-                                </Link>
-                                <Link to="/equipment" className="nav-item">
+                                </NavLink>
+                                <NavLink to="/equipment" className="nav-item">
                                     Equipment Checkout
-                                </Link>
+                                </NavLink>
                                 {isAdmin && (
-                                    <Link to="/analytics">
+                                    <NavLink to="/analytics" className="nav-item">
                                         Analytics
-                                    </Link>
+                                    </NavLink>
                                 )}
                                 {isAdmin && (
-                                    <Link to="/settings">
+                                    <NavLink to="/settings" className="nav-item">
                                         Settings
-                                    </Link>
+                                    </NavLink>
                                 )}
                             </div>
                             <button className="sign-out-button" onClick={handleSignOut}>
