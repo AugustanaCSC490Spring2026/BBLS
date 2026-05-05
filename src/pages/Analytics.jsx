@@ -180,9 +180,6 @@ function Analytics({ gym, updateGym }) {
       else if (dataFile === "combined") {
         await fetchCombinedCollections();
       }
-      else if (dataFile === "firebase") {
-        await fetchFirebaseData();
-      }
       else if (dataFile === "guestEntrance") {
         await fetchGuestEntrance();
       }
@@ -405,33 +402,6 @@ function Analytics({ gym, updateGym }) {
     }
 
     setSwipeData(combined);
-  }
-
-  // I BELIEVE I CAN DELETE THIS FUNCTION ---- IT IS OUTDATED/REPLACED BY fetchSpecificCollection
-  async function fetchFirebaseData() {
-    const { start, end } = getDateRange();
-    const swipeRef = collection(db, "swipeIns");
-
-    const q = query(
-      swipeRef,
-      where("swipeInTime", ">=", start),
-      where("swipeInTime", "<=", end)
-    );
-
-    const snapshot = await getDocs(q);
-    const data = [];
-
-    snapshot.forEach((doc) => {
-      const d = doc.data();
-      if (!d.swipeInTime) return;
-
-      data.push({
-        studentId: d.ID,
-        time: d.swipeInTime.toDate()
-      });
-    });
-
-    setSwipeData(data);
   }
 
   // Fetches only guest swipe ins from the "guestEntrance collection"
