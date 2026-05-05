@@ -702,57 +702,119 @@ function Analytics({ gym, updateGym }) {
   // Takes care of guest swipes. The reason this is done separately than normal swipes is so users can see the reason for visit for each guest. 
   // Otherwise, it functions similarly to normal swipe ins.
   if (dataFile === "guestEntrance") {
-    const buckets = generateIntervals(start, end);
+    const { start, end } = getDateRange();
 
-    const categoryMap = {};
+    const categoryMap = {};   // Stores each guest category and its associated counts
+    let labels = [];          // Labels for the x-axis (depends on grouping type)
 
-    swipeData.forEach((swipe) => {
-      const date =
-        swipe.time instanceof Date ? swipe.time : new Date(swipe.time);   // If the swipe time is not a Date object, converts it
+    // If the user selected a grouping option (day of week, hour, etc...)
+    if (groupBy !== "none") {
 
-      if (isNaN(date) || date < start || date > end) return;
-
-      const category = swipe.category || "N/A";     // If swipe.category is blank, defaults to N/A (this shouldn't happen, but just in case)
-
-
-       // Associates each category to it's own clone of buckets. 
-       // Basically, allows each cateogry to make it's own graph, which then stacks on top of the other category graphs when displaying the whole graph
-      if (!categoryMap[category]) {
-        categoryMap[category] = { ...buckets };   
+      // Determines what labels should be used for the x-axis
+      if (groupBy === "dayOfWeek") {
+        labels = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+      } else if (groupBy === "hourOfDay") {
+        labels = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+      } else if (groupBy === "dayOfMonth") {
+        labels = Array.from({ length: 31 }, (_, i) => `${i + 1}`);
+      } else if (groupBy === "monthOfYear") {
+        labels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
       }
 
-      let label = "";
+      // Initializes each category with an array of 0s (one for each label)
+      swipeData.forEach((swipe) => {
+        const category = swipe.category || "N/A";
 
-      // Same logic as processData()
-      if (interval === "hours")
-        label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()} ${date.getHours()}:00`;
-      else if (interval === "days")
-        label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
-      else if (interval === "weeks") {
-        const weekStart = new Date(date);
-        weekStart.setDate(date.getDate() - date.getDay());
-        weekStart.setHours(0, 0, 0, 0);
-        label = `${weekStart.getMonth() + 1}/${weekStart.getDate()}/${weekStart.getFullYear()}`;
-      }
-      else if (interval === "months")
-        label = `${date.getMonth() + 1}/${date.getFullYear()}`;
-      else if (interval === "years")
-        label = `${date.getFullYear()}`;
+        if (!categoryMap[category]) {
+          categoryMap[category] = Array(labels.length).fill(0);
+        }
+      });
 
-      if (categoryMap[category][label] !== undefined) {
-        categoryMap[category][label] += 1;
-      }
-    });
+      // Processes each swipe and increments the correct grouped bucket
+      swipeData.forEach((swipe) => {
+        const date = swipe.time instanceof Date ? swipe.time : new Date(swipe.time);
 
-    // Data specifically for guest swipes
-    data = {
-      labels: Object.keys(buckets),
-      datasets: Object.keys(categoryMap).map((cat) => ({
-        label: cat,
-        data: Object.keys(buckets).map((b) => categoryMap[cat][b] || 0),
-        backgroundColor: getCategoryColor(cat)
-      }))
-    };
+        // Ensures the swipe is valid and within selected date range
+        if (isNaN(date) || date < start || date > end) return;
+
+        const category = swipe.category || "N/A";
+
+        let index;
+
+        // Determines which index to increment based on grouping selection
+        if (groupBy === "dayOfWeek") index = date.getDay();
+        else if (groupBy === "hourOfDay") index = date.getHours();
+        else if (groupBy === "dayOfMonth") index = date.getDate() - 1;
+        else if (groupBy === "monthOfYear") index = date.getMonth();
+
+        // Increments the correct category + grouped bucket
+        if (categoryMap[category] && index !== undefined) {
+          categoryMap[category][index] += 1;
+        }
+      });
+
+      // Formats grouped data for chart display (stacked by category)
+      data = {
+        labels,
+        datasets: Object.keys(categoryMap).map((cat) => ({
+          label: cat,
+          data: categoryMap[cat],
+          backgroundColor: getCategoryColor(cat)
+        }))
+      };
+
+    } else {
+      // ORIGINAL behavior when no grouping is selected (time-based intervals)
+      const buckets = generateIntervals(start, end);
+
+      swipeData.forEach((swipe) => {
+        const date =
+          swipe.time instanceof Date ? swipe.time : new Date(swipe.time);   // Converts to Date if needed
+
+        // Ensures swipe is valid and within selected time range
+        if (isNaN(date) || date < start || date > end) return;
+
+        const category = swipe.category || "N/A";   // Defaults to N/A if category is missing
+
+        // Creates a bucket set for each category
+        if (!categoryMap[category]) {
+          categoryMap[category] = { ...buckets };
+        }
+
+        let label = "";
+
+        // Same interval logic as processData()
+        if (interval === "hours")
+          label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()} ${date.getHours()}:00`;
+        else if (interval === "days")
+          label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+        else if (interval === "weeks") {
+          const weekStart = new Date(date);
+          weekStart.setDate(date.getDate() - date.getDay());
+          weekStart.setHours(0, 0, 0, 0);
+          label = `${weekStart.getMonth() + 1}/${weekStart.getDate()}/${weekStart.getFullYear()}`;
+        }
+        else if (interval === "months")
+          label = `${date.getMonth() + 1}/${date.getFullYear()}`;
+        else if (interval === "years")
+          label = `${date.getFullYear()}`;
+
+        // Increments the correct category + time bucket
+        if (categoryMap[category][label] !== undefined) {
+          categoryMap[category][label] += 1;
+        }
+      });
+
+      // Formats guest data into stacked datasets for chart display
+      data = {
+        labels: Object.keys(buckets),
+        datasets: Object.keys(categoryMap).map((cat) => ({
+          label: cat,
+          data: Object.keys(buckets).map((b) => categoryMap[cat][b] || 0),
+          backgroundColor: getCategoryColor(cat)
+        }))
+      };
+    }
   }
 
   // Data for demographics
