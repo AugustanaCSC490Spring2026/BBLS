@@ -349,11 +349,15 @@ const Settings = () => {
     // checks ID to ensure it has the right number of characters
     verified_data = studentEmail;
     let studentList = await getDocs(currentStudentsRef);
+    //loops through all the current students to find one that matches
+    let foundStudent = false;
     studentList.forEach((student) => {
       if (student.data().Email == studentEmail) {
         studentEntered = student;
+        foundStudent = true;
       }
     })
+    //displays error if student is not found
     if (studentEntered == null) {
       displayIdEntryError("No student has the entered id or username");
       document.getElementById("studentInputForm").value = "";
@@ -361,10 +365,14 @@ const Settings = () => {
       return;
     }
     else {
+      //collects student name and ID to use later
       studentName = studentEntered.data().FirstName + " " + studentEntered.data().LastName;
       studentEnteredID = studentEntered.data().ID;
+      //checks to see if the student is banned
       docRef = doc(db, "bannedStudents", studentEnteredID);
       getDoc(docRef).then((docSnap) => {
+        //if student is banned gives only option to unban
+        //if student is not banned only gives option to ban
         if (!docSnap.exists()) {
           isbanned = false;
           displayPopup(isbanned);
@@ -405,8 +413,11 @@ const Settings = () => {
     const unbanDateStatement = document.getElementById("unbanDateStatement");
     const unbanDateInput = document.getElementById("unbaneDateInput");
 
-    //if the student is banned displays only the unban and cancel buttons
-    //if the student is not banned displays only the ban and cancel buttons
+    /*if the student is banned displays only the unban and cancel buttons
+      if the student is not banned displays only the ban and cancel buttons as well
+      as why the student is being banned and the date the student is to be unbanned
+      */
+    
     if (isbanned) {
       banStudentsPopupHeader.textContent = studentName + " is currently banned.";
       banStudentsPopupText.textContent = "Would you like to unban this student?";
@@ -433,11 +444,11 @@ const Settings = () => {
     }
     banStudentsPopupContainer.style.display = "flex";
     //sets a 30 second timer to ensure admin can't accidentally leave the option open
-    //   clearTimeout(popupTimer);
-    // popupTimer = setTimeout(() => { banStudentsPopupContainer.style.display = "none"; }, 30000);
-
-
+    clearTimeout(popupTimer);
+     popupTimer = setTimeout(() => { banStudentsPopupContainer.style.display = "none"; }, 30000);
   }
+
+  //sets a second studentID variable that is in scope
 
   let studentId
 
@@ -445,6 +456,7 @@ const Settings = () => {
     studentId = input;
   }
 
+  //functions to store the reason why the student was banned and when they are to be unbanned
   let reasonStudentBanned;
   function updateReasonBanned(input) {
     reasonStudentBanned = input;
