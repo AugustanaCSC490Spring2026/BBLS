@@ -1,12 +1,13 @@
 // THIS CODE WAS CODED WITH HELP FROM GEMINI
 
 import Navbar from "./Navigation.jsx";
-import { useState, useEffect, useRef, useCallback } from "react"; // Added useRef
+import { useState, useEffect, useRef, useCallback } from "react";
 import "../components/Equipment.css";
 import ValidateSwipe from "../components/ValidateSwipe.js";
 import Papa from "papaparse";
 import ToastContainer from "../components/ToastContainer";
 import NavDropdown from "../components/NavDropdown.jsx";
+import AddInventoryPopup from "../components/AddInventoryPopup.jsx"; // ← NEW
 
 import {
     collection,
@@ -33,7 +34,9 @@ export default function Equipment({ gym, updateGym }) {
     const [availableEquipment, setAvailableEquipment] = useState([]);
     const [activeCheckouts, setActiveCheckouts] = useState([]);
 
-    // 1. Create the Ref for the Student ID input
+    // ← NEW: controls the Add Inventory popup
+    const [isAddInventoryOpen, setIsAddInventoryOpen] = useState(false);
+
     const idInputRef = useRef(null);
     const toastIdRef = useRef(0);
 
@@ -80,8 +83,6 @@ export default function Equipment({ gym, updateGym }) {
         setToasts((prev) => {
             const updated = [...prev, newToast];
             if (updated.length > 7) {
-                // This keeps the 7 newest items. 
-                // The "oldest" of these 7 stays at index 0 (the top).
                 return updated.slice(-7);
             }
             return updated;
@@ -106,10 +107,8 @@ export default function Equipment({ gym, updateGym }) {
         setActiveCheckouts(checkoutList);
     };
 
-    // 2. Set up the Auto-Focus Interval (runs every 5 seconds)
     useEffect(() => {
         const focusInterval = setInterval(() => {
-            // Only grab focus if the user isn't currently using a different input field
             if (
                 document.activeElement.tagName !== "INPUT" &&
                 document.activeElement.tagName !== "SELECT"
@@ -118,10 +117,9 @@ export default function Equipment({ gym, updateGym }) {
             }
         }, 5000);
 
-        // Focus immediately on page load
         idInputRef.current?.focus();
 
-        return () => clearInterval(focusInterval); // Cleanup when leaving page
+        return () => clearInterval(focusInterval);
     }, []);
 
 
@@ -134,11 +132,6 @@ export default function Equipment({ gym, updateGym }) {
 
 
     const handleCheckout = async () => {
-        <NavDropdown
-            options={["Pepsi-Co Center", "Westerlin Gym"]}
-            defaultOption={currentGym}
-            onChange={onGymChange}
-        />
         if (isProcessing) return;
         if (!studentId || !selectedEquipment || quantity <= 0) {
             addToast("error", "Form Error", "Please fill in all fields");
@@ -187,14 +180,13 @@ export default function Equipment({ gym, updateGym }) {
             setSelectedEquipment("");
             setQuantity(1);
 
-            // Refocus ID box after checkout
             idInputRef.current?.focus();
 
         } catch (error) {
             console.error(error);
             addToast("error", "Checkout Failed", "An error occurred during checkout");
         } finally {
-            setIsProcessing(false); // 3. Re-enable the button
+            setIsProcessing(false);
         }
     };
 
@@ -233,6 +225,43 @@ export default function Equipment({ gym, updateGym }) {
         }
     };
 
+    // ← NEW: handles submission from the Add Inventory popup
+    const handleAddInventory = async ({ itemName, quantity: qty }) => {
+        const inventoryRef = getInventoryCollection();
+        if (!inventoryRef) return;
+
+        try {
+            // Check if the item already exists in the current gym's DB
+            const snapshot = await getDocs(inventoryRef);
+            const existingDoc = snapshot.docs.find(
+                (d) => d.data().name?.toLowerCase() === itemName.toLowerCase()
+            );
+
+            if (existingDoc) {
+                // Item exists — add to both available and total
+                const data = existingDoc.data();
+                await updateDoc(doc(inventoryRef, existingDoc.id), {
+                    available: data.available + qty,
+                    total: data.total + qty,
+                });
+                addToast("success", "Inventory Updated", `Added ${qty} more ${itemName}(s)`);
+            } else {
+                // Brand-new item — create a new document
+                await addDoc(inventoryRef, {
+                    name: itemName,
+                    available: qty,
+                    total: qty,
+                });
+                addToast("success", "New Item Added", `${itemName} added to inventory`);
+            }
+
+            fetchInventory();
+        } catch (error) {
+            console.error(error);
+            addToast("error", "Update Failed", "Could not update inventory");
+        }
+    };
+
     const labelStyle = { display: "block", marginBottom: "5px", fontWeight: "600", fontSize: "0.9rem", textAlign: "left" };
     const inputStyle = { borderRadius: "8px", width: "100%", padding: "10px", marginBottom: "15px", border: "1px solid #ccc", boxSizing: "border-box" };
 
@@ -259,7 +288,7 @@ export default function Equipment({ gym, updateGym }) {
                             <div>
                                 <label style={labelStyle}>Student ID</label>
                                 <input
-                                    ref={idInputRef} // 3. Attached the Ref here
+                                    ref={idInputRef}
                                     type="password"
                                     placeholder="Scan or Enter ID"
                                     style={inputStyle}
@@ -295,24 +324,28 @@ export default function Equipment({ gym, updateGym }) {
 
                             <button
                                 onClick={handleCheckout}
-                                disabled={isProcessing} // Disable while processing
+                                disabled={isProcessing}
                                 style={{
                                     borderRadius: "8px",
                                     marginTop: "auto",
                                     padding: "12px",
                                     cursor: isProcessing ? "not-allowed" : "pointer",
-                                    opacity: isProcessing ? 0.6 : 1, // Visual feedback
-                                    backgroundColor: isProcessing ? "#ccc" : "" // Optional: change color
+                                    opacity: isProcessing ? 0.6 : 1,
+                                    backgroundColor: isProcessing ? "#ccc" : ""
                                 }}
                             >
                                 {isProcessing ? "Processing..." : "Checkout"}
                             </button>
                         </div>
 
-                        {/* Right: Modern Inventory with Progress Bars */}
+                        {/* Right: Inventory with Progress Bars */}
                         <div className="card" style={{ flex: 1, minHeight: "450px" }}>
                             <div className="card-header">
                                 <h2 style={{ marginBottom: "20px" }}>Inventory Status</h2>
+                                {/* ← WIRED UP: opens the popup */}
+                                <button onClick={() => setIsAddInventoryOpen(true)}>
+                                    Add Inventory
+                                </button>
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
                                 {availableEquipment.map(item => {
@@ -384,6 +417,15 @@ export default function Equipment({ gym, updateGym }) {
                     </div>
                 </div>
             </div>
+
+            {/* ← NEW: Add Inventory Popup */}
+            <AddInventoryPopup
+                isOpen={isAddInventoryOpen}
+                onClose={() => setIsAddInventoryOpen(false)}
+                onSubmit={handleAddInventory}
+                availableEquipment={availableEquipment}
+            />
+
             <ToastContainer
                 toasts={toasts}
                 removeToast={removeToast}
