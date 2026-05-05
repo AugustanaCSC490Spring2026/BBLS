@@ -7,8 +7,27 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from './Navigation.jsx';
 import { db } from "../Firebase.js";
 import { doc, getDoc } from "firebase/firestore";
+import ToastContainer from "../components/ToastContainer.jsx";
+
 
 function Login() {
+  const [toasts, setToasts] = useState([]);
+
+  const addToast = (type, title, message) => {
+    const id = Date.now(); // Unique ID for filtering
+    const newToast = { id, type, title, message };
+
+    setToasts((prev) => [...prev, newToast]);
+
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+      removeToast(id);
+    }, 3000);
+  };
+
+  const removeToast = (id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
   const navigate = useNavigate();
   const [error, setError] = useState("")
   // handleGoogleLogin will sign the user in with Google and check if their email is authorized
@@ -23,12 +42,14 @@ function Login() {
       if (userSnap.exists()) {
         navigate("/Location");
       } else {
-        alert("Unauthorized user. Please use an allowed email address.");
+        addToast("error", "Unauthorized", "Please use an allowed email address.");
+        // alert("Unauthorized user. Please use an allowed email address.");
         await signOut(auth);
         window.location.reload();
       }
     } catch (error) {
-      setError("Login failed. Please try again.");
+      addToast("error", "Login Failed", "Please use an authorized email address to sign in.");
+      // setError("Login failed. Please try again.");
       console.error("Error during login:", error);
     }
   };
@@ -38,8 +59,8 @@ function Login() {
     <>
       <main className="main">
         <div className='login-page'>
-          <div className="card">
-            <div className="card-header">
+          <div className="login-card">
+            <div className="login-card-header">
               <img src={logo} alt="Logo" className="logo-image" width={200} height={200} />
               <h1>Augustana College </h1>
               <h2> Recreation Center </h2>
@@ -65,6 +86,10 @@ function Login() {
           </div>
         </div>
       </main>
+      <ToastContainer 
+        toasts={toasts} 
+        removeToast={removeToast} 
+      />
 
     </>
   )

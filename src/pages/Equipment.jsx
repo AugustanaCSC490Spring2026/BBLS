@@ -6,6 +6,8 @@ import "../components/Equipment.css";
 import ValidateSwipe from "../components/ValidateSwipe.js";
 import Papa from "papaparse";
 import ToastContainer from "../components/ToastContainer";
+import NavDropdown from "../components/NavDropdown.jsx";
+
 import {
     collection,
     doc,
@@ -80,7 +82,7 @@ export default function Equipment({ gym, updateGym }) {
             if (updated.length > 7) {
                 // This keeps the 7 newest items. 
                 // The "oldest" of these 7 stays at index 0 (the top).
-                return updated.slice(-7); 
+                return updated.slice(-7);
             }
             return updated;
         });
@@ -132,6 +134,11 @@ export default function Equipment({ gym, updateGym }) {
 
 
     const handleCheckout = async () => {
+        // <NavDropdown
+        //     options={["Pepsi-Co Center", "Westerlin Gym"]}
+        //     defaultOption={currentGym}
+        //     onChange={onGymChange}
+        // />
         if (isProcessing) return;
         if (!studentId || !selectedEquipment || quantity <= 0) {
             addToast("error", "Form Error", "Please fill in all fields");
@@ -141,9 +148,13 @@ export default function Equipment({ gym, updateGym }) {
         const validation = await ValidateSwipe(studentId, getDoc, doc, db);
         if (!validation.isValid) {
             addToast("error", "ID Denied", validation.reasonDenied);
+            setStudentId("");
+            setSelectedEquipment("");
+            setIsProcessing(false);
+            idInputRef.current?.focus();
             return;
         }
-        
+
         const studentName = validation.name;
         const inventoryRef = getInventoryCollection();
         const checkoutRef = getCheckoutCollection();
@@ -187,7 +198,7 @@ export default function Equipment({ gym, updateGym }) {
             console.error(error);
             addToast("error", "Checkout Failed", "An error occurred during checkout");
         } finally {
-        setIsProcessing(false); // 3. Re-enable the button
+            setIsProcessing(false); // 3. Re-enable the button
         }
     };
 
@@ -242,6 +253,11 @@ export default function Equipment({ gym, updateGym }) {
                         <div className="card" style={{ flex: 1, minHeight: "450px", display: "flex", flexDirection: "column" }}>
                             <div className="card-header">
                                 <h2>New Checkout</h2>
+                                <NavDropdown
+                                    options={["Pepsi-Co Center", "Westerlin Gym"]}
+                                    defaultOption={gym}
+                                    onChange={updateGym}
+                                />
                             </div>
 
                             <div>
@@ -281,13 +297,13 @@ export default function Equipment({ gym, updateGym }) {
                                 />
                             </div>
 
-                            <button 
-                                onClick={handleCheckout} 
+                            <button
+                                onClick={handleCheckout}
                                 disabled={isProcessing} // Disable while processing
-                                style={{ 
-                                    borderRadius: "8px", 
-                                    marginTop: "auto", 
-                                    padding: "12px", 
+                                style={{
+                                    borderRadius: "8px",
+                                    marginTop: "auto",
+                                    padding: "12px",
                                     cursor: isProcessing ? "not-allowed" : "pointer",
                                     opacity: isProcessing ? 0.6 : 1, // Visual feedback
                                     backgroundColor: isProcessing ? "#ccc" : "" // Optional: change color

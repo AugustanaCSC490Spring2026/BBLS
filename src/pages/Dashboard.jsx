@@ -2,9 +2,11 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { db } from "../Firebase.js";
 import ToastContainer from "../components/ToastContainer";
 import ValidateStaffSwipe from "../components/ValidateStaffSwipe.js";
+import NavDropdown from "../components/NavDropdown.jsx";
 
 // NEW: added serverTimestamp for accurate backend time
 import { addDoc, collection, serverTimestamp, getDoc, doc } from "firebase/firestore";
+import awayModeIcon from "../assets/moon.png";
 
 import "../components/Dashboard.css";
 
@@ -18,7 +20,6 @@ const currentStudentsRef = collection(db, "currentStudents");
 const bannedStudentsRef = collection(db, "bannedStudents");
 const guestEntranceRef = collection(db, "guestEntrance");
 
-import awayModeIcon from "../assets/moon.png";
 
 function Dashboard({ gym, updateGym }) {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -77,22 +78,22 @@ function Dashboard({ gym, updateGym }) {
 
   const addToast = (type, title, message) => {
     const newToast = {
-        id: toastIdRef.current++,
-        type,
-        title,
-        message,
+      id: toastIdRef.current++,
+      type,
+      title,
+      message,
     };
 
     setToasts((prev) => {
-        const updated = [...prev, newToast];
-        if (updated.length > 7) {
-            // This keeps the 7 newest items. 
-            // The "oldest" of these 7 stays at index 0 (the top).
-            return updated.slice(-7); 
-        }
-        return updated;
+      const updated = [...prev, newToast];
+      if (updated.length > 7) {
+        // This keeps the 7 newest items. 
+        // The "oldest" of these 7 stays at index 0 (the top).
+        return updated.slice(-7);
+      }
+      return updated;
     });
-};
+  };
 
   const removeToast = useCallback((id) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
@@ -100,7 +101,7 @@ function Dashboard({ gym, updateGym }) {
 
   const handleSubmission = async (event) => {
     if (event) event.preventDefault();
-    
+
     // 1. EXIT if already processing
     if (isProcessing) return;
 
@@ -122,7 +123,7 @@ function Dashboard({ gym, updateGym }) {
       await storeSwipeIn(gym, swipeValid, verified_data, serverTimestamp(), reasonSwipeDenied, studentName);
 
       setStudentId("");
-      
+
       requestAnimationFrame(() => {
         inputRef.current?.focus();
       });
@@ -147,32 +148,32 @@ function Dashboard({ gym, updateGym }) {
       validBool = isValidData.isValid;
       reasonDenied = isValidData.reasonDenied;
       overallName = isValidData.name;
-    
+
       if (validBool) {
         addDoc(guestEntranceRef, {
-        location: gym,
-        timestamp: timeStamp,
-        ...guestData // This "spreads" the object into separate Firestore fields
-      }); 
+          location: gym,
+          timestamp: timeStamp,
+          ...guestData // This "spreads" the object into separate Firestore fields
+        });
       }
-    } else{
+    } else {
       overallName = guestData.name;
       validBool = true;
       addDoc(guestEntranceRef, {
         location: gym,
         timestamp: timeStamp,
         ...guestData // This "spreads" the object into separate Firestore fields
-      }); 
+      });
     }
     if (validBool) {
       addToast("success", "ID Accepted", `Welcome, ${overallName}!`);
-    } else{
+    } else {
       addToast("error", "ID Denied", reasonDenied);
     }
   };
 
 
-  
+
   //saves data to firebase
   function storeSwipeIn(gym, swipeValid, verified_data, timeStamp, reasonSwipeDenied, studentName) {
     if (swipeValid && gym !== "None Selected") {
@@ -194,9 +195,18 @@ function Dashboard({ gym, updateGym }) {
   return (
     <>
       <div className="top-dashboard">
-        <button onClick={() => setAwayMode(true)}>
-          <img src={awayModeIcon} alt="Away Mode" />
-        </button>
+        <div className="dash-right">
+          <NavDropdown
+            options={["Pepsi-Co Center", "Westerlin Gym"]}
+            defaultOption={gym}
+            onChange={updateGym}
+          />
+        </div>
+        <div className="dash-left">
+          <button onClick={() => setAwayMode(true)}>
+            <img src={awayModeIcon} alt="Away Mode" />
+          </button>
+        </div>
       </div>
       <div className="Dashboard">
 
@@ -221,8 +231,8 @@ function Dashboard({ gym, updateGym }) {
               onKeyDown={handleKeyDown}
             />
 
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="swipe-button"
               disabled={isProcessing}
               style={{

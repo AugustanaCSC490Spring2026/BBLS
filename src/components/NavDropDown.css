@@ -37,13 +37,13 @@
 /* White Theme (Primary) */
 .nav-dropdown-trigger[data-theme="primary"],
 .nav-dropdown-item[data-theme="primary"] {
-  background-color: #ffffff;
-  color: #007BFF; /* Text matches the Blue Theme color */
+  background-color: #007BFF;
+  color: white; /* Text matches the Blue Theme color */
 }
 
 .nav-dropdown-trigger[data-theme="primary"]:hover,
 .nav-dropdown-item[data-theme="primary"]:hover {
-  background-color: #f8f9fa; /* Slight off-white for hover feedback */
+  background-color: #007BFF; /* Slight off-white for hover feedback */
 }
 
 /* Blue Theme (Secondary) */
