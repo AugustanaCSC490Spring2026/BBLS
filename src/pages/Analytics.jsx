@@ -180,6 +180,15 @@ function Analytics({ gym, updateGym }) {
       else if (dataFile === "combined") {
         await fetchCombinedCollections();
       }
+      else if (dataFile === "pepsicoCheckouts") {
+        await fetchCheckoutCollection("pepsicoCheckouts");
+      }
+      else if (dataFile === "westerlinCheckouts") {
+        await fetchCheckoutCollection("westerlinCheckouts");
+      }
+      else if (dataFile === "combinedCheckouts") {
+        await fetchCombinedCheckouts();
+      }
       else if (dataFile === "guestEntrance") {
         await fetchGuestEntrance();
       }
@@ -397,6 +406,65 @@ function Analytics({ gym, updateGym }) {
         combined.push({
           studentId: d.ID,
           time: d.swipeInTime.toDate()
+        });
+      });
+    }
+
+    setSwipeData(combined);
+  }
+
+  // Fetches checkout data based off a specific location. Similar to fetchSpecificCollection()
+  async function fetchCheckoutCollection(collectionName) {
+    const { start, end } = getDateRange();
+    const ref = collection(db, collectionName);
+
+    const q = query(
+      ref,
+      where("checkoutTime", ">=", start),
+      where("checkoutTime", "<=", end)
+    );
+
+    const snapshot = await getDocs(q);
+    const data = [];
+
+    snapshot.forEach((doc) => {
+      const d = doc.data();
+      if (!d.checkoutTime) return;
+
+      data.push({
+        studentId: d.studentId,
+        time: d.checkoutTime.toDate()
+      });
+    });
+
+    setSwipeData(data);
+  }
+
+  // Fetches combined checkout data for pepsico and westie.
+  async function fetchCombinedCheckouts() {
+    const { start, end } = getDateRange();
+    const collections = ["pepsicoCheckouts", "westerlinCheckouts"];
+
+    let combined = [];
+
+    for (let name of collections) {
+      const ref = collection(db, name);
+
+      const q = query(
+        ref,
+        where("checkoutTime", ">=", start),
+        where("checkoutTime", "<=", end)
+      );
+
+      const snapshot = await getDocs(q);
+
+      snapshot.forEach((doc) => {
+        const d = doc.data();
+        if (!d.checkoutTime) return;
+
+        combined.push({
+          studentId: d.studentId,
+          time: d.checkoutTime.toDate()
         });
       });
     }
@@ -734,9 +802,12 @@ function Analytics({ gym, updateGym }) {
                 onChange={(e) => setDataFile(e.target.value)}
               >
                 <option value="normal">Randomly Generated (non-firebase data)</option>
-                <option value="pepsico">PepsiCo Center</option>
-                <option value="westerlin">Westerlin Gym</option>
-                <option value="combined">Combined Gyms</option>
+                <option value="pepsico">PepsiCo Swipes</option>
+                <option value="westerlin">Westerlin Swipes</option>
+                <option value="combined">Combined Gym Swipes</option>
+                <option value="pepsicoCheckouts">PepsiCo Checkouts</option>
+                <option value="westerlinCheckouts">Westerlin Checkouts</option>
+                <option value="combinedCheckouts">Combined Checkouts</option>
 
                 {chartType !== "demographics" && (
                   <option value="guestEntrance">
