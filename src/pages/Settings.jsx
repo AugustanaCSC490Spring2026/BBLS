@@ -22,6 +22,7 @@ const bannedStudentsRef = collection(db, "bannedStudents");
 const currentStudentsRef = collection(db, "currentStudents");
 
 import { add } from "firebase/firestore/pipelines";
+import { getAdditionalUserInfo } from "firebase/auth";
 
 
 
@@ -355,7 +356,8 @@ const Settings = () => {
       }
     })
     if (studentEntered == null) {
-      displayIdEntryError("No student has the entered id or username");
+      addToast("error", "ID Not Found", "No student has the entered id or username.");
+      // displayIdEntryError("No student has the entered id or username");
       document.getElementById("studentInputForm").value = "";
       updateStudentIdentifier("");
       return;
@@ -380,19 +382,19 @@ const Settings = () => {
 
   }
 
-  function displayIdEntryError(swipeOutput) {
-    const customAlert = document.getElementById("customAlert");
-    const alertText = document.getElementById("alertText");
-    alertText.textContent = swipeOutput;
-    customAlert.style.display = "flex";
-    setTimeout(() => { customAlert.style.display = "none"; }, 1000);
-
-  }
-
   let dateStudentIsUnbanned;
   function setUnbanDate(input) {
     dateStudentIsUnbanned = input;
   }
+
+  // function displayIdEntryError(swipeOutput) {
+  //   const customAlert = document.getElementById("customAlert");
+  //   const alertText = document.getElementById("alertText");
+  //   alertText.textContent = swipeOutput;
+  //   customAlert.style.display = "flex";
+  //   setTimeout(() => { customAlert.style.display = "none"; }, 1000);
+
+  // }
 
   function displayPopup(isbanned) {
     const banStudentsPopupContainer = document.getElementById("banStudentsPopupContainer");
@@ -475,8 +477,10 @@ const Settings = () => {
           dateBanned: new Date().toLocaleDateString('en-CA'),
           dateToBeUnbanned: dateStudentIsUnbanned
         })
+        addToast("success", "Student Banned", studentName + " has been banned.");
       } else {
-        displayIdEntryError("error retrieving data from database. Please try again or contact support if error persists");
+        addToast("error", "Database Error", "Error retrieving data from database. Please try again or contact support if error persists.");
+        // displayIdEntryError("error retrieving data from database. Please try again or contact support if error persists");
       }
       //runs the cancel operation function to remove the popup
       cancelOperation(event);
@@ -492,9 +496,11 @@ const Settings = () => {
     if (docRef) {
       //deletes student from database
       deleteDoc(docRef);
+      addToast("success", "Student Unbanned", studentName + " has been unbanned.");
     }
     else {
-      displayIdEntryError("error retrieving data from database. Please try again or contact support if error persists");
+      addToast("error", "Database Error", "Error retrieving data from database. Please try again or contact support if error persists.");
+      // displayIdEntryError("error retrieving data from database. Please try again or contact support if error persists");
 
     }
     //runs the cancel operation function to remove the popup
