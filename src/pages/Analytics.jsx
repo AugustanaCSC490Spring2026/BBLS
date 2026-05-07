@@ -699,6 +699,18 @@ function Analytics({ gym, updateGym }) {
     ]
   };
 
+  const whiteBackgroundPlugin = {
+    id: 'customCanvasBackgroundColor',
+    beforeDraw: (chart) => {
+      const { ctx } = chart;
+      ctx.save();
+      ctx.globalCompositeOperation = 'destination-over';
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, chart.width, chart.height);
+      ctx.restore();
+    }
+  };
+
   // Takes care of guest swipes. The reason this is done separately than normal swipes is so users can see the reason for visit for each guest. 
   // Otherwise, it functions similarly to normal swipe ins.
   if (dataFile === "guestEntrance") {
@@ -824,11 +836,11 @@ function Analytics({ gym, updateGym }) {
       {
         data: Object.values(demographicData),
         backgroundColor: [
-          "#8884d8",
-          "#82ca9d",
-          "#ffc658",
-          "#ff7f7f",
           "#8dd1e1",
+          "#82ca9d",
+          "#8884d8",
+          "#ff7f7f",
+          "#ffc658",
           "#d0ed57",
           "#a4de6c"
         ]
@@ -1011,6 +1023,7 @@ function Analytics({ gym, updateGym }) {
                 <Bar
                   ref={chartRef}
                   data={data}
+                  plugins={[whiteBackgroundPlugin]}
                   options={{
                     responsive: true,
                     scales: {
@@ -1031,7 +1044,7 @@ function Analytics({ gym, updateGym }) {
                   No data
                 </div>
               ) : (
-                <Pie ref={chartRef} data={pieData} />
+                <Pie ref={chartRef} data={pieData} plugins={[whiteBackgroundPlugin]} />
               )}
             </div>
           </div>

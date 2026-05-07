@@ -202,6 +202,10 @@
   width: auto;
 }
 
+.studentsList{
+  width: 400px;
+}
+
 /* ── ID entry error alert ────────────────────────────────── */
 .customAlert {
   display: none;

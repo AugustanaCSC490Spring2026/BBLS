@@ -57,6 +57,7 @@ const Settings = () => {
 
   const [equipmentGym, setEquipmentGym] = useState("Pepsi-Co Center");
   const [bannedStudents, setBannedStudents] = useState([]);
+  const [possibleStudents, updatePossibleStudents] = useState([]);
   const [isAddInventoryOpen, setIsAddInventoryOpen] = useState(false);
   const [isRemoveInventoryOpen, setIsRemoveInventoryOpen] = useState(false);
   const [availableEquipment, setAvailableEquipment] = useState([]);
@@ -83,6 +84,7 @@ const Settings = () => {
 
   useEffect(() => {
     updateBannedStudentsList();
+    createListOfPossibleStudents();
   }, []);
 
   useEffect(() => {
@@ -96,9 +98,19 @@ const Settings = () => {
       name: d.data().FirstName + " " + d.data().LastName,
       unbanDate: d.data().dateToBeUnbanned,
     }));
-    setBannedStudents(bannedList);
+    setBannedStudents(bannedList); // use state instead of direct DOM manipulation
+    //updatePossibleStudents(bannedList)
   };
 
+  const createListOfPossibleStudents = async (input) =>{
+    const docSnap = await getDocs(currentStudentsRef);
+    let listOfPossibleStudents = [];
+    const studentList = docSnap.docs.map(
+      (doc) => doc.data().Email
+    );
+    updatePossibleStudents(studentList);
+    }
+  ;
   const unbanStudentById = async (studentId, studentName) => {
     const ref = doc(db, "bannedStudents", studentId);
     await deleteDoc(ref);
@@ -324,6 +336,8 @@ const Settings = () => {
     });
   };
 
+  
+
   const handleEquipmentImport = (event) => {
 
     const file = event.target.files[0];
@@ -414,7 +428,7 @@ const Settings = () => {
   let studentEnteredID;
   let swipeOutput;
   let docRef;
-  let popupTimer;
+  let differentReasonBanned;
 
   const handleKeyDown = (input) => {
     if (input.key === "enter") {
@@ -433,11 +447,15 @@ const Settings = () => {
     let isbanned;
     verified_data = studentEmail;
     let studentList = await getDocs(currentStudentsRef);
+    //loops through all the current students to find one that matches
+    let foundStudent = false;
     studentList.forEach((student) => {
       if (student.data().Email == studentEmail) {
         studentEntered = student;
+        foundStudent = true;
       }
     })
+    //displays error if student is not found
     if (studentEntered == null) {
       addToast("error", "ID Not Found", "No student has the entered id or username.");
       // displayIdEntryError("No student has the entered id or username");
@@ -446,17 +464,23 @@ const Settings = () => {
       return;
     }
     else {
+      //collects student name and ID to use later
       studentName = studentEntered.data().FirstName + " " + studentEntered.data().LastName;
       studentEnteredID = studentEntered.data().ID;
+      //checks to see if the student is banned
       docRef = doc(db, "bannedStudents", studentEnteredID);
       getDoc(docRef).then((docSnap) => {
+        //if student is banned gives only option to unban
+        //if student is not banned only gives option to ban
         if (!docSnap.exists()) {
           isbanned = false;
           displayPopup(isbanned);
         }
         else {
           isbanned = true;
+          differentReasonBanned = docSnap.data().reasonBanned;
           displayPopup(isbanned);
+          console.log(docSnap.data().reasonBanned);
         }
       })
     }
@@ -489,10 +513,18 @@ const Settings = () => {
     const banStudentReasonForm = document.getElementById("banStudentReasonForm");
     const unbanDateStatement = document.getElementById("unbanDateStatement");
     const unbanDateInput = document.getElementById("unbaneDateInput");
+    const banStudentReason = document.getElementById("banStudentReason");
 
+    /*if the student is banned displays only the unban and cancel buttons
+      if the student is not banned displays only the ban and cancel buttons as well
+      as why the student is being banned and the date the student is to be unbanned
+      */
+    
     if (isbanned) {
       banStudentsPopupHeader.textContent = studentName + " is currently banned.";
       banStudentsPopupText.textContent = "Would you like to unban this student?";
+      banStudentReason.textContent = "reason Banned: " + differentReasonBanned;
+      banStudentReason.style.display = "flex";
       unbanStudentButton.style.display = "flex";
       banStudentButton.style.display = "none";
       banStudentReasonStatememnt.style.display = "none";
@@ -504,6 +536,7 @@ const Settings = () => {
       banStudentsPopupHeader.textContent = studentName + " is currently not banned.";
       banStudentsPopupText.textContent = "Would you like to ban this student?";
       unbanStudentButton.style.display = "none";
+      banStudentReason.style.display = "none";
       banStudentButton.style.display = "flex";
       banStudentReasonStatememnt.style.display = "flex";
       banStudentReasonForm.style.display = "flex";
@@ -515,12 +548,15 @@ const Settings = () => {
     banStudentsPopupContainer.style.display = "flex";
   }
 
+  //sets a second studentID variable that is in scope
+
   let studentId
 
   function setStudentId(input) {
     studentId = input;
   }
 
+  //functions to store the reason why the student was banned and when they are to be unbanned
   let reasonStudentBanned;
   function updateReasonBanned(input) {
     reasonStudentBanned = input;
@@ -618,14 +654,21 @@ const Settings = () => {
                   id="studentInputForm"
                   className="studentInputForm"
                   type="text"
+                  list="studentList"
                   ref={null}
                   value={studentEmail}
                   placeholder="Enter Student username"
                   onChange={(e) => updateStudentIdentifier(e.target.value)}
                   onKeyDown={handleKeyDown}
                 />
-                <button className="selectStudentButton">Search ID</button>
+                <button className="selectStudentButton">Search username</button>
               </form>
+              <datalist id="studentList">
+                {possibleStudents.map((name, i) => (
+                  <option key={i} value={name}></option>
+                ))
+}
+              </datalist>
 
               <div className="bannedStudentsHeader">
                 <h3 className="bannedStudentsListHeader">Currently Banned Students</h3>
