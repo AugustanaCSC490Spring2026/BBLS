@@ -8,7 +8,7 @@
   gap: 4rem;                   /* Puts space between the buttons */
   
   /* These two lines are likely what was missing */
-  height: 100vh;               /* Makes the container 100% of the screen height */
+  flex: 1;                     /* Fill remaining height after navbar */
   width: 100vw;                /* Makes the container 100% of the screen width */
   
   background-color: white;     /* Ensures the background is white */

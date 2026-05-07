@@ -137,6 +137,14 @@ function Dashboard({ gym, updateGym }) {
     }
   };
 
+  function displayIdEntryError(swipeOutput) {
+    const customAlert = document.getElementById("customAlert");
+    const alertText = document.getElementById("alertText");
+    alertText.textContent = swipeOutput;
+    customAlert.style.display = "flex";
+    setTimeout(() => { customAlert.style.display = "none"; }, 3000);
+  }
+
   async function processGuestEntry(guestData) {
     const timeStamp = serverTimestamp();
     let validBool = true;
@@ -185,6 +193,8 @@ function Dashboard({ gym, updateGym }) {
         addDoc(westerlinGymRef, { ID: verified_data, swipeInTime: timeStamp });
       }
 
+    } else if (!swipeValid && reasonSwipeDenied.includes("banned")){
+      displayIdEntryError(reasonSwipeDenied);
     } else if (!swipeValid) {
       addToast("error", "ID Denied", reasonSwipeDenied);
       addDoc(invalidSwipeInRef, { gym: gym, ID: verified_data, swipeInTime: timeStamp });
@@ -267,6 +277,12 @@ function Dashboard({ gym, updateGym }) {
           removeToast={removeToast}
         />
       )}
+      <div className="customAlert" id="customAlert">
+        <div className="alertContent" id="alertContent">
+          <h2 className="alertHeading">ID entry error</h2>
+          <p id="alertText"></p>
+        </div>
+      </div>
     </>
   );
 }

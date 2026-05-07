@@ -1,6 +1,6 @@
 .page {
-    background-color: #f8f9fa; /* Light grey background to make cards pop */
-    min-height: 100vh;
+    background-color: #f8f9fa;
+    flex: 1;
 }
 
 .page-header {
