@@ -315,6 +315,8 @@ const Settings = () => {
     });
   };
 
+  
+
   const handleEquipmentImport = (event) => {
 
     const file = event.target.files[0];
