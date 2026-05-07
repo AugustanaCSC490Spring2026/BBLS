@@ -694,7 +694,7 @@ function Analytics({ gym, updateGym }) {
       {
         label: "Swipes",
         data: chartData.map((d) => d.swipes),
-        backgroundColor: "#8884d8"
+        backgroundColor: "#002F6C"
       }
     ]
   };
