@@ -91,10 +91,19 @@ const Settings = () => {
 
   const updateBannedStudentsList = async () => {
     const docSnap = await getDocs(bannedStudentsRef);
-    const bannedList = docSnap.docs.map(
-      (doc) => doc.data().FirstName + " " + doc.data().LastName + "  | Unban Date: " + doc.data().dateToBeUnbanned
-    );
+    const bannedList = docSnap.docs.map((d) => ({
+      id: d.data().ID,
+      name: d.data().FirstName + " " + d.data().LastName,
+      unbanDate: d.data().dateToBeUnbanned,
+    }));
     setBannedStudents(bannedList);
+  };
+
+  const unbanStudentById = async (studentId, studentName) => {
+    const ref = doc(db, "bannedStudents", studentId);
+    await deleteDoc(ref);
+    addToast("success", "Student Unbanned", studentName + " has been unbanned.");
+    updateBannedStudentsList();
   };
 
   const handleRemoveInventory = async ({ itemName, quantity: qty }) => {
@@ -622,8 +631,15 @@ const Settings = () => {
                 <h3 className="bannedStudentsListHeader">Currently Banned Students</h3>
               </div>
               <div className="bannedStudentsList" id="bannedStudentsList">
-                {bannedStudents.map((name, i) => (
-                  <p key={i}>{name}</p>
+                {bannedStudents.map((student, i) => (
+                  <div key={i} className="bannedStudentRow">
+                    <p className="bannedStudentName">{student.name}</p>
+                    <p className="bannedStudentDate">Unban: {student.unbanDate}</p>
+                    <button
+                      className="unbanListButton"
+                      onClick={() => unbanStudentById(student.id, student.name)}
+                    >Unban</button>
+                  </div>
                 ))}
               </div>
             </div>
