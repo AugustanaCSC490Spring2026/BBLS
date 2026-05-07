@@ -54,9 +54,11 @@ const Settings = () => {
   const [showGymPopup, setShowGymPopup] = useState(false);
   const [selectedGym, setSelectedGym] = useState(null);
   const [bannedStudents, setBannedStudents] = useState([]);
+  let [possibleStudents, updatePossibleStudents] = useState([]);
 
   useEffect(() => {
     updateBannedStudentsList();
+    createListOfPossibleStudents();
   }, []);
 
   const updateBannedStudentsList = async () => {
@@ -65,7 +67,17 @@ const Settings = () => {
       (doc) => doc.data().FirstName + " " + doc.data().LastName + "  | unban Date: " + doc.data().dateToBeUnbanned
     );
     setBannedStudents(bannedList); // use state instead of direct DOM manipulation
+    //updatePossibleStudents(bannedList)
   };
+
+  const createListOfPossibleStudents = async (input) =>{
+    const docSnap = await getDocs(currentStudentsRef);
+    let listOfPossibleStudents = [];
+    const studentList = docSnap.docs.map(
+      (doc) => doc.data().Email
+    );
+    updatePossibleStudents(studentList);
+  }
 
   // Helper function to clear the currentStudents collection within firestore when a CSV is uploaded
   const clearCollection = async (collectionName) => {
@@ -315,7 +327,7 @@ const Settings = () => {
   let studentEnteredID;
   let swipeOutput;
   let docRef;
-  let popupTimer;
+  let differentReasonBanned;
   //verify ID
   const handleKeyDown = (input) => {
     if (input.key === "enter") {
@@ -379,7 +391,9 @@ const Settings = () => {
         }
         else {
           isbanned = true;
+          differentReasonBanned = docSnap.data().reasonBanned;
           displayPopup(isbanned);
+          console.log(docSnap.data().reasonBanned);
         }
       })
     }
@@ -393,7 +407,7 @@ const Settings = () => {
     const alertText = document.getElementById("alertText");
     alertText.textContent = swipeOutput;
     customAlert.style.display = "flex";
-    setTimeout(() => { customAlert.style.display = "none"; }, 1000);
+    setTimeout(() => { customAlert.style.display = "none"; }, 1400);
 
   }
 
@@ -412,6 +426,7 @@ const Settings = () => {
     const banStudentReasonForm = document.getElementById("banStudentReasonForm");
     const unbanDateStatement = document.getElementById("unbanDateStatement");
     const unbanDateInput = document.getElementById("unbaneDateInput");
+    const banStudentReason = document.getElementById("banStudentReason");
 
     /*if the student is banned displays only the unban and cancel buttons
       if the student is not banned displays only the ban and cancel buttons as well
@@ -421,6 +436,8 @@ const Settings = () => {
     if (isbanned) {
       banStudentsPopupHeader.textContent = studentName + " is currently banned.";
       banStudentsPopupText.textContent = "Would you like to unban this student?";
+      banStudentReason.textContent = "reason Banned: " + differentReasonBanned;
+      banStudentReason.style.display = "flex";
       unbanStudentButton.style.display = "flex";
       banStudentButton.style.display = "none";
       banStudentReasonStatememnt.style.display = "none";
@@ -434,6 +451,7 @@ const Settings = () => {
       banStudentsPopupHeader.textContent = studentName + " is currently not banned.";
       banStudentsPopupText.textContent = "Would you like to ban this student?";
       unbanStudentButton.style.display = "none";
+      banStudentReason.style.display = "none";
       banStudentButton.style.display = "flex";
       banStudentReasonStatememnt.style.display = "flex";
       banStudentReasonForm.style.display = "flex";
@@ -443,9 +461,6 @@ const Settings = () => {
       unbanDateInput.value = new Date().toLocaleDateString('en-CA');
     }
     banStudentsPopupContainer.style.display = "flex";
-    //sets a 30 second timer to ensure admin can't accidentally leave the option open
-    clearTimeout(popupTimer);
-     popupTimer = setTimeout(() => { banStudentsPopupContainer.style.display = "none"; }, 30000);
   }
 
   //sets a second studentID variable that is in scope
@@ -634,21 +649,27 @@ const Settings = () => {
               id="studentInputForm"
               className="studentInputForm"
               type="text"
-              ref={null}
+              list="possibleStudents"
               value={studentEmail}
               placeholder="Enter Student username"
               onChange={(e) => updateStudentIdentifier(e.target.value)}
               onKeyDown={handleKeyDown}
 
             />
+            <datalist id="possibleStudents">
+              {possibleStudents.map((name, i) => (
+                  <option key={i} value={name}></option>
+              ))}
+            </datalist>
             <button
-              className="selectStudentButton">Search ID</button>
+              className="selectStudentButton">Search username</button>
           </form>
 
           <div id="banStudentsPopupContainer" className="banStudentsPopupContainer">
             <div className="banStudentsPopupBackground">
               <div className="banStudentsPopup">
                 <h2 id="banStudentsPopupHeader">If you see this there is a bug</h2>
+                <p id="banStudentReason"> Reason stuydent was banned</p>
                 <p
                   id="banStudentReasonStatememnt"
                   className="banStudentReasonStatememnt">Why would you like to ban this student?</p>
