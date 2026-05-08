@@ -840,7 +840,7 @@ const Settings = () => {
                 <tbody>
                   {adminList.length === 0
                     ? <tr><td colSpan="2">No administrators found.</td></tr>
-                    : adminList.map((admin, i) => (
+                    : [...adminList].sort((a, b) => b.isAdmin - a.isAdmin).map((admin, i) => (
                         <tr key={i}>
                           <td>{admin.email || admin.Email || admin.id}</td>
                           <td>{admin.isAdmin ? "Admin" : "Desk Worker"}</td>
