@@ -367,3 +367,31 @@
   background-color: #f0f0f0;
   color: #333;
 }
+
+.adminTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+.adminTable th,
+.adminTable td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.9rem;
+}
+
+.adminTable th {
+  font-weight: 600;
+  color: #444;
+  background-color: #f8f9fa;
+}
+
+.adminTable tr:last-child td {
+  border-bottom: none;
+}
+
+.adminTable tr:hover td {
+  background-color: #f8f9fa;
+}

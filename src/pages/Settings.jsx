@@ -33,6 +33,7 @@ import { getAdditionalUserInfo } from "firebase/auth";
 
 const Settings = () => {
   const [toasts, setToasts] = useState([]);
+  const [adminList, setAdminList] = useState([]);
   const toastIdRef = useRef(0);
 
   const addToast = (type, title, message) => {
@@ -569,10 +570,14 @@ const Settings = () => {
     console.log(input);
   }
 
-  function getAdminList() {
-
-
-  }
+  const fetchAdminList = async () => {
+    const snapshot = await getDocs(adminListRef);
+    const admins = snapshot.docs.map(d => ({
+      id: d.id,
+      ...d.data()
+    }));
+    setAdminList(admins);
+  };
 
   const banStudent = async (event) => {
     event.preventDefault();
@@ -744,7 +749,7 @@ const Settings = () => {
               <p className="settings-section-desc">Manage system access and roles.</p>
               <button
                 className="add-admin-button"
-                onClick={() => setIsAdminPopupOpen(true)}
+                onClick={() => { setIsAdminPopupOpen(true); fetchAdminList(); }}
               >
                 Edit Administrators
               </button>
@@ -825,9 +830,25 @@ const Settings = () => {
             <div className="adminPopup" onClick={(e) => e.stopPropagation()}>
               <button className="adminPopupClose" onClick={() => setIsAdminPopupOpen(false)}>✕</button>
               <h2>Manage Administrators</h2>
-              {/* Your admin management content goes here */}
-              <p>{getAdminList()}</p>
-              
+              <table className="adminTable">
+                <thead>
+                  <tr>
+                    <th>Email</th>
+                    <th>Role</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {adminList.length === 0
+                    ? <tr><td colSpan="2">No administrators found.</td></tr>
+                    : adminList.map((admin, i) => (
+                        <tr key={i}>
+                          <td>{admin.email || admin.Email || admin.id}</td>
+                          <td>{admin.isAdmin ? "Admin" : "Desk Worker"}</td>
+                        </tr>
+                      ))
+                  }
+                </tbody>
+              </table>
             </div>
           </div>
         )}
