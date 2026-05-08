@@ -667,7 +667,7 @@ const Settings = () => {
                 {possibleStudents.map((name, i) => (
                   <option key={i} value={name}></option>
                 ))
-}
+                }
               </datalist>
 
               <div className="bannedStudentsHeader">
@@ -688,7 +688,10 @@ const Settings = () => {
             </div>
           </div>
 
-          {/* Right Card: Equipment */}
+          {/* Right Column: Equipment + Administrative stacked */}
+        <div className="settings-column">
+
+          {/* Equipment Card */}
           <div className="settings-card">
             <div className="settings-card-header">
               <h2>Equipment</h2>
@@ -723,6 +726,25 @@ const Settings = () => {
               </button>
             </div>
           </div>
+
+          {/* Administrative Card */}
+          <div className="settings-card administrative-card">
+            <div className="settings-card-header">
+              <h2>Administrative</h2>
+            </div>
+            <div className="settings-section">
+              <h3 className="settings-section-title">Manage Administrators</h3>
+              <p className="settings-section-desc">Manage system access and roles.</p>
+              <button
+                className="add-admin-button"
+                onClick={() => console.log("Add Admin Clicked")}
+              >
+                Edit Administrators
+              </button>
+            </div>
+          </div>
+
+        </div>
 
         </div>
 
