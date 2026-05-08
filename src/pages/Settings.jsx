@@ -23,6 +23,7 @@ import NavDropdown from "../components/NavDropdown.jsx";
 
 const bannedStudentsRef = collection(db, "bannedStudents");
 const currentStudentsRef = collection(db, "currentStudents");
+const adminListRef = collection(db, "authorized_users");
 
 import { add } from "firebase/firestore/pipelines";
 import { getAdditionalUserInfo } from "firebase/auth";
@@ -58,6 +59,7 @@ const Settings = () => {
   const [equipmentGym, setEquipmentGym] = useState("Pepsi-Co Center");
   const [bannedStudents, setBannedStudents] = useState([]);
   const [possibleStudents, updatePossibleStudents] = useState([]);
+  const [isAdminPopupOpen, setIsAdminPopupOpen] = useState(false);
   const [isAddInventoryOpen, setIsAddInventoryOpen] = useState(false);
   const [isRemoveInventoryOpen, setIsRemoveInventoryOpen] = useState(false);
   const [availableEquipment, setAvailableEquipment] = useState([]);
@@ -567,6 +569,11 @@ const Settings = () => {
     console.log(input);
   }
 
+  function getAdminList() {
+
+
+  }
+
   const banStudent = async (event) => {
     event.preventDefault();
     if (reasonStudentBanned == undefined) {
@@ -737,7 +744,7 @@ const Settings = () => {
               <p className="settings-section-desc">Manage system access and roles.</p>
               <button
                 className="add-admin-button"
-                onClick={() => console.log("Add Admin Clicked")}
+                onClick={() => setIsAdminPopupOpen(true)}
               >
                 Edit Administrators
               </button>
@@ -811,6 +818,19 @@ const Settings = () => {
             </div>
           </div>
         </div>
+
+        {/* ── Admin Popup ── */}
+        {isAdminPopupOpen && (
+          <div className="adminPopupOverlay" onClick={() => setIsAdminPopupOpen(false)}>
+            <div className="adminPopup" onClick={(e) => e.stopPropagation()}>
+              <button className="adminPopupClose" onClick={() => setIsAdminPopupOpen(false)}>✕</button>
+              <h2>Manage Administrators</h2>
+              {/* Your admin management content goes here */}
+              <p>{getAdminList()}</p>
+              
+            </div>
+          </div>
+        )}
 
       </div>
 
