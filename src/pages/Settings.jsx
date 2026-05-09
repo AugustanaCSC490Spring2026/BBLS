@@ -23,6 +23,7 @@ import NavDropdown from "../components/NavDropdown.jsx";
 
 const bannedStudentsRef = collection(db, "bannedStudents");
 const currentStudentsRef = collection(db, "currentStudents");
+const adminListRef = collection(db, "authorized_users");
 
 import { add } from "firebase/firestore/pipelines";
 import { getAdditionalUserInfo } from "firebase/auth";
@@ -32,6 +33,7 @@ import { getAdditionalUserInfo } from "firebase/auth";
 
 const Settings = () => {
   const [toasts, setToasts] = useState([]);
+  const [adminList, setAdminList] = useState([]);
   const toastIdRef = useRef(0);
 
   const addToast = (type, title, message) => {
@@ -58,6 +60,7 @@ const Settings = () => {
   const [equipmentGym, setEquipmentGym] = useState("Pepsi-Co Center");
   const [bannedStudents, setBannedStudents] = useState([]);
   const [possibleStudents, updatePossibleStudents] = useState([]);
+  const [isAdminPopupOpen, setIsAdminPopupOpen] = useState(false);
   const [isAddInventoryOpen, setIsAddInventoryOpen] = useState(false);
   const [isRemoveInventoryOpen, setIsRemoveInventoryOpen] = useState(false);
   const [availableEquipment, setAvailableEquipment] = useState([]);
@@ -557,6 +560,15 @@ const Settings = () => {
     console.log(input);
   }
 
+  const fetchAdminList = async () => {
+    const snapshot = await getDocs(adminListRef);
+    const admins = snapshot.docs.map(d => ({
+      id: d.id,
+      ...d.data()
+    }));
+    setAdminList(admins);
+  };
+
   const banStudent = async (event) => {
     event.preventDefault();
     if (reasonStudentBanned == undefined) {
@@ -658,7 +670,7 @@ const Settings = () => {
                   <option key={i} value={name}
                   className="studentsList"></option>
                 ))
-}
+                }
               </datalist>
 
               <div className="bannedStudentsHeader">
@@ -672,7 +684,10 @@ const Settings = () => {
             </div>
           </div>
 
-          {/* Right Card: Equipment */}
+          {/* Right Column: Equipment + Administrative stacked */}
+        <div className="settings-column">
+
+          {/* Equipment Card */}
           <div className="settings-card">
             <div className="settings-card-header">
               <h2>Equipment</h2>
@@ -707,6 +722,25 @@ const Settings = () => {
               </button>
             </div>
           </div>
+
+          {/* Administrative Card */}
+          <div className="settings-card administrative-card">
+            <div className="settings-card-header">
+              <h2>Administrative</h2>
+            </div>
+            <div className="settings-section">
+              <h3 className="settings-section-title">Manage Administrators</h3>
+              <p className="settings-section-desc">Manage system access and roles.</p>
+              <button
+                className="add-admin-button"
+                onClick={() => { setIsAdminPopupOpen(true); fetchAdminList(); }}
+              >
+                Edit Administrators
+              </button>
+            </div>
+          </div>
+
+        </div>
 
         </div>
 
@@ -773,6 +807,35 @@ const Settings = () => {
             </div>
           </div>
         </div>
+
+        {/* ── Admin Popup ── */}
+        {isAdminPopupOpen && (
+          <div className="adminPopupOverlay" onClick={() => setIsAdminPopupOpen(false)}>
+            <div className="adminPopup" onClick={(e) => e.stopPropagation()}>
+              <button className="adminPopupClose" onClick={() => setIsAdminPopupOpen(false)}>✕</button>
+              <h2>Manage Administrators</h2>
+              <table className="adminTable">
+                <thead>
+                  <tr>
+                    <th>Email</th>
+                    <th>Role</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {adminList.length === 0
+                    ? <tr><td colSpan="2">No administrators found.</td></tr>
+                    : [...adminList].sort((a, b) => b.isAdmin - a.isAdmin).map((admin, i) => (
+                        <tr key={i}>
+                          <td>{admin.email || admin.Email || admin.id}</td>
+                          <td>{admin.isAdmin ? "Admin" : "Desk Worker"}</td>
+                        </tr>
+                      ))
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
       </div>
 
