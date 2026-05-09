@@ -96,9 +96,11 @@ const Settings = () => {
 
   const updateBannedStudentsList = async () => {
     const docSnap = await getDocs(bannedStudentsRef);
-    const bannedList = docSnap.docs.map(
-      (doc) => doc.data().FirstName + " " + doc.data().LastName + "  | Unban Date: " + doc.data().dateToBeUnbanned
-    );
+    const bannedList = docSnap.docs.map((d) => ({
+      id: d.data().ID,
+      name: d.data().FirstName + " " + d.data().LastName,
+      unbanDate: d.data().dateToBeUnbanned,
+    }));
     setBannedStudents(bannedList); // use state instead of direct DOM manipulation
     //updatePossibleStudents(bannedList)
   };
@@ -112,6 +114,12 @@ const Settings = () => {
     updatePossibleStudents(studentList);
     }
   ;
+  const unbanStudentById = async (studentId, studentName) => {
+    const ref = doc(db, "bannedStudents", studentId);
+    await deleteDoc(ref);
+    addToast("success", "Student Unbanned", studentName + " has been unbanned.");
+    updateBannedStudentsList();
+  };
 
   const handleRemoveInventory = async ({ itemName, quantity: qty }) => {
     const inventoryRef = getInventoryCollection();
@@ -331,6 +339,8 @@ const Settings = () => {
     });
   };
 
+  
+
   const handleEquipmentImport = (event) => {
 
     const file = event.target.files[0];
@@ -506,7 +516,6 @@ const Settings = () => {
     const banStudentReasonForm = document.getElementById("banStudentReasonForm");
     const unbanDateStatement = document.getElementById("unbanDateStatement");
     const unbanDateInput = document.getElementById("unbaneDateInput");
-    const banStudentReason = document.getElementById("banStudentReason");
 
     /*if the student is banned displays only the unban and cancel buttons
       if the student is not banned displays only the ban and cancel buttons as well
@@ -516,8 +525,6 @@ const Settings = () => {
     if (isbanned) {
       banStudentsPopupHeader.textContent = studentName + " is currently banned.";
       banStudentsPopupText.textContent = "Would you like to unban this student?";
-      banStudentReason.textContent = "reason Banned: " + differentReasonBanned;
-   //   banStudentReason.style.display = "flex";
       unbanStudentButton.style.display = "flex";
       banStudentButton.style.display = "none";
       banStudentReasonStatememnt.style.display = "none";
@@ -529,7 +536,6 @@ const Settings = () => {
       banStudentsPopupHeader.textContent = studentName + " is currently not banned.";
       banStudentsPopupText.textContent = "Would you like to ban this student?";
       unbanStudentButton.style.display = "none";
-  //    banStudentReason.style.display = "none";
       banStudentButton.style.display = "flex";
       banStudentReasonStatememnt.style.display = "flex";
       banStudentReasonForm.style.display = "flex";
@@ -667,8 +673,7 @@ const Settings = () => {
               </form>
               <datalist id="studentList">
                 {possibleStudents.map((name, i) => (
-                  <option key={i} value={name}
-                  className="studentsList"></option>
+                  <option key={i} value={name}></option>
                 ))
                 }
               </datalist>
@@ -677,8 +682,15 @@ const Settings = () => {
                 <h3 className="bannedStudentsListHeader">Currently Banned Students</h3>
               </div>
               <div className="bannedStudentsList" id="bannedStudentsList">
-                {bannedStudents.map((name, i) => (
-                  <p key={i}>{name}</p>
+                {bannedStudents.map((student, i) => (
+                  <div key={i} className="bannedStudentRow">
+                    <p className="bannedStudentName">{student.name}</p>
+                    <p className="bannedStudentDate">Unban: {student.unbanDate}</p>
+                    <button
+                      className="unbanListButton"
+                      onClick={() => unbanStudentById(student.id, student.name)}
+                    >Unban</button>
+                  </div>
                 ))}
               </div>
             </div>
