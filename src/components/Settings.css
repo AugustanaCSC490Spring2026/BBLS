@@ -395,3 +395,110 @@
 .adminTable tr:hover td {
   background-color: #f8f9fa;
 }
+
+.adminTableRow:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.addAdminRow:hover {
+  background-color: rgba(74, 144, 226, 0.08);
+}
+
+.adminEditForm {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #f9f9f9;
+}
+
+.adminEditForm h3 {
+  margin: 0 0 12px 0;
+  font-size: 1rem;
+}
+
+.adminEditFields {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.adminEditFields input,
+.adminEditFields select {
+  flex: 1;
+  min-width: 150px;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.adminEditButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.adminSaveButton {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.adminDeleteButton {
+  background: #e24a4a;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.adminCancelButton {
+  background: #ddd;
+  color: #333;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.adminTableRow { cursor: pointer; }
+.adminTableRow:hover { background-color: rgba(0,0,0,0.04); }
+.adminRowSelected { background-color: rgba(24,95,165,0.08); }
+
+.addAdminRow { color: #185FA5; font-style: italic; }
+.addAdminRow:hover { background-color: rgba(24,95,165,0.06) !important; }
+
+.adminEditForm {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border: 0.5px solid #ddd;
+  border-radius: 8px;
+  background: #f7f7f7;
+}
+.adminEditTitle {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+  margin-bottom: 10px;
+}
+.adminEditFields { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.adminEditFields input,
+.adminEditFields select {
+  flex: 1;
+  min-width: 140px;
+  padding: 7px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.adminEditButtons { display: flex; gap: 8px; }
+.adminSaveButton { background: #185FA5; color: white; border: none; padding: 7px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.adminCancelButton { background: #eee; color: #444; border: none; padding: 7px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.adminDeleteButton { background: #fdecea; color: #a32d2d; border: 1px solid #f0a0a0; padding: 7px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; margin-left: auto; }
