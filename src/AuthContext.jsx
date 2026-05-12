@@ -24,6 +24,7 @@ export const AuthProvider = ({ children }) => {
         const userRef = doc(db, "authorized_users", email);
         const snap = await getDoc(userRef);
 
+
         if (snap.exists()) {
           setUser(currentUser);
 

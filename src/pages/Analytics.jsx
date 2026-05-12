@@ -51,6 +51,13 @@ function Analytics({ gym, updateGym }) {
   // State to handle weekly/monthly/daily grouping
   const [groupBy, setGroupBy] = useState("none");
 
+  // Stat card data
+  const [statData, setStatData] = useState({
+    thisWeekSwipes: null, lastWeekSwipes: null,
+    thisWeekCheckouts: null, lastWeekCheckouts: null,
+    thisWeekUnique: null, lastWeekUnique: null,
+  });
+
   const chartRef = useRef(null);
 
   // Maps dropdown names that match to Firestore field names
@@ -87,6 +94,56 @@ function Analytics({ gym, updateGym }) {
 
     return categoryColorMap[category];
   }
+
+  // Fetch this week vs last week stats for the stat cards
+  useEffect(() => {
+    async function fetchStatCardData() {
+      const now = new Date();
+
+      const thisWeekStart = new Date(now);
+      thisWeekStart.setDate(now.getDate() - now.getDay());
+      thisWeekStart.setHours(0, 0, 0, 0);
+
+      const lastWeekStart = new Date(thisWeekStart);
+      lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+
+      let twSwipes = 0, lwSwipes = 0, twCheckouts = 0, lwCheckouts = 0;
+      const twUnique = new Set(), lwUnique = new Set();
+
+      try {
+        for (const name of ["pepsicoCenter", "westerlinGym"]) {
+          const q = query(collection(db, name), where("swipeInTime", ">=", lastWeekStart), where("swipeInTime", "<=", now));
+          const snap = await getDocs(q);
+          snap.forEach(doc => {
+            const d = doc.data();
+            if (!d.swipeInTime) return;
+            const t = d.swipeInTime.toDate();
+            if (t >= thisWeekStart) { twSwipes++; if (d.ID) twUnique.add(d.ID); }
+            else { lwSwipes++; if (d.ID) lwUnique.add(d.ID); }
+          });
+        }
+        for (const name of ["pepsicoCheckouts", "westerlinCheckouts"]) {
+          const q = query(collection(db, name), where("checkoutTime", ">=", lastWeekStart), where("checkoutTime", "<=", now));
+          const snap = await getDocs(q);
+          snap.forEach(doc => {
+            const d = doc.data();
+            if (!d.checkoutTime) return;
+            const t = d.checkoutTime.toDate();
+            if (t >= thisWeekStart) twCheckouts++; else lwCheckouts++;
+          });
+        }
+      } catch (err) {
+        console.error("Stat card fetch error:", err);
+      }
+
+      setStatData({
+        thisWeekSwipes: twSwipes, lastWeekSwipes: lwSwipes,
+        thisWeekCheckouts: twCheckouts, lastWeekCheckouts: lwCheckouts,
+        thisWeekUnique: twUnique.size, lastWeekUnique: lwUnique.size,
+      });
+    }
+    fetchStatCardData();
+  }, []);
 
   // Fetch entire currentStudents collection ONCE and cache it
   useEffect(() => {
@@ -848,6 +905,40 @@ function Analytics({ gym, updateGym }) {
     ]
   };
 
+  function renderStatCard(title, thisWeek, lastWeek, accent) {
+    const loading = thisWeek === null;
+    let change = null;
+    if (!loading && lastWeek > 0) change = Math.round(((thisWeek - lastWeek) / lastWeek) * 100);
+    const dir = change === null ? null : change >= 0 ? "up" : "down";
+    const color = dir === "up" ? "#16a34a" : "#dc2626";
+
+    const upPoints   = "0,28 13,22 26,25 39,18 52,14 65,10 78,5";
+    const downPoints = "0,5 13,10 26,8 39,14 52,20 65,24 78,30";
+    const points   = dir === "up" ? upPoints : downPoints;
+    const fillPath = dir === "up"
+      ? "M0,28 L13,22 L26,25 L39,18 L52,14 L65,10 L78,5 L78,35 L0,35 Z"
+      : "M0,5 L13,10 L26,8 L39,14 L52,20 L65,24 L78,30 L78,35 L0,35 Z";
+
+    return (
+      <div className={`stat-card ${accent}`}>
+        <p className="sc-label">{title}</p>
+        <p className="sc-value">{loading ? "—" : thisWeek.toLocaleString()}</p>
+        {!loading && dir !== null && (
+          <div className="sc-trend">
+            <svg viewBox="0 0 78 35" width="70" height="30">
+              <path d={fillPath} fill={color} fillOpacity="0.12" />
+              <polyline points={points} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span className={`sc-trend-text ${dir}`}>
+              {dir === "up" ? "▲" : "▼"} {Math.abs(change)}%
+            </span>
+          </div>
+        )}
+        {!loading && <p className="sc-sub">Last week: {lastWeek.toLocaleString()}</p>}
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="page-header">
@@ -855,10 +946,13 @@ function Analytics({ gym, updateGym }) {
 
       <div className="Analytics-page">
         <div className="analytics-card">
+          <div className="analytics-card-header">
+            <h2>Chart Controls</h2>
+          </div>
           {/* Chart Type */}
           <div className="control-box">
             <div className="control-content">
-              <h3>Chart Type</h3>
+              <p className="control-label">Chart Type</p>
               <select
                 value={chartType}
                 onChange={(e) => setChartType(e.target.value)}
@@ -870,7 +964,7 @@ function Analytics({ gym, updateGym }) {
 
             {/* Dataset */}
             <div className="control-content">
-              <h3>Dataset</h3>
+              <p className="control-label">Dataset</p>
               <select
                 value={dataFile}
                 onChange={(e) => setDataFile(e.target.value)}
@@ -893,7 +987,7 @@ function Analytics({ gym, updateGym }) {
 
             {/* Time Range */}
             <div className="control-content">
-              <h3>Choose Time Range</h3>
+              <p className="control-label">Time Range</p>
 
               <select
                 value={timeRange}
@@ -908,7 +1002,7 @@ function Analytics({ gym, updateGym }) {
               </select>
 
               {timeRange === "custom" && (
-                <div style={{ marginTop: "10px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "6px" }}>
                   <input
                     type="date"
                     onChange={(e) => setStartDate(e.target.value)}
@@ -926,7 +1020,7 @@ function Analytics({ gym, updateGym }) {
                 <div className="interval-group-row">
 
                   <div className="control-item">
-                    <h3>Interval</h3>
+                    <p className="control-label">Interval</p>
                     <select
                       value={interval}
                       onChange={(e) => setInterval(e.target.value)}
@@ -942,7 +1036,7 @@ function Analytics({ gym, updateGym }) {
 
                   {/* Handles grouping by week, day, month, etc ... */}
                   <div className="control-item">
-                    <h3>Group By</h3>
+                    <p className="control-label">Group By</p>
                     <select
                       value={groupBy}
                       onChange={(e) => setGroupBy(e.target.value)}
@@ -958,7 +1052,7 @@ function Analytics({ gym, updateGym }) {
                 </div>
               ) : (
                 <>
-                  <h3>Demographic Type</h3>
+                  <p className="control-label">Demographic Type</p>
                   <select
                     value={demographicType}
                     onChange={(e) =>
@@ -982,15 +1076,9 @@ function Analytics({ gym, updateGym }) {
         </div>
         <div className="charts-boxes">
           <div className="stat-cards">
-            <div className="stat-card">
-
-            </div>
-            <div className="stat-card">
-              
-            </div>
-            <div className="stat-card">
-              
-            </div>
+            {renderStatCard("Swipe-ins This Week", statData.thisWeekSwipes, statData.lastWeekSwipes, "sc-blue")}
+            {renderStatCard("Equipment Checkouts", statData.thisWeekCheckouts, statData.lastWeekCheckouts, "sc-yellow")}
+            {renderStatCard("Unique Visitors", statData.thisWeekUnique, statData.lastWeekUnique, "sc-blue")}
           </div>
           <div className="Charts" style={{ marginTop: "30px" }}>
             <div style={{ width: "100%", height: 400, position: "relative" }}>
