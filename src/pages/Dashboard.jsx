@@ -227,35 +227,34 @@ function Dashboard({ gym, updateGym }) {
         />
 
         <div className="swipe-card">
-          {/* <h1>{gym}</h1> */}
-          <h2>Swipe In</h2>
+          <div className="swipe-card-header">
+            <h2>Swipe In</h2>
+          </div>
+          <div className="swipe-card-body">
+            <form onSubmit={handleSubmission}>
+              <label>Student ID</label>
 
-          <form onSubmit={handleSubmission}>
-            <label>Student ID</label>
+              <input
+                ref={inputRef}
+                placeholder="Enter Student ID"
+                value={studentId}
+                onChange={(e) => setStudentId(e.target.value)}
+                onKeyDown={handleKeyDown}
+              />
 
-            <input
-              ref={inputRef}
-              placeholder="Enter Student ID"
-              value={studentId}
-              onChange={(e) => setStudentId(e.target.value)}
-              onKeyDown={handleKeyDown}
-            />
-
-            <button
-              type="submit"
-              className="swipe-button"
-              disabled={isProcessing}
-              style={{
-                opacity: isProcessing ? 0.6 : 1,
-                cursor: isProcessing ? "not-allowed" : "pointer",
-                transition: "all 0.2s ease"
-              }}
-            >
-              {isProcessing ? "Processing..." : "Check In"}
-            </button>
-
-          </form>
-
+              <button
+                type="submit"
+                className="swipe-button"
+                disabled={isProcessing}
+                style={{
+                  opacity: isProcessing ? 0.6 : 1,
+                  cursor: isProcessing ? "not-allowed" : "pointer",
+                }}
+              >
+                {isProcessing ? "Processing..." : "Check In"}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
       <button
