@@ -262,6 +262,35 @@ function Analytics({ gym, updateGym }) {
     return { start, end };
   }
 
+  // Generates the file name when exporting so it includes the file type and date
+  function generateExportFileName(extension) {
+    const now = new Date();
+
+    const pad = (n) => String(n).padStart(2, "0");
+
+    const timestamp =
+      `${now.getFullYear()}-` +
+      `${pad(now.getMonth() + 1)}-` +
+      `${pad(now.getDate())}_` +
+      `${pad(now.getHours())}-` +
+      `${pad(now.getMinutes())}-` +
+      `${pad(now.getSeconds())}`;
+
+    let baseName = "";
+
+    if (chartType === "demographics") {
+      baseName = "demographic_data";
+    }
+    else if (isCheckoutDataset) {
+      baseName = "equipment_data";
+    }
+    else {
+      baseName = "swipe_data";
+    }
+
+    return `${baseName}_${timestamp}.${extension}`;
+  }
+
   // PNG Export
   function exportChartToPNG() {
     let chartInstance = chartRef.current;
@@ -280,10 +309,7 @@ function Analytics({ gym, updateGym }) {
 
     const link = document.createElement("a");
     link.href = url;
-    link.download =
-      chartType === "swipe"
-        ? "swipe_chart.png"
-        : "demographics_chart.png";
+    link.download = generateExportFileName("png");
 
     document.body.appendChild(link);
     link.click();
@@ -358,7 +384,7 @@ function Analytics({ gym, updateGym }) {
     const link = document.createElement("a");
 
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "swipe_data.csv");
+    link.setAttribute("download", generateExportFileName("csv"));
 
     document.body.appendChild(link);
     link.click();
