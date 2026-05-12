@@ -64,6 +64,13 @@ function Analytics({ gym, updateGym }) {
     Transfer: "Transfer"
   };
 
+  // Simple way to check if a dataset is an equipment checkout. Used to sort
+  // equipment data out when showing different equipments on graph
+  const isCheckoutDataset =
+    dataFile === "pepsicoCheckouts" ||
+    dataFile === "westerlinCheckouts" ||
+    dataFile === "combinedCheckouts";
+
   // Gives categories for guest swipes different colors on the graph. Color codes the guest swipes
   const categoryColorMap = {};
   function getCategoryColor(category) {
@@ -433,6 +440,7 @@ function Analytics({ gym, updateGym }) {
 
       data.push({
         studentId: d.studentId,
+        equipment: d.equipment || "Unknown",
         time: d.checkoutTime.toDate()
       });
     });
@@ -464,6 +472,7 @@ function Analytics({ gym, updateGym }) {
 
         combined.push({
           studentId: d.studentId,
+          equipment: d.equipment || "Unknown",
           time: d.checkoutTime.toDate()
         });
       });
@@ -711,9 +720,10 @@ function Analytics({ gym, updateGym }) {
     }
   };
 
-  // Takes care of guest swipes. The reason this is done separately than normal swipes is so users can see the reason for visit for each guest. 
+
+  // Takes care of guest swipes and equipment checkouts. The reason this is done separately than normal swipes is so users can see the reason for visit for each guest or equipment type.
   // Otherwise, it functions similarly to normal swipe ins.
-  if (dataFile === "guestEntrance") {
+  if (dataFile === "guestEntrance" || isCheckoutDataset) {
     const { start, end } = getDateRange();
 
     const categoryMap = {};   // Stores each guest category and its associated counts
@@ -735,7 +745,10 @@ function Analytics({ gym, updateGym }) {
 
       // Initializes each category with an array of 0s (one for each label)
       swipeData.forEach((swipe) => {
-        const category = swipe.category || "N/A";
+        const category =
+          dataFile === "guestEntrance"
+            ? (swipe.category || "N/A")
+            : (swipe.equipment || "Unknown");
 
         if (!categoryMap[category]) {
           categoryMap[category] = Array(labels.length).fill(0);
@@ -786,7 +799,10 @@ function Analytics({ gym, updateGym }) {
         // Ensures swipe is valid and within selected time range
         if (isNaN(date) || date < start || date > end) return;
 
-        const category = swipe.category || "N/A";   // Defaults to N/A if category is missing
+        const category =
+          dataFile === "guestEntrance"
+            ? (swipe.category || "N/A")
+            : (swipe.equipment || "Unknown");   // Defaults to N/A if category is missing
 
         // Creates a bucket set for each category
         if (!categoryMap[category]) {
