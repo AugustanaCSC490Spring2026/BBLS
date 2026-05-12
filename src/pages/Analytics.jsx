@@ -292,7 +292,7 @@ function Analytics({ gym, updateGym }) {
 
   // CSV EXPORT 
   function exportSwipeDataToCSV() {
-    if (chartType !== "swipe") return;
+    if (chartType !== "swipe") return;   // equipment checkouts is included in this, so still works
 
     const { start, end } = getDateRange();
 
@@ -313,10 +313,14 @@ function Analytics({ gym, updateGym }) {
 
     const hasGuestData = filtered.some(swipe => swipe.studentId === "guest");
 
-    // ✅ UPDATED HEADERS
+    // Controls headers within the CSV file
+    const timeColumnLabel = isCheckoutDataset
+      ? "Checkout Time"
+      : "Swipe Time";
+
     const rows = hasGuestData
-      ? [["Student ID", "Name", "Swipe Time"]] // DO NOT add email for guests
-      : [["Student ID", "Email", "Swipe Time"]];
+      ? [["Student ID", "Name", timeColumnLabel]]
+      : [["Student ID", "Email", timeColumnLabel]];
 
     filtered.forEach((swipe) => {
       const date =
