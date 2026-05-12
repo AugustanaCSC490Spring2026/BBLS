@@ -912,7 +912,7 @@ function Analytics({ gym, updateGym }) {
                 value={chartType}
                 onChange={(e) => setChartType(e.target.value)}
               >
-                <option value="swipe">Swipe-ins</option>
+                <option value="swipe">Swipe-ins and Equipment</option>
                 <option value="demographics">Demographics</option>
               </select>
             </div>
@@ -932,9 +932,9 @@ function Analytics({ gym, updateGym }) {
                 {/* Hide checkout datasets for demographics */}
                 {chartType !== "demographics" && (
                   <>
-                    <option value="pepsicoCheckouts">PepsiCo Checkouts</option>
-                    <option value="westerlinCheckouts">Westerlin Checkouts</option>
-                    <option value="combinedCheckouts">Combined Checkouts</option>
+                    <option value="pepsicoCheckouts">PepsiCo Equipment Checkouts</option>
+                    <option value="westerlinCheckouts">Westerlin Equipment Checkouts</option>
+                    <option value="combinedCheckouts">Combined Gym Equipment Checkouts</option>
 
                     <option value="guestEntrance">
                       Guest Entrance
