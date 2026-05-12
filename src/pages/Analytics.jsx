@@ -928,14 +928,18 @@ function Analytics({ gym, updateGym }) {
                 <option value="pepsico">PepsiCo Swipes</option>
                 <option value="westerlin">Westerlin Swipes</option>
                 <option value="combined">Combined Gym Swipes</option>
-                <option value="pepsicoCheckouts">PepsiCo Checkouts</option>
-                <option value="westerlinCheckouts">Westerlin Checkouts</option>
-                <option value="combinedCheckouts">Combined Checkouts</option>
 
+                {/* Hide checkout datasets for demographics */}
                 {chartType !== "demographics" && (
-                  <option value="guestEntrance">
-                    Guest Entrance
-                  </option>
+                  <>
+                    <option value="pepsicoCheckouts">PepsiCo Checkouts</option>
+                    <option value="westerlinCheckouts">Westerlin Checkouts</option>
+                    <option value="combinedCheckouts">Combined Checkouts</option>
+
+                    <option value="guestEntrance">
+                      Guest Entrance
+                    </option>
+                  </>
                 )}
               </select>
             </div>
