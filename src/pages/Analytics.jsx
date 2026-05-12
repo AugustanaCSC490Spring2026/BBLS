@@ -762,7 +762,10 @@ function Analytics({ gym, updateGym }) {
         // Ensures the swipe is valid and within selected date range
         if (isNaN(date) || date < start || date > end) return;
 
-        const category = swipe.category || "N/A";
+        const category =
+          dataFile === "guestEntrance"
+            ? (swipe.category || "N/A")
+            : (swipe.equipment || "Unknown");
 
         let index;
 
