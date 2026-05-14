@@ -107,6 +107,6 @@ font-weight:bold;
 
 /* Recommended: Add a hover state so users know it's clickable */
 .sign-out-button:hover {
-  background-color: #d9a91f;
-  border-color: #b8921a;
+  background-color: #e8e8e8;
+  border-color: #cccccc;
 }
