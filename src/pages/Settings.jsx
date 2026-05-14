@@ -109,7 +109,7 @@ const cancelEditAdmin = () => {
   setEditEmail("");
   setEditRole(false);
 };
-
+ // the next 50 lines were helped code with claude
 const handleSaveAdmin = async () => {
   if (!editEmail.trim()) return;
   try {
@@ -119,6 +119,14 @@ const handleSaveAdmin = async () => {
       await updateDoc(ref, { email: editEmail.trim(), isAdmin: editRole });
       addToast("success", "Admin Updated", `${editEmail} has been updated.`);
     } else {
+      // Check for duplicate email before adding
+      const duplicate = adminList.some(
+        (admin) => (admin.email || admin.Email || admin.id).toLowerCase() === editEmail.trim().toLowerCase()
+      );
+      if (duplicate) {
+        addToast("error", "Already Exists", `${editEmail} is already an administrator.`);
+        return;
+      }
       // FIRESTORE: addDoc for new admin
       await addDoc(adminListRef, { email: editEmail.trim(), isAdmin: editRole });
       addToast("success", "Admin Added", `${editEmail} has been added.`);
@@ -509,7 +517,7 @@ const handleDeleteAdmin = async () => {
 
     let isbanned;
     verified_data = studentEmail;
-    let studentList = await getDocs(currentStudentsRef);
+    const studentList = await getDocs(currentStudentsRef);
     //loops through all the current students to find one that matches
     let foundStudent = false;
     studentList.forEach((student) => {

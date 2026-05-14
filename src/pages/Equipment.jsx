@@ -132,7 +132,7 @@ export default function Equipment({ gym, updateGym }) {
             return;
         }
         setIsProcessing(true);
-        const validation = await ValidateSwipe(studentId, getDoc, doc, db);
+        const validation = await ValidateSwipe(studentId);
         if (!validation.isValid) {
             addToast("error", "ID Denied", validation.reasonDenied);
             setStudentId("");

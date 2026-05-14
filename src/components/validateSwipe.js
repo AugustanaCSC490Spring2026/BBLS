@@ -1,13 +1,23 @@
+import  { doc, getDoc } from "firebase/firestore";
+import { db } from "../Firebase.js";
+
+
 /**
+ * 
+ * want more attention to staff being able to swipe in normally rather than guest 
+ * take ID's that stipped the 0
+ * possible race conditions throgh await 
+ * await 2 promises to save time banned & curent stuendnt
+ * 
  * Handles ID validation through the format, existance of a student with that ID, and if that student is banned or not.
  * @param {string} swipe - The raw swipe ID string captured from the scanner.
- * @param {Function} getDoc - Firebase Firestore `getDoc` function.
- * @param {Function} doc - Firebase Firestore `doc` function.
- * @param {Object} db - The initialized Firebase Firestore database instance.
+
  * @returns {Promise<{isValid: boolean, studentId: string, name: string, reasonDenied: string}>}
  * An object with multiple data points for different implementations within the project. 
  */
-async function ValidateSwipe(swipe, getDoc, doc, db){
+
+
+async function ValidateSwipe(swipe){
   // defining vars for the return object.
   let swipeValid = null;
   let reasonSwipeDenied = "No reason given";
@@ -33,7 +43,9 @@ async function ValidateSwipe(swipe, getDoc, doc, db){
   
   // backend validation now that we know the ID number.
   try{
-    const studentSnap = await getDoc(doc(db, "currentStudents", swipe));
+    const studentSnapPromise =  getDoc(doc(db, "currentStudents", swipe));
+    const bannedSnapPromise  =  getDoc(doc(db, "bannedStudents", swipe));
+    const [studentSnap, bannedSnap] = await Promise.all([studentSnapPromise, bannedSnapPromise]);
     // student does exist, update variables
     // ben Amuller wrote lines 30 and 31
     if (studentSnap.exists()) {
@@ -50,7 +62,7 @@ async function ValidateSwipe(swipe, getDoc, doc, db){
       };
     }
     
-    const bannedSnap = await getDoc(doc(db, "bannedStudents", swipe));
+
     // if student is banned, update variables
     // Ben Aumuller wrote lines 46 and 47
     if (bannedSnap.exists()) {
