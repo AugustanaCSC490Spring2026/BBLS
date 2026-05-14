@@ -90,68 +90,80 @@ const Settings = () => {
   };
 
   const openEditAdmin = (admin) => {
-  setEditingAdmin(admin);
-  setEditEmail(admin.email || admin.Email || admin.id);
-  setEditRole(admin.isAdmin || false);
-  setIsEditingAdmin(true);
-};
+    setEditingAdmin(admin);
+    setEditEmail(admin.email || admin.Email || admin.id);
+    setEditRole(admin.isAdmin || false);
+    setIsEditingAdmin(true);
+  };
 
-const openAddAdmin = () => {
-  setEditingAdmin(null);
-  setEditEmail("");
-  setEditRole(false);
-  setIsEditingAdmin(true);
-};
+  const openAddAdmin = () => {
+    setEditingAdmin(null);
+    setEditEmail("");
+    setEditRole(false);
+    setIsEditingAdmin(true);
+  };
 
-const cancelEditAdmin = () => {
-  setIsEditingAdmin(false);
-  setEditingAdmin(null);
-  setEditEmail("");
-  setEditRole(false);
-};
- // the next 50 lines were helped code with claude
-const handleSaveAdmin = async () => {
-  if (!editEmail.trim()) return;
-  try {
-    if (editingAdmin) {
-      // FIRESTORE: updateDoc on existing admin doc
-      const ref = doc(db, "authorized_users", editingAdmin.id);
-      await updateDoc(ref, { email: editEmail.trim(), isAdmin: editRole });
-      addToast("success", "Admin Updated", `${editEmail} has been updated.`);
-    } else {
-      // Check for duplicate email before adding
-      const duplicate = adminList.some(
-        (admin) => (admin.email || admin.Email || admin.id).toLowerCase() === editEmail.trim().toLowerCase()
-      );
-      if (duplicate) {
-        addToast("error", "Already Exists", `${editEmail} is already an administrator.`);
-        return;
+  const cancelEditAdmin = () => {
+    setIsEditingAdmin(false);
+    setEditingAdmin(null);
+    setEditEmail("");
+    setEditRole(false);
+  };
+  // the next 50 lines were helped code with claude
+  const handleSaveAdmin = async () => {
+    if (!editEmail.trim()) return;
+
+    // Normalize the email to lowercase to ensure consistency in Document IDs
+    const adminId = editEmail.trim().toLowerCase();
+
+    try {
+      if (editingAdmin) {
+        // UPDATE: Use the existing document ID
+        const ref = doc(db, "authorized_users", editingAdmin.id);
+        await updateDoc(ref, { isAdmin: editRole });
+        addToast("success", "Admin Updated", `${adminId} has been updated.`);
+      } else {
+        // NEW ADMIN: The ID is the email itself
+        const newAdminRef = doc(db, "authorized_users", adminId);
+
+        // Check for duplicate by looking at the document ID in your local list
+        const duplicate = adminList.some(
+          (admin) => admin.id.toLowerCase() === adminId
+        );
+
+        if (duplicate) {
+          addToast("error", "Already Exists", `${adminId} is already an administrator.`);
+          return;
+        }
+
+        // Save ONLY the isAdmin field. The "name" of the doc is the email.
+        await setDoc(newAdminRef, {
+          isAdmin: editRole
+        });
+
+        addToast("success", "Admin Added", `${adminId} has been added.`);
       }
-      // FIRESTORE: addDoc for new admin
-      await addDoc(adminListRef, { email: editEmail.trim(), isAdmin: editRole });
-      addToast("success", "Admin Added", `${editEmail} has been added.`);
+      cancelEditAdmin();
+      fetchAdminList();
+    } catch (err) {
+      console.error(err);
+      addToast("error", "Save Failed", "Could not save administrator.");
     }
-    cancelEditAdmin();
-    fetchAdminList();
-  } catch (err) {
-    console.error(err);
-    addToast("error", "Save Failed", "Could not save administrator.");
-  }
-};
+  };
 
-const handleDeleteAdmin = async () => {
-  if (!editingAdmin) return;
-  try {
-    // FIRESTORE: deleteDoc on existing admin doc
-    await deleteDoc(doc(db, "authorized_users", editingAdmin.id));
-    addToast("success", "Admin Removed", `${editEmail} has been removed.`);
-    cancelEditAdmin();
-    fetchAdminList();
-  } catch (err) {
-    console.error(err);
-    addToast("error", "Delete Failed", "Could not remove administrator.");
-  }
-};
+  const handleDeleteAdmin = async () => {
+    if (!editingAdmin) return;
+    try {
+      // FIRESTORE: deleteDoc on existing admin doc
+      await deleteDoc(doc(db, "authorized_users", editingAdmin.id));
+      addToast("success", "Admin Removed", `${editEmail} has been removed.`);
+      cancelEditAdmin();
+      fetchAdminList();
+    } catch (err) {
+      console.error(err);
+      addToast("error", "Delete Failed", "Could not remove administrator.");
+    }
+  };
 
   useEffect(() => {
     updateBannedStudentsList();
@@ -636,10 +648,14 @@ const handleDeleteAdmin = async () => {
 
   const fetchAdminList = async () => {
     const snapshot = await getDocs(adminListRef);
-    const admins = snapshot.docs.map(d => ({
-      id: d.id,
-      ...d.data()
+    
+    // We map the documents so that the "Document ID" (the email)
+    // becomes the 'id' property of our object.
+    const admins = snapshot.docs.map(doc => ({
+      id: doc.id,      // This is the email address string
+      ...doc.data()    // This spreads the 'isAdmin' field
     }));
+
     setAdminList(admins);
   };
 
@@ -890,65 +906,65 @@ const handleDeleteAdmin = async () => {
 
         {/* ── Admin Popup ── partially generated by Claude*/}
         {isAdminPopupOpen && (
-  <div className="adminPopupOverlay" onClick={() => { setIsAdminPopupOpen(false); cancelEditAdmin(); }}>
-    <div className="adminPopup" onClick={(e) => e.stopPropagation()}>
-      <button className="adminPopupClose" onClick={() => { setIsAdminPopupOpen(false); cancelEditAdmin(); }}>✕</button>
-      <h2>Manage Administrators</h2>
+          <div className="adminPopupOverlay" onClick={() => { setIsAdminPopupOpen(false); cancelEditAdmin(); }}>
+            <div className="adminPopup" onClick={(e) => e.stopPropagation()}>
+              <button className="adminPopupClose" onClick={() => { setIsAdminPopupOpen(false); cancelEditAdmin(); }}>✕</button>
+              <h2>Manage Administrators</h2>
 
-      <table className="adminTable">
-        <thead>
-          <tr>
-            <th>Email</th>
-            <th>Role</th>
-          </tr>
-        </thead>
-        <tbody>
-          {adminList.length === 0
-            ? <tr><td colSpan="2">No administrators found.</td></tr>
-            : [...adminList].sort((a, b) => b.isAdmin - a.isAdmin).map((admin, i) => (
-                <tr
-                  key={i}
-                  className={`adminTableRow ${editingAdmin?.id === admin.id ? "adminRowSelected" : ""}`}
-                  onClick={() => openEditAdmin(admin)}
-                >
-                  <td>{admin.email || admin.Email || admin.id}</td>
-                  <td>{admin.isAdmin ? "Admin" : "Desk Worker"}</td>
-                </tr>
-              ))
-          }
-          <tr className="adminTableRow addAdminRow" onClick={openAddAdmin}>
-            <td colSpan="2">+ Add Administrator</td>
-          </tr>
-        </tbody>
-      </table>
+              <table className="adminTable">
+                <thead>
+                  <tr>
+                    <th>Email</th>
+                    <th>Role</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {adminList.length === 0
+                    ? <tr><td colSpan="2">No administrators found.</td></tr>
+                    : [...adminList].sort((a, b) => b.isAdmin - a.isAdmin).map((admin, i) => (
+                      <tr
+                        key={i}
+                        className={`adminTableRow ${editingAdmin?.id === admin.id ? "adminRowSelected" : ""}`}
+                        onClick={() => openEditAdmin(admin)}
+                      >
+                        <td>{admin.email || admin.Email || admin.id}</td>
+                        <td>{admin.isAdmin ? "Admin" : "Desk Worker"}</td>
+                      </tr>
+                    ))
+                  }
+                  <tr className="adminTableRow addAdminRow" onClick={openAddAdmin}>
+                    <td colSpan="2">+ Add Administrator</td>
+                  </tr>
+                </tbody>
+              </table>
 
-      {isEditingAdmin && (
-        <div className="adminEditForm">
-          <p className="adminEditTitle">{editingAdmin ? "Edit administrator" : "Add administrator"}</p>
-          <div className="adminEditFields">
-            <input
-              type="text"
-              placeholder="Email address"
-              value={editEmail}
-              onChange={(e) => setEditEmail(e.target.value)}
-            />
-            <select value={editRole} onChange={(e) => setEditRole(e.target.value === "true")}>
-              <option value="false">Desk Worker</option>
-              <option value="true">Admin</option>
-            </select>
+              {isEditingAdmin && (
+                <div className="adminEditForm">
+                  <p className="adminEditTitle">{editingAdmin ? "Edit administrator" : "Add administrator"}</p>
+                  <div className="adminEditFields">
+                    <input
+                      type="text"
+                      placeholder="Email address"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                    />
+                    <select value={editRole} onChange={(e) => setEditRole(e.target.value === "true")}>
+                      <option value="false">Desk Worker</option>
+                      <option value="true">Admin</option>
+                    </select>
+                  </div>
+                  <div className="adminEditButtons">
+                    <button className="adminSaveButton" onClick={handleSaveAdmin}>Save</button>
+                    <button className="adminCancelButton" onClick={cancelEditAdmin}>Cancel</button>
+                    {editingAdmin && (
+                      <button className="adminDeleteButton" onClick={handleDeleteAdmin}>Remove</button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="adminEditButtons">
-            <button className="adminSaveButton" onClick={handleSaveAdmin}>Save</button>
-            <button className="adminCancelButton" onClick={cancelEditAdmin}>Cancel</button>
-            {editingAdmin && (
-              <button className="adminDeleteButton" onClick={handleDeleteAdmin}>Remove</button>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  </div>
-)}
+        )}
 
       </div>
 
