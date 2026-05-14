@@ -597,9 +597,8 @@ const Settings = () => {
     const unbanDateStatement = document.getElementById("unbanDateStatement");
     const unbanDateInput = document.getElementById("unbaneDateInput");
 
-    /*if the student is banned displays only the unban and cancel buttons
-      if the student is not banned displays only the ban and cancel buttons as well
-      as why the student is being banned and the date the student is to be unbanned
+    /*if the student is currently banned allows admins to edit that students ban info
+      if student is not banned shows popup and allows admin to enter ban info
       */
 
     if (isbanned) {
@@ -618,6 +617,7 @@ const Settings = () => {
       banStudentsPopupText.textContent = "Would you like to ban this student?";
       unbanStudentButton.style.display = "none";
       banStudentButton.textContent = "ban"
+      //creates a date object for tomorrows date
       let date = new Date();
       date.setDate(date.getDate() + 1);
       date = date.toLocaleDateString('en-CA');
