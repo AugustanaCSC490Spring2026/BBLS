@@ -54,7 +54,7 @@ function Dashboard({ gym, updateGym }) {
     return () => clearInterval(focusInterval);
   }, [isGuestPopupOpen]);
   const handleOverlaySwipe = async (rawId) => {
-    const validationResult = await ValidateSwipe(rawId, getDoc, doc, db);
+    const validationResult = await ValidateSwipe(rawId);
     const { isValid, studentId: verified_data, name, reasonDenied } = validationResult;
 
     try {
@@ -113,11 +113,7 @@ function Dashboard({ gym, updateGym }) {
 
     try {
       // Validating the swipe input
-      const validationResult = await ValidateSwipe(temp_input, getDoc, doc, db);
-      const swipeValid = validationResult.isValid;
-      const verified_data = validationResult.studentId;
-      const studentName = validationResult.name;
-      const reasonSwipeDenied = validationResult.reasonDenied;
+      const { isValid: swipeValid, studentId: verified_data, name: studentName, reasonDenied: reasonSwipeDenied } = await ValidateSwipe(temp_input);
 
       // Save to firebase
       await storeSwipeIn(gym, swipeValid, verified_data, serverTimestamp(), reasonSwipeDenied, studentName);

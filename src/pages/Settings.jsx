@@ -35,6 +35,10 @@ const Settings = () => {
   const [toasts, setToasts] = useState([]);
   const [adminList, setAdminList] = useState([]);
   const toastIdRef = useRef(0);
+  const [isEditingAdmin, setIsEditingAdmin] = useState(false);
+  const [editingAdmin, setEditingAdmin] = useState(null);
+  const [editEmail, setEditEmail] = useState("");
+  const [editRole, setEditRole] = useState(false);
 
   const addToast = (type, title, message) => {
     const newToast = {
@@ -85,6 +89,82 @@ const Settings = () => {
     setAvailableEquipment(equipmentList);
   };
 
+  const openEditAdmin = (admin) => {
+    setEditingAdmin(admin);
+    setEditEmail(admin.email || admin.Email || admin.id);
+    setEditRole(admin.isAdmin || false);
+    setIsEditingAdmin(true);
+  };
+
+  const openAddAdmin = () => {
+    setEditingAdmin(null);
+    setEditEmail("");
+    setEditRole(false);
+    setIsEditingAdmin(true);
+  };
+
+  const cancelEditAdmin = () => {
+    setIsEditingAdmin(false);
+    setEditingAdmin(null);
+    setEditEmail("");
+    setEditRole(false);
+  };
+  // the next 50 lines were helped code with claude
+  const handleSaveAdmin = async () => {
+    if (!editEmail.trim()) return;
+
+    // Normalize the email to lowercase to ensure consistency in Document IDs
+    const adminId = editEmail.trim().toLowerCase();
+
+    try {
+      if (editingAdmin) {
+        // UPDATE: Use the existing document ID
+        const ref = doc(db, "authorized_users", editingAdmin.id);
+        await updateDoc(ref, { isAdmin: editRole });
+        addToast("success", "Admin Updated", `${adminId} has been updated.`);
+      } else {
+        // NEW ADMIN: The ID is the email itself
+        const newAdminRef = doc(db, "authorized_users", adminId);
+
+        // Check for duplicate by looking at the document ID in your local list
+        const duplicate = adminList.some(
+          (admin) => admin.id.toLowerCase() === adminId
+        );
+
+        if (duplicate) {
+          addToast("error", "Already Exists", `${adminId} is already an administrator.`);
+          return;
+        }
+
+        // Save ONLY the isAdmin field. The "name" of the doc is the email.
+        await setDoc(newAdminRef, {
+          isAdmin: editRole
+        });
+
+        addToast("success", "Admin Added", `${adminId} has been added.`);
+      }
+      cancelEditAdmin();
+      fetchAdminList();
+    } catch (err) {
+      console.error(err);
+      addToast("error", "Save Failed", "Could not save administrator.");
+    }
+  };
+
+  const handleDeleteAdmin = async () => {
+    if (!editingAdmin) return;
+    try {
+      // FIRESTORE: deleteDoc on existing admin doc
+      await deleteDoc(doc(db, "authorized_users", editingAdmin.id));
+      addToast("success", "Admin Removed", `${editEmail} has been removed.`);
+      cancelEditAdmin();
+      fetchAdminList();
+    } catch (err) {
+      console.error(err);
+      addToast("error", "Delete Failed", "Could not remove administrator.");
+    }
+  };
+
   useEffect(() => {
     updateBannedStudentsList();
     createListOfPossibleStudents();
@@ -105,15 +185,15 @@ const Settings = () => {
     //updatePossibleStudents(bannedList)
   };
 
-  const createListOfPossibleStudents = async (input) =>{
+  const createListOfPossibleStudents = async (input) => {
     const docSnap = await getDocs(currentStudentsRef);
     let listOfPossibleStudents = [];
     const studentList = docSnap.docs.map(
       (doc) => doc.data().Email
     );
     updatePossibleStudents(studentList);
-    }
-  ;
+  }
+    ;
   const unbanStudentById = async (studentId, studentName) => {
     const ref = doc(db, "bannedStudents", studentId);
     await deleteDoc(ref);
@@ -339,7 +419,7 @@ const Settings = () => {
     });
   };
 
-  
+
 
   const handleEquipmentImport = (event) => {
 
@@ -449,7 +529,7 @@ const Settings = () => {
 
     let isbanned;
     verified_data = studentEmail;
-    let studentList = await getDocs(currentStudentsRef);
+    const studentList = await getDocs(currentStudentsRef);
     //loops through all the current students to find one that matches
     let foundStudent = false;
     studentList.forEach((student) => {
@@ -521,7 +601,7 @@ const Settings = () => {
       if the student is not banned displays only the ban and cancel buttons as well
       as why the student is being banned and the date the student is to be unbanned
       */
-    
+
     if (isbanned) {
       banStudentsPopupHeader.textContent = studentName + " is currently banned.";
       banStudentsPopupText.textContent = "Would you like to unban this student or edit information?";
@@ -568,10 +648,14 @@ const Settings = () => {
 
   const fetchAdminList = async () => {
     const snapshot = await getDocs(adminListRef);
-    const admins = snapshot.docs.map(d => ({
-      id: d.id,
-      ...d.data()
+    
+    // We map the documents so that the "Document ID" (the email)
+    // becomes the 'id' property of our object.
+    const admins = snapshot.docs.map(doc => ({
+      id: doc.id,      // This is the email address string
+      ...doc.data()    // This spreads the 'isAdmin' field
     }));
+
     setAdminList(admins);
   };
 
@@ -697,62 +781,62 @@ const Settings = () => {
           </div>
 
           {/* Right Column: Equipment + Administrative stacked */}
-        <div className="settings-column">
+          <div className="settings-column">
 
-          {/* Equipment Card */}
-          <div className="settings-card">
-            <div className="settings-card-header">
-              <h2>Equipment</h2>
-              <NavDropdown
-                options={["Pepsi-Co Center", "Westerlin Gym"]}
-                defaultOption={equipmentGym}
-                onChange={setEquipmentGym}
-              />
+            {/* Equipment Card */}
+            <div className="settings-card">
+              <div className="settings-card-header">
+                <h2>Equipment</h2>
+                <NavDropdown
+                  options={["Pepsi-Co Center", "Westerlin Gym"]}
+                  defaultOption={equipmentGym}
+                  onChange={setEquipmentGym}
+                />
+              </div>
+
+              <div className="settings-section">
+                <h3 className="settings-section-title">Import Equipment CSV</h3>
+                <p className="settings-section-desc">Upload a CSV to set the full inventory for a gym.</p>
+                <button onClick={() => document.getElementById("equipmentFileInput").click()}>
+                  Import Equipment CSV
+                </button>
+              </div>
+
+              <div className="settings-section">
+                <h3 className="settings-section-title">Add Inventory</h3>
+                <p className="settings-section-desc">Add individual items to the selected gym's inventory.</p>
+                <button onClick={() => setIsAddInventoryOpen(true)}>
+                  Add Inventory
+                </button>
+              </div>
+
+              <div className="settings-section">
+                <h3 className="settings-section-title">Remove from Inventory</h3>
+                <p className="settings-section-desc">Remove individual items from the selected gym's inventory.</p>
+                <button onClick={() => setIsRemoveInventoryOpen(true)}>
+                  Remove from Inventory
+                </button>
+              </div>
             </div>
 
-            <div className="settings-section">
-              <h3 className="settings-section-title">Import Equipment CSV</h3>
-              <p className="settings-section-desc">Upload a CSV to set the full inventory for a gym.</p>
-              <button onClick={() => document.getElementById("equipmentFileInput").click()}>
-                Import Equipment CSV
-              </button>
+            {/* Administrative Card */}
+            <div className="settings-card administrative-card">
+              <div className="settings-card-header">
+                <h2>Administrative</h2>
+              </div>
+              <div className="settings-section">
+                <h3 className="settings-section-title">Manage Administrators</h3>
+                <p className="settings-section-desc">Manage system access and roles.</p>
+                <button
+                  className="add-admin-button"
+                  onClick={() => { setIsAdminPopupOpen(true); fetchAdminList(); }}
+                >
+                  Edit Administrators
+                </button>
+              </div>
             </div>
 
-            <div className="settings-section">
-              <h3 className="settings-section-title">Add Inventory</h3>
-              <p className="settings-section-desc">Add individual items to the selected gym's inventory.</p>
-              <button onClick={() => setIsAddInventoryOpen(true)}>
-                Add Inventory
-              </button>
-            </div>
-
-            <div className="settings-section">
-              <h3 className="settings-section-title">Remove from Inventory</h3>
-              <p className="settings-section-desc">Remove individual items from the selected gym's inventory.</p>
-              <button onClick={() => setIsRemoveInventoryOpen(true)}>
-                Remove from Inventory
-              </button>
-            </div>
           </div>
-
-          {/* Administrative Card */}
-          <div className="settings-card administrative-card">
-            <div className="settings-card-header">
-              <h2>Administrative</h2>
-            </div>
-            <div className="settings-section">
-              <h3 className="settings-section-title">Manage Administrators</h3>
-              <p className="settings-section-desc">Manage system access and roles.</p>
-              <button
-                className="add-admin-button"
-                onClick={() => { setIsAdminPopupOpen(true); fetchAdminList(); }}
-              >
-                Edit Administrators
-              </button>
-            </div>
-          </div>
-
-        </div>
 
         </div>
 
@@ -821,12 +905,13 @@ const Settings = () => {
           </div>
         </div>
 
-        {/* ── Admin Popup ── */}
+        {/* ── Admin Popup ── partially generated by Claude*/}
         {isAdminPopupOpen && (
-          <div className="adminPopupOverlay" onClick={() => setIsAdminPopupOpen(false)}>
+          <div className="adminPopupOverlay" onClick={() => { setIsAdminPopupOpen(false); cancelEditAdmin(); }}>
             <div className="adminPopup" onClick={(e) => e.stopPropagation()}>
-              <button className="adminPopupClose" onClick={() => setIsAdminPopupOpen(false)}>✕</button>
+              <button className="adminPopupClose" onClick={() => { setIsAdminPopupOpen(false); cancelEditAdmin(); }}>✕</button>
               <h2>Manage Administrators</h2>
+
               <table className="adminTable">
                 <thead>
                   <tr>
@@ -838,14 +923,46 @@ const Settings = () => {
                   {adminList.length === 0
                     ? <tr><td colSpan="2">No administrators found.</td></tr>
                     : [...adminList].sort((a, b) => b.isAdmin - a.isAdmin).map((admin, i) => (
-                        <tr key={i}>
-                          <td>{admin.email || admin.Email || admin.id}</td>
-                          <td>{admin.isAdmin ? "Admin" : "Desk Worker"}</td>
-                        </tr>
-                      ))
+                      <tr
+                        key={i}
+                        className={`adminTableRow ${editingAdmin?.id === admin.id ? "adminRowSelected" : ""}`}
+                        onClick={() => openEditAdmin(admin)}
+                      >
+                        <td>{admin.email || admin.Email || admin.id}</td>
+                        <td>{admin.isAdmin ? "Admin" : "Desk Worker"}</td>
+                      </tr>
+                    ))
                   }
+                  <tr className="adminTableRow addAdminRow" onClick={openAddAdmin}>
+                    <td colSpan="2">+ Add Administrator</td>
+                  </tr>
                 </tbody>
               </table>
+
+              {isEditingAdmin && (
+                <div className="adminEditForm">
+                  <p className="adminEditTitle">{editingAdmin ? "Edit administrator" : "Add administrator"}</p>
+                  <div className="adminEditFields">
+                    <input
+                      type="text"
+                      placeholder="Email address"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                    />
+                    <select value={editRole} onChange={(e) => setEditRole(e.target.value === "true")}>
+                      <option value="false">Desk Worker</option>
+                      <option value="true">Admin</option>
+                    </select>
+                  </div>
+                  <div className="adminEditButtons">
+                    <button className="adminSaveButton" onClick={handleSaveAdmin}>Save</button>
+                    <button className="adminCancelButton" onClick={cancelEditAdmin}>Cancel</button>
+                    {editingAdmin && (
+                      <button className="adminDeleteButton" onClick={handleDeleteAdmin}>Remove</button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

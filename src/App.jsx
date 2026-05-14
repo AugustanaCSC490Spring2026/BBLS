@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -80,11 +80,12 @@ function App() {
             <Route
               path="/settings"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requireAdmin={true}>
                   <Settings />
                 </ProtectedRoute>
               }
             />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
