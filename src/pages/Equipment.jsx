@@ -223,20 +223,20 @@ export default function Equipment({ gym, updateGym }) {
         }
     };
 
-    const labelStyle = { display: "block", marginBottom: "5px", fontWeight: "600", fontSize: "0.9rem", textAlign: "left" };
-    const inputStyle = { borderRadius: "8px", width: "100%", padding: "10px", marginBottom: "15px", border: "1px solid #ccc", boxSizing: "border-box" };
+    const labelStyle = { display: "block", marginBottom: "6px", fontWeight: "600", fontSize: "0.875rem", color: "#444" };
+    const inputStyle = { borderRadius: "10px", width: "100%", padding: "12px 16px", border: "1px solid #e2e8f0", boxSizing: "border-box", fontSize: "0.95rem", outline: "none", background: "white" };
 
 
     return (
         <>
             <div className="page">
 
-                <div className="layout" style={{ display: "flex", flexDirection: "column", gap: "20px", padding: "20px" }}>
+                <div className="layout" style={{ display: "flex", flexDirection: "column", gap: "16px", padding: "20px", height: "calc(100vh - 102px)", boxSizing: "border-box" }}>
 
-                    <div style={{ display: "flex", gap: "20px", width: "100%", alignItems: "stretch" }}>
+                    <div style={{ display: "flex", gap: "16px", flex: 1, minHeight: 0 }}>
 
                         {/* Left: New Checkout Form */}
-                        <div className="card" style={{ flex: 1, minHeight: "450px", display: "flex", flexDirection: "column" }}>
+                        <div className="card" style={{ flex: 1, minHeight: 0, maxHeight: "none", overflow: "hidden" }}>
                             <div className="card-header">
                                 <h2>New Checkout</h2>
                                 <NavDropdown
@@ -246,131 +246,142 @@ export default function Equipment({ gym, updateGym }) {
                                 />
                             </div>
 
-                            <div>
-                                <label style={labelStyle}>Student ID</label>
-                                <input
-                                    ref={idInputRef}
-                                    type="password"
-                                    placeholder="Scan or Enter ID"
-                                    style={inputStyle}
-                                    value={studentId}
-                                    onChange={(e) => setStudentId(e.target.value)}
-                                />
-                            </div>
+                            <div className="card-body" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                                <div>
+                                    <label style={labelStyle}>Student ID</label>
+                                    <input
+                                        ref={idInputRef}
+                                        type="password"
+                                        placeholder="Scan or Enter ID"
+                                        style={inputStyle}
+                                        value={studentId}
+                                        onChange={(e) => setStudentId(e.target.value)}
+                                    />
+                                </div>
 
-                            <div>
-                                <label style={labelStyle}>Select Equipment</label>
-                                <select
-                                    style={inputStyle}
-                                    value={selectedEquipment}
-                                    onChange={(e) => setSelectedEquipment(e.target.value)}
+                                <div>
+                                    <label style={labelStyle}>Select Equipment</label>
+                                    <select
+                                        style={inputStyle}
+                                        value={selectedEquipment}
+                                        onChange={(e) => setSelectedEquipment(e.target.value)}
+                                    >
+                                        <option value="">Choose item...</option>
+                                        {availableEquipment.map(item => (
+                                            <option key={item.name} value={item.name}>{item.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label style={labelStyle}>Quantity</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        style={inputStyle}
+                                        value={quantity}
+                                        onChange={(e) => setQuantity(Number(e.target.value))}
+                                    />
+                                </div>
+
+                                <button
+                                    onClick={handleCheckout}
+                                    disabled={isProcessing}
+                                    style={{
+                                        marginTop: "auto",
+                                        padding: "12px",
+                                        borderRadius: "10px",
+                                        border: "none",
+                                        background: isProcessing ? "#ccc" : "#002F6C",
+                                        color: "white",
+                                        fontSize: "0.9375rem",
+                                        fontWeight: "600",
+                                        cursor: isProcessing ? "not-allowed" : "pointer",
+                                        opacity: isProcessing ? 0.6 : 1,
+                                        transition: "background 0.2s",
+                                    }}
                                 >
-                                    <option value="">Choose item...</option>
-                                    {availableEquipment.map(item => (
-                                        <option key={item.name} value={item.name}>{item.name}</option>
-                                    ))}
-                                </select>
+                                    {isProcessing ? "Processing..." : "Checkout"}
+                                </button>
                             </div>
-
-                            <div>
-                                <label style={labelStyle}>Quantity</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    style={inputStyle}
-                                    value={quantity}
-                                    onChange={(e) => setQuantity(Number(e.target.value))}
-                                />
-                            </div>
-
-                            <button
-                                onClick={handleCheckout}
-                                disabled={isProcessing}
-                                style={{
-                                    borderRadius: "8px",
-                                    marginTop: "auto",
-                                    padding: "12px",
-                                    cursor: isProcessing ? "not-allowed" : "pointer",
-                                    opacity: isProcessing ? 0.6 : 1,
-                                    backgroundColor: isProcessing ? "#ccc" : ""
-                                }}
-                            >
-                                {isProcessing ? "Processing..." : "Checkout"}
-                            </button>
                         </div>
 
                         {/* Right: Inventory with Progress Bars */}
-                        <div className="card" style={{ flex: 1, minHeight: "450px" }}>
+                        <div className="card" style={{ flex: 1, minHeight: 0, maxHeight: "none", overflowY: "auto" }}>
                             <div className="card-header">
-                                <h2 style={{ marginBottom: "20px" }}>Inventory Status</h2>
+                                <h2>Inventory Status</h2>
                             </div>
-                            <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
-                                {availableEquipment.map(item => {
-                                    const percentage = item.total > 0 ? (item.available / item.total) * 100 : 0;
-                                    const barWidth = Math.min(percentage, 100);
+                            <div className="card-body">
+                                <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
+                                    {availableEquipment.map(item => {
+                                        const percentage = item.total > 0 ? (item.available / item.total) * 100 : 0;
+                                        const barWidth = Math.min(percentage, 100);
 
-                                    let barColor = "#52b788";
-                                    if (percentage < 25 || item.available === 0) {
-                                        barColor = "#ff4d4d";
-                                    } else if (percentage < 50) {
-                                        barColor = "#ffd166";
-                                    }
+                                        let barColor = "#52b788";
+                                        if (percentage < 25 || item.available === 0) {
+                                            barColor = "#ff4d4d";
+                                        } else if (percentage < 50) {
+                                            barColor = "#ffd166";
+                                        }
 
-                                    return (
-                                        <div key={item.name}>
-                                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontWeight: "600" }}>
-                                                <span>{item.name}</span>
-                                                <span style={{ color: "#666", fontSize: "0.9rem" }}>
-                                                    {item.available}/{item.total} available
-                                                </span>
+                                        return (
+                                            <div key={item.name}>
+                                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontWeight: "600" }}>
+                                                    <span>{item.name}</span>
+                                                    <span style={{ color: "#666", fontSize: "0.9rem" }}>
+                                                        {item.available}/{item.total} available
+                                                    </span>
+                                                </div>
+                                                <div style={{ width: "100%", backgroundColor: "#e0e0e0", borderRadius: "10px", height: "10px", overflow: "hidden" }}>
+                                                    <div style={{
+                                                        width: `${barWidth}%`,
+                                                        backgroundColor: barColor,
+                                                        height: "100%",
+                                                        borderRadius: "10px",
+                                                        transition: "width 0.5s ease-out, background-color 0.3s ease"
+                                                    }} />
+                                                </div>
                                             </div>
-                                            <div style={{ width: "100%", backgroundColor: "#e0e0e0", borderRadius: "10px", height: "10px", overflow: "hidden" }}>
-                                                <div style={{
-                                                    width: `${barWidth}%`,
-                                                    backgroundColor: barColor,
-                                                    height: "100%",
-                                                    borderRadius: "10px",
-                                                    transition: "width 0.5s ease-out, background-color 0.3s ease"
-                                                }} />
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Bottom: Full Width Active Checkouts */}
-                    <div className="card active-checkouts-card" style={{ width: "100%" }}>
+                    <div className="card active-checkouts-card" style={{ flex: "0 0 210px", overflowY: "auto" }}>
                         <div className="card-header">
                             <h2>Active Checkouts</h2>
                         </div>
 
-                        {activeCheckouts.length === 0 ? (
-                            <p className="empty-message">No active checkouts</p>
-                        ) : (
-                            <div className="checkout-grid">
-                                {activeCheckouts.map(item => (
-                                    <div key={item.id} className="checkout">
-                                        <div>
-                                            <strong>{item.studentName}</strong>
-                                            <p>{item.equipment} {" x"}{item.quantity}</p>
+                        <div className="card-body">
+                            {activeCheckouts.length === 0 ? (
+                                <p className="empty-message">No active checkouts</p>
+                            ) : (
+                                <div className="checkout-grid">
+                                    {activeCheckouts.map(item => (
+                                        <div key={item.id} className="checkout">
+                                            <div>
+                                                <strong>{item.studentName}</strong>
+                                                <p>{item.equipment} {" x"}{item.quantity}</p>
+                                            </div>
+                                            <button
+                                                onClick={() => handleReturn(item.id)}
+                                                disabled={returningId !== null}
+                                                style={{
+                                                    opacity: returningId !== null ? 0.6 : 1,
+                                                    cursor: returningId !== null ? "not-allowed" : "pointer",
+                                                    minWidth: "100px"
+                                                }}
+                                            >
+                                                {returningId === item.id ? "Returning..." : "Return"}
+                                            </button>
                                         </div>
-                                        <button
-                                            onClick={() => handleReturn(item.id)}
-                                            disabled={returningId !== null}
-                                            style={{
-                                                opacity: returningId !== null ? 0.6 : 1,
-                                                cursor: returningId !== null ? "not-allowed" : "pointer",
-                                                minWidth: "100px"
-                                            }}
-                                        >
-                                            {returningId === item.id ? "Returning..." : "Return"}
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
