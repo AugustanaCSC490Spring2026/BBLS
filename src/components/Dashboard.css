@@ -64,7 +64,7 @@
 
 .swipe-card input:focus {
   border-color: #002F6C;
-  box-shadow: 0 0 0 3px rgba(0, 47, 108, 0.08);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.10);
 }
 
 .swipe-button {

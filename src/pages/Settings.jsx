@@ -642,12 +642,12 @@ const Settings = () => {
         //if student is not banned only gives option to ban
         if (!docSnap.exists()) {
           isbanned = false;
-          displayPopup(isbanned);
+          displayPopup(isbanned, docSnap);
         }
         else {
           isbanned = true;
           differentReasonBanned = docSnap.data().reasonBanned;
-          displayPopup(isbanned);
+          displayPopup(isbanned, docSnap);
           console.log(docSnap.data().reasonBanned);
         }
       })
@@ -671,7 +671,7 @@ const Settings = () => {
 
   // }
 
-  function displayPopup(isbanned) {
+  function displayPopup(isbanned, enteredStudent) {
     const banStudentsPopupContainer = document.getElementById("banStudentsPopupContainer");
     const banStudentButton = document.getElementById("banStudentButton");
     const unbanStudentButton = document.getElementById("unbanStudentButton");
@@ -689,25 +689,25 @@ const Settings = () => {
 
     if (isbanned) {
       banStudentsPopupHeader.textContent = studentName + " is currently banned.";
-      banStudentsPopupText.textContent = "Would you like to unban this student?";
+      banStudentsPopupText.textContent = "Would you like to unban this student or edit information?";
       unbanStudentButton.style.display = "flex";
-      banStudentButton.style.display = "none";
-      banStudentReasonStatememnt.style.display = "none";
-      banStudentReasonForm.style.display = "none";
-      unbanDateStatement.style.display = "none";
-      unbanDateInput.style.display = "none";
+      let date = enteredStudent.data().dateToBeUnbanned;
+      setUnbanDate(date);
+      unbanDateInput.value = date;
+      let reasonBanned = enteredStudent.data().reasonBanned;
+      banStudentReasonForm.value = reasonBanned;
+      banStudentButton.textContent = "edit ban"
     }
     else {
       banStudentsPopupHeader.textContent = studentName + " is currently not banned.";
       banStudentsPopupText.textContent = "Would you like to ban this student?";
       unbanStudentButton.style.display = "none";
-      banStudentButton.style.display = "flex";
-      banStudentReasonStatememnt.style.display = "flex";
-      banStudentReasonForm.style.display = "flex";
-      unbanDateStatement.style.display = "flex";
-      unbanDateInput.style.display = "flex";
-      setUnbanDate(new Date().toLocaleDateString('en-CA'));
-      unbanDateInput.value = new Date().toLocaleDateString('en-CA');
+      banStudentButton.textContent = "ban"
+      let date = new Date();
+      date.setDate(date.getDate() + 1);
+      date = date.toLocaleDateString('en-CA');
+      setUnbanDate(date);
+      unbanDateInput.value = date;
     }
     banStudentsPopupContainer.style.display = "flex";
   }
@@ -961,9 +961,10 @@ const Settings = () => {
           <div className="banStudentsPopupBackground">
             <div className="banStudentsPopup">
               <h2 id="banStudentsPopupHeader">If you see this there is a bug</h2>
+              <p id="banStudentsPopupText" className="banStudentsPopupText"></p>
               <p
                 id="banStudentReasonStatememnt"
-                className="banStudentReasonStatememnt">Why would you like to ban this student?</p>
+                className="banStudentReasonStatememnt">reason student is to be banned</p>
               <input
                 className="banStudentReasonForm"
                 id="banStudentReasonForm"
@@ -974,14 +975,13 @@ const Settings = () => {
               />
               <p
                 id="unbanDateStatement"
-                className="unbanDateStatement"> Enter Date Student should be Unbanned</p>
+                className="unbanDateStatement"> Date Student is to be Unbanned</p>
               <input
                 id="unbaneDateInput"
                 className="unbaneDateInput"
                 type="Date"
                 onChange={(e) => setUnbanDate(e.target.value)}
               />
-              <p id="banStudentsPopupText"></p>
               <div className="popup-button-group">
                 <button
                   className="banStudentButton"
@@ -989,15 +989,16 @@ const Settings = () => {
                   onClick={banStudent}
                 >Ban</button>
                 <button
-                  className="unbanStudentButton"
-                  id="unbanStudentButton"
-                  onClick={unbanStudent}
-                >Unban</button>
-                <button
                   className="cancelOperationButton"
                   id="cancelOperationButton"
                   onClick={cancelOperation}
                 >Cancel</button>
+                <button
+                  className="unbanStudentButton"
+                  id="unbanStudentButton"
+                  onClick={unbanStudent}
+                >Unban</button>
+                
               </div>
             </div>
           </div>
