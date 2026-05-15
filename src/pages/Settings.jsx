@@ -360,9 +360,11 @@ const Settings = () => {
               continue;
             }
 
+            const hashedId = await hashId(studentId);
+
             // Build the student object to store in Firestore
             const studentData = {
-              ID: studentId,
+              ID: hashedId,
               Email: row.AUGIE_EMAIL || "",
               LastName: row.LastName || "",
               FirstName: row.Pref_FirstName || "",
@@ -377,7 +379,7 @@ const Settings = () => {
             };
 
             // Create a document reference using student ID as the document ID
-            const docRef = doc(db, "currentStudents", studentId);
+            const docRef = doc(db, "currentStudents", hashedId);
 
             // Add this write operation to the batch
             batch.set(docRef, studentData);

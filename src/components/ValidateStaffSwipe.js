@@ -1,4 +1,8 @@
-async function ValidateStaffSwipe(swipe, getDoc, doc, db){
+import  { doc, getDoc } from "firebase/firestore";
+import { db } from "../Firebase.js";
+import { hashId } from "./HashId.js";
+
+async function ValidateStaffSwipe(swipe) {
 
   // defining vars for the return object.
 
@@ -42,23 +46,24 @@ async function ValidateStaffSwipe(swipe, getDoc, doc, db){
 
   }
 
-  
+
 
   // backend validation now that we know the ID number.
 
-  try{
+  try {
 
-    const staffSnap = await getDoc(doc(db, "currentStaff", swipe));
+    const hashedId = await hashId(swipe);
+    const staffSnap = await getDoc(doc(db, "currentStaff", hashedId));
 
     if (staffSnap.exists()) {
 
       name = staffSnap.data().FirstName + " " + staffSnap.data().LastName;
 
-      swipeValid = true;  
+      swipeValid = true;
 
     }
 
-    else{
+    else {
 
       return {
 
@@ -76,7 +81,7 @@ async function ValidateStaffSwipe(swipe, getDoc, doc, db){
 
   }
 
-  catch (error){
+  catch (error) {
 
     console.log("Error fetching staff data:", error);
 
@@ -94,21 +99,21 @@ async function ValidateStaffSwipe(swipe, getDoc, doc, db){
 
   }
 
-  
+
 
   // staff exists, checking if they are banned.
 
-  
+
 
   return {
 
-  isValid: swipeValid,
+    isValid: swipeValid,
 
-  staffId: swipe,
+    staffId: swipe,
 
-  name: name,
+    name: name,
 
-  reasonDenied: reasonSwipeDenied
+    reasonDenied: reasonSwipeDenied
 
   };
 
