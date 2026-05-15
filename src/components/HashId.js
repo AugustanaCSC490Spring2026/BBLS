@@ -1,8 +1,8 @@
 import { getFunctions, httpsCallable } from "firebase/functions";
-import { app } from "./Firebase.js";
+import { app } from "../Firebase.js";
 
-const functions = getFunctions(app);
-const hashStudentIdFn = httpsCallable(functions, "hashStudentId");
+const functionsInstance = getFunctions(app, "us-central1");
+const hashStudentIdFn = httpsCallable(functionsInstance, "hashStudentId");
 
 export async function hashId(rawId) {
   const result = await hashStudentIdFn({ rawId });

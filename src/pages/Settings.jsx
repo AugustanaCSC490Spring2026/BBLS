@@ -13,6 +13,8 @@ import { db } from "../Firebase.js";
 // Firestore tools
 import { doc, writeBatch, collection, serverTimestamp, getDoc, deleteDoc, setDoc, getDocs, addDoc, updateDoc } from "firebase/firestore";
 
+import { hashId } from "../components/HashId.js";
+
 import "../components/Settings.css";
 
 import ToastContainer from "../components/ToastContainer.jsx";
