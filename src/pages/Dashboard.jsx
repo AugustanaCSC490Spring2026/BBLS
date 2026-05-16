@@ -29,6 +29,7 @@ function Dashboard({ gym, updateGym }) {
   const inputRef = useRef(null);
   const overlaySwipeRef = useRef(null);
   const [awayMode, setAwayMode] = useState(false);
+  const awayModeRef = useRef(false);
   const [bannedOverlay, setBannedOverlay] = useState({ visible: false, message: "" });
   const [toasts, setToasts] = useState([]);
   const toastIdRef = useRef(0);
@@ -41,6 +42,10 @@ function Dashboard({ gym, updateGym }) {
   useEffect(() => {
     overlaySwipeRef.current = handleOverlaySwipe;
   }, [gym]);
+
+  useEffect(() => {
+    awayModeRef.current = awayMode;
+  }, [awayMode]);
 
   // Keeps input focused every 5 seconds
   useEffect(() => {
@@ -142,7 +147,7 @@ function Dashboard({ gym, updateGym }) {
     let overallName = "No staff name";
 
     if (guestData.category === "Staff") {
-      const isValidData = await ValidateStaffSwipe(guestData.staffId);
+      const isValidData = await ValidateStaffSwipe(guestData.staffId, getDoc, doc, db);
       validBool = isValidData.isValid;
       reasonDenied = isValidData.reasonDenied;
       overallName = isValidData.name;
@@ -183,7 +188,7 @@ function Dashboard({ gym, updateGym }) {
         addDoc(westerlinGymRef, { ID: verified_data, swipeInTime: timeStamp });
       }
 
-    } else if (!swipeValid && reasonSwipeDenied.includes("banned")){
+    } else if (!swipeValid && reasonSwipeDenied.includes("banned") && !awayModeRef.current){
       setBannedOverlay({ visible: true, message: reasonSwipeDenied });
     } else if (!swipeValid) {
       addToast("error", "ID Denied", reasonSwipeDenied);

@@ -1,4 +1,3 @@
-import React from "react";
 import "./BannedStudentOverlay.css";
 
 function BannedStudentOverlay({ isVisible, message, onDismiss }) {
@@ -16,34 +15,11 @@ function BannedStudentOverlay({ isVisible, message, onDismiss }) {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
+        cursor: "pointer",
         userSelect: "none",
       }}
+      onClick={onDismiss}
     >
-      <button
-        onClick={onDismiss}
-        style={{
-          position: "absolute",
-          top: "1.5rem",
-          right: "1.5rem",
-          background: "none",
-          border: "2px solid rgba(255,255,255,0.6)",
-          borderRadius: "50%",
-          color: "white",
-          fontSize: "1.4rem",
-          width: "2.8rem",
-          height: "2.8rem",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          lineHeight: 1,
-          opacity: 0.9,
-        }}
-        aria-label="Dismiss banned student alert"
-      >
-        ✕
-      </button>
-
       <h1
         style={{
           color: "#fff",
@@ -74,12 +50,12 @@ function BannedStudentOverlay({ isVisible, message, onDismiss }) {
         style={{
           position: "absolute",
           bottom: "1.5rem",
-          color: "rgba(255,255,255,0.35)",
+          color: "rgba(255,255,255,0.3)",
           fontSize: "0.8rem",
           letterSpacing: "0.08em",
         }}
       >
-        Press ✕ to dismiss
+        Click anywhere to dismiss
       </p>
     </div>
   );
