@@ -12,6 +12,7 @@ import { db } from "../Firebase.js";
 
 // Firestore tools
 import { doc, writeBatch, collection, serverTimestamp, getDoc, deleteDoc, setDoc, getDocs, addDoc, updateDoc } from "firebase/firestore";
+import { hashId } from "../components/HashId.js";
 
 import "../components/Settings.css";
 
@@ -20,7 +21,7 @@ import AddInventoryPopup from "../components/AddInventoryPopup.jsx";
 import RemoveInventoryPopup from "../components/RemoveInventoryPopup.jsx";
 import NavDropdown from "../components/NavDropdown.jsx";
 
-
+const currentStaffRef = collection(db, "currentStaff"); // New reference
 const bannedStudentsRef = collection(db, "bannedStudents");
 const currentStudentsRef = collection(db, "currentStudents");
 const adminListRef = collection(db, "authorized_users");
@@ -109,6 +110,88 @@ const Settings = () => {
     setEditEmail("");
     setEditRole(false);
   };
+
+  const handleStaffFileChange = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (file.type !== "text/csv" && !file.name.toLowerCase().endsWith(".csv")) {
+      addToast("error", "Invalid File", "Please upload a valid .csv file.");
+      event.target.value = null;
+      return;
+    }
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const data = results.data;
+
+        const confirmUpload = window.confirm(
+          "This will DELETE all existing staff and replace them with the uploaded CSV.\n\nAre you sure?"
+        );
+
+        if (!confirmUpload) {
+          addToast("error", "Upload Cancelled", "Staff upload cancelled.");
+          event.target.value = null;
+          return;
+        }
+
+        // Clear existing staff collection
+        await clearCollection("currentStaff");
+
+        let successCount = 0;
+        let failCount = 0;
+        let batch = writeBatch(db);
+        let operationCount = 0;
+
+        for (const row of data) {
+          try {
+            let staffId = row.ID?.trim();
+
+            if (!staffId || staffId.length !== 7) {
+              failCount++;
+              continue;
+            }
+
+            const hashedId = await hashId(staffId);
+
+            const staffData = {
+              ID: hashedId,
+              LastName: row.LastName || "",
+              FirstName: row.Pref_FirstName || "",
+            };
+
+            const docRef = doc(db, "currentStaff", hashedId);
+            batch.set(docRef, staffData);
+
+            operationCount++;
+            successCount++;
+
+            if (operationCount === 500) {
+              await batch.commit();
+              batch = writeBatch(db);
+              operationCount = 0;
+            }
+          } catch (err) {
+            console.error("Error processing row:", err);
+            failCount++;
+          }
+        }
+
+        if (operationCount > 0) {
+          await batch.commit();
+        }
+
+        addToast("success", "Upload Complete", `Staff Success: ${successCount}, Failed: ${failCount}`);
+        event.target.value = null;
+      },
+      error: (err) => {
+        addToast("error", "CSV Error", "Error parsing staff CSV.");
+      }
+    });
+  };
+
   // the next 50 lines were helped code with claude
   const handleSaveAdmin = async () => {
     if (!editEmail.trim()) return;
@@ -360,9 +443,11 @@ const Settings = () => {
               continue;
             }
 
+            const hashedId = await hashId(studentId);
+
             // Build the student object to store in Firestore
             const studentData = {
-              ID: studentId,
+              ID: hashedId,
               Email: row.AUGIE_EMAIL || "",
               LastName: row.LastName || "",
               FirstName: row.Pref_FirstName || "",
@@ -377,7 +462,7 @@ const Settings = () => {
             };
 
             // Create a document reference using student ID as the document ID
-            const docRef = doc(db, "currentStudents", studentId);
+            const docRef = doc(db, "currentStudents", hashedId);
 
             // Add this write operation to the batch
             batch.set(docRef, studentData);
@@ -648,7 +733,7 @@ const Settings = () => {
 
   const fetchAdminList = async () => {
     const snapshot = await getDocs(adminListRef);
-    
+
     // We map the documents so that the "Document ID" (the email)
     // becomes the 'id' property of our object.
     const admins = snapshot.docs.map(doc => ({
@@ -736,6 +821,20 @@ const Settings = () => {
                 accept=".csv"
                 style={{ display: "none" }}
                 onChange={handleFileChange}
+              />
+            </div>
+            <div className="settings-section">
+              <h3 className="settings-section-title">Import Staff Body</h3>
+              <p className="settings-section-desc">Replace the current staff list with a new CSV file.</p>
+              <button onClick={() => document.getElementById("staffFileInput").click()}>
+                Import Staff CSV
+              </button>
+              <input
+                id="staffFileInput"
+                type="file"
+                accept=".csv"
+                style={{ display: "none" }}
+                onChange={handleStaffFileChange}
               />
             </div>
 

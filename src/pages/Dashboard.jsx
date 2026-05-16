@@ -142,7 +142,7 @@ function Dashboard({ gym, updateGym }) {
     let overallName = "No staff name";
 
     if (guestData.category === "Staff") {
-      const isValidData = await ValidateStaffSwipe(guestData.staffId, getDoc, doc, db);
+      const isValidData = await ValidateStaffSwipe(guestData.staffId);
       validBool = isValidData.isValid;
       reasonDenied = isValidData.reasonDenied;
       overallName = isValidData.name;
