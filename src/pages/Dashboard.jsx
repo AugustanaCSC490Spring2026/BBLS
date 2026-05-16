@@ -13,6 +13,7 @@ import "../components/Dashboard.css";
 import GuestPopup from "../components/GuestTab.jsx";
 import ValidateSwipe from "../components/ValidateSwipe.js";
 import AwayModeOverlay from "../components/AwayModeOverlay.jsx";
+import BannedStudentOverlay from "../components/BannedStudentOverlay.jsx";
 const pepsicoCenterRef = collection(db, 'pepsicoCenter')
 const westerlinGymRef = collection(db, 'westerlinGym')
 const invalidSwipeInRef = collection(db, 'invalidSwipeIns');
@@ -28,6 +29,7 @@ function Dashboard({ gym, updateGym }) {
   const inputRef = useRef(null);
   const overlaySwipeRef = useRef(null);
   const [awayMode, setAwayMode] = useState(false);
+  const [bannedOverlay, setBannedOverlay] = useState({ visible: false, message: "" });
   const [toasts, setToasts] = useState([]);
   const toastIdRef = useRef(0);
 
@@ -133,14 +135,6 @@ function Dashboard({ gym, updateGym }) {
     }
   };
 
-  function displayIdEntryError(swipeOutput) {
-    const customAlert = document.getElementById("customAlert");
-    const alertText = document.getElementById("alertText");
-    alertText.textContent = swipeOutput;
-    customAlert.style.display = "flex";
-    setTimeout(() => { customAlert.style.display = "none"; }, 3000);
-  }
-
   async function processGuestEntry(guestData) {
     const timeStamp = serverTimestamp();
     let validBool = true;
@@ -190,7 +184,7 @@ function Dashboard({ gym, updateGym }) {
       }
 
     } else if (!swipeValid && reasonSwipeDenied.includes("banned")){
-      displayIdEntryError(reasonSwipeDenied);
+      setBannedOverlay({ visible: true, message: reasonSwipeDenied });
     } else if (!swipeValid) {
       addToast("error", "ID Denied", reasonSwipeDenied);
       addDoc(invalidSwipeInRef, { gym: gym, ID: verified_data, swipeInTime: timeStamp });
@@ -210,7 +204,7 @@ function Dashboard({ gym, updateGym }) {
         </div>
         <div className="dash-left">
           <button onClick={() => setAwayMode(true)}>
-            <img src={awayModeIcon} alt="Away Mode" />
+            Away
           </button>
         </div>
       </div>
@@ -220,6 +214,12 @@ function Dashboard({ gym, updateGym }) {
           isActive={awayMode}
           onDismiss={() => setAwayMode(false)}
           onSwipe={(id) => overlaySwipeRef.current?.(id)}
+        />
+
+        <BannedStudentOverlay
+          isVisible={bannedOverlay.visible}
+          message={bannedOverlay.message}
+          onDismiss={() => setBannedOverlay({ visible: false, message: "" })}
         />
 
         <div className="swipe-card">
@@ -272,12 +272,6 @@ function Dashboard({ gym, updateGym }) {
           removeToast={removeToast}
         />
       )}
-      <div className="customAlert" id="customAlert">
-        <div className="alertContent" id="alertContent">
-          <h2 className="alertHeading">ID entry error</h2>
-          <p id="alertText"></p>
-        </div>
-      </div>
     </>
   );
 }
