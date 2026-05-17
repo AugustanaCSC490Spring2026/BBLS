@@ -43,9 +43,7 @@ function Analytics({ gym, updateGym }) {
   // Cached student data (FULL FETCH)
   const [studentMap, setStudentMap] = useState({});
 
-  const [dataFile, setDataFile] = useState("normal");
-
-  const [normalData, setNormalData] = useState([]);
+  const [dataFile, setDataFile] = useState("combined");
 
   // 🆕 Export dropdown state
   const [exportFormat, setExportFormat] = useState("");
@@ -175,67 +173,6 @@ function Analytics({ gym, updateGym }) {
     loadStudents();
   }, []);
 
-  function generateNormalDataset() {
-    const startDate = new Date();
-    startDate.setMonth(startDate.getMonth() - 12);
-    const endDate = new Date();
-
-    const data = [];
-
-    function randomStudent() {
-      return Math.floor(10000 + Math.random() * 90000);
-    }
-
-    function getHoursForDay(day) {
-      switch (day) {
-        case 0: return [10, 22];
-        case 1:
-        case 2:
-        case 3:
-        case 4: return [7, 22];
-        case 5: return [7, 20];
-        case 6: return [9, 18];
-        default: return [7, 22];
-      }
-    }
-
-    let cursor = new Date(startDate);
-
-    while (cursor <= endDate) {
-      const day = cursor.getDay();
-      const [open, close] = getHoursForDay(day);
-      const swipes = Math.floor(Math.random() * 40) + 20;
-
-      for (let i = 0; i < swipes; i++) {
-        const hour = Math.floor(Math.random() * (close - open)) + open;
-
-        const d = new Date(cursor);
-        d.setHours(hour);
-        d.setMinutes(Math.floor(Math.random() * 60));
-        d.setSeconds(Math.floor(Math.random() * 60));
-
-        data.push({
-          studentId: randomStudent(),
-          time: d.toISOString().slice(0, 19)
-        });
-      }
-
-      cursor.setDate(cursor.getDate() + 1);
-    }
-
-    return data;
-  }
-
-  const datasets = {
-    normal: generateNormalDataset,
-  };
-
-  useEffect(() => {
-    setNormalData(generateNormalDataset());
-  }, []);
-
-
-
   // Key useEffect that reloads charts anytime an attribute of the chart changes (one of the drop-downs). This one leads to swipeData being generated (based off a given collection, gets swipes for that range)
   useEffect(() => {
     async function loadData() {
@@ -261,9 +198,6 @@ function Analytics({ gym, updateGym }) {
       else if (dataFile === "guestEntrance") {
         await fetchGuestEntrance();
       }
-      else if (dataFile === "normal") {
-        setSwipeData(normalData);
-      }
       else {
         setSwipeData(datasets[dataFile] || []);
       }
@@ -271,7 +205,7 @@ function Analytics({ gym, updateGym }) {
     }
 
     loadData();
-  }, [dataFile, timeRange, startDate, endDate, normalData]);
+  }, [dataFile, timeRange, startDate, endDate]);
 
   // Based on the given time range chosen by a user, this function selects the start/end times
   function getDateRange() {
@@ -1024,7 +958,6 @@ function Analytics({ gym, updateGym }) {
                 value={dataFile}
                 onChange={(e) => setDataFile(e.target.value)}
               >
-                <option value="normal">Randomly Generated (non-firebase data)</option>
                 <option value="pepsico">PepsiCo Swipes</option>
                 <option value="westerlin">Westerlin Swipes</option>
                 <option value="combined">Combined Gym Swipes</option>
