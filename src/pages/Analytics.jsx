@@ -654,26 +654,22 @@ function Analytics({ gym, updateGym }) {
 
     // Increments cursor from the start time until the end time, designating the labels for the buckets
     while (cursor <= end) {
-      let label = "";
+
+      let label = getLabel(cursor);
 
       if (interval === "hours") {
-        label = `${cursor.getMonth() + 1}/${cursor.getDate()}/${cursor.getFullYear()} ${cursor.getHours()}:00`;
         cursor.setHours(cursor.getHours() + 1);
       }
       else if (interval === "days") {
-        label = `${cursor.getMonth() + 1}/${cursor.getDate()}/${cursor.getFullYear()}`;
         cursor.setDate(cursor.getDate() + 1);
       }
       else if (interval === "weeks") {
-        label = `${cursor.getMonth() + 1}/${cursor.getDate()}/${cursor.getFullYear()}`;
         cursor.setDate(cursor.getDate() + 7);
       }
       else if (interval === "months") {
-        label = `${cursor.getMonth() + 1}/${cursor.getFullYear()}`;
         cursor.setMonth(cursor.getMonth() + 1);
       }
       else if (interval === "years") {
-        label = `${cursor.getFullYear()}`;
         cursor.setFullYear(cursor.getFullYear() + 1);
       }
 
@@ -695,22 +691,13 @@ function Analytics({ gym, updateGym }) {
       if (isNaN(date)) return;
       if (date < start || date > end) return;
 
-      let label = "";
+      let label = getLabel(date);
 
-      if (interval === "hours")
-        label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()} ${date.getHours()}:00`;
-      else if (interval === "days")
-        label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
-      else if (interval === "weeks") {
+      if (interval === "weeks") {
         const weekStart = new Date(date);
         weekStart.setDate(date.getDate() - date.getDay());
         weekStart.setHours(0, 0, 0, 0);
-        label = `${weekStart.getMonth() + 1}/${weekStart.getDate()}/${weekStart.getFullYear()}`;
       }
-      else if (interval === "months")
-        label = `${date.getMonth() + 1}/${date.getFullYear()}`;
-      else if (interval === "years")
-        label = `${date.getFullYear()}`;
 
       if (buckets[label] !== undefined) buckets[label] += 1;
     });
@@ -905,23 +892,15 @@ function Analytics({ gym, updateGym }) {
           categoryMap[category] = { ...buckets };
         }
 
-        let label = "";
+        let label = getLabel(date);
 
         // Same interval logic as processData()
-        if (interval === "hours")
-          label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()} ${date.getHours()}:00`;
-        else if (interval === "days")
-          label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
-        else if (interval === "weeks") {
+        if (interval === "weeks") {
           const weekStart = new Date(date);
           weekStart.setDate(date.getDate() - date.getDay());
           weekStart.setHours(0, 0, 0, 0);
-          label = `${weekStart.getMonth() + 1}/${weekStart.getDate()}/${weekStart.getFullYear()}`;
         }
-        else if (interval === "months")
-          label = `${date.getMonth() + 1}/${date.getFullYear()}`;
-        else if (interval === "years")
-          label = `${date.getFullYear()}`;
+
 
         // Increments the correct category + time bucket
         if (categoryMap[category][label] !== undefined) {
@@ -992,6 +971,27 @@ function Analytics({ gym, updateGym }) {
         {!loading && <p className="sc-sub">Last week: {lastWeek.toLocaleString()}</p>}
       </div>
     );
+  }
+
+  function getLabel(cursor) {
+    let label = "";
+
+    if (interval === "hours") {
+      label = `${cursor.getMonth() + 1}/${cursor.getDate()}/${cursor.getFullYear()} ${cursor.getHours()}:00`;
+    }
+    else if (interval === "days") {
+      label = `${cursor.getMonth() + 1}/${cursor.getDate()}/${cursor.getFullYear()}`;
+    }
+    else if (interval === "weeks") {
+      label = `${cursor.getMonth() + 1}/${cursor.getDate()}/${cursor.getFullYear()}`;
+    }
+    else if (interval === "months") {
+      label = `${cursor.getMonth() + 1}/${cursor.getFullYear()}`;
+    }
+    else if (interval === "years") {
+      label = `${cursor.getFullYear()}`;
+    }
+    return label
   }
 
   return (
