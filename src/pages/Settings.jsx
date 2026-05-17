@@ -20,6 +20,9 @@ import ToastContainer from "../components/ToastContainer.jsx";
 import AddInventoryPopup from "../components/AddInventoryPopup.jsx";
 import RemoveInventoryPopup from "../components/RemoveInventoryPopup.jsx";
 import NavDropdown from "../components/NavDropdown.jsx";
+import AdminPopup from "../components/AdminPopup.jsx";
+import BanStudentPopup from "../components/BanStudentPopup.jsx";
+import BannedStudentsPopup from "../components/BannedStudentsPopup.jsx";
 
 const currentStaffRef = collection(db, "currentStaff"); // New reference
 const bannedStudentsRef = collection(db, "bannedStudents");
@@ -66,6 +69,9 @@ const Settings = () => {
   const [bannedStudents, setBannedStudents] = useState([]);
   const [possibleStudents, updatePossibleStudents] = useState([]);
   const [isAdminPopupOpen, setIsAdminPopupOpen] = useState(false);
+  const [isBanPopupOpen, setIsBanPopupOpen] = useState(false);
+  const [banPopupStudent, setBanPopupStudent] = useState(null);
+  const [isBannedStudentsPopupOpen, setIsBannedStudentsPopupOpen] = useState(false);
   const [isAddInventoryOpen, setIsAddInventoryOpen] = useState(false);
   const [isRemoveInventoryOpen, setIsRemoveInventoryOpen] = useState(false);
   const [availableEquipment, setAvailableEquipment] = useState([]);
@@ -263,6 +269,7 @@ const Settings = () => {
       id: d.data().ID,
       name: d.data().FirstName + " " + d.data().LastName,
       unbanDate: d.data().dateToBeUnbanned,
+      reason: d.data().reasonBanned || "",
     }));
     setBannedStudents(bannedList); // use state instead of direct DOM manipulation
     //updatePossibleStudents(bannedList)
@@ -282,6 +289,18 @@ const Settings = () => {
     await deleteDoc(ref);
     addToast("success", "Student Unbanned", studentName + " has been unbanned.");
     updateBannedStudentsList();
+  };
+
+  const handleSaveBannedStudentChanges = async ({ studentId, reasonBanned, dateToBeUnbanned }) => {
+    try {
+      const ref = doc(db, "bannedStudents", studentId);
+      await updateDoc(ref, { reasonBanned, dateToBeUnbanned });
+      addToast("success", "Ban Updated", "Ban details have been updated.");
+      updateBannedStudentsList();
+    } catch (err) {
+      console.error(err);
+      addToast("error", "Update Failed", "Could not update ban details.");
+    }
   };
 
   const handleRemoveInventory = async ({ itemName, quantity: qty }) => {
@@ -672,44 +691,19 @@ const Settings = () => {
   // }
 
   function displayPopup(isbanned, enteredStudent) {
-    const banStudentsPopupContainer = document.getElementById("banStudentsPopupContainer");
-    const banStudentButton = document.getElementById("banStudentButton");
-    const unbanStudentButton = document.getElementById("unbanStudentButton");
-    const banStudentsPopupHeader = document.getElementById("banStudentsPopupHeader");
-    const banStudentsPopupText = document.getElementById("banStudentsPopupText");
-    const banStudentReasonStatememnt = document.getElementById("banStudentReasonStatememnt");
-    const banStudentReasonForm = document.getElementById("banStudentReasonForm");
-    const unbanDateStatement = document.getElementById("unbanDateStatement");
-    const unbanDateInput = document.getElementById("unbaneDateInput");
-
-    /*if the student is banned displays only the unban and cancel buttons
-      if the student is not banned displays only the ban and cancel buttons as well
-      as why the student is being banned and the date the student is to be unbanned
-      */
-
+    let date, reasonBanned;
     if (isbanned) {
-      banStudentsPopupHeader.textContent = studentName + " is currently banned.";
-      banStudentsPopupText.textContent = "Would you like to unban this student or edit information?";
-      unbanStudentButton.style.display = "flex";
-      let date = enteredStudent.data().dateToBeUnbanned;
-      setUnbanDate(date);
-      unbanDateInput.value = date;
-      let reasonBanned = enteredStudent.data().reasonBanned;
-      banStudentReasonForm.value = reasonBanned;
-      banStudentButton.textContent = "edit ban"
-    }
-    else {
-      banStudentsPopupHeader.textContent = studentName + " is currently not banned.";
-      banStudentsPopupText.textContent = "Would you like to ban this student?";
-      unbanStudentButton.style.display = "none";
-      banStudentButton.textContent = "ban"
-      let date = new Date();
+      date = enteredStudent.data().dateToBeUnbanned;
+      reasonBanned = enteredStudent.data().reasonBanned || "";
+    } else {
+      date = new Date();
       date.setDate(date.getDate() + 1);
       date = date.toLocaleDateString('en-CA');
-      setUnbanDate(date);
-      unbanDateInput.value = date;
+      reasonBanned = "";
     }
-    banStudentsPopupContainer.style.display = "flex";
+    setUnbanDate(date);
+    setBanPopupStudent({ name: studentName, isBanned: isbanned, unbanDate: date, reasonBanned, studentId, studentEnteredID });
+    setIsBanPopupOpen(true);
   }
 
   //sets a second studentID variable that is in scope
@@ -746,10 +740,10 @@ const Settings = () => {
 
   const banStudent = async (event) => {
     event.preventDefault();
-    if (reasonStudentBanned == undefined) {
+    if (!reasonStudentBanned) {
       reasonStudentBanned = "no reason given";
     }
-    docRef = await doc(db, "currentStudents", studentId);
+    docRef = await doc(db, "currentStudents", banPopupStudent?.studentId);
     await getDoc(docRef).then((docSnap) => {
       if (docSnap.exists()) {
         setDoc(doc(db, "bannedStudents", docSnap.data().ID), {
@@ -761,7 +755,7 @@ const Settings = () => {
           dateBanned: new Date().toLocaleDateString('en-CA'),
           dateToBeUnbanned: dateStudentIsUnbanned
         })
-        addToast("success", "Student Banned", studentName + " has been banned.");
+        addToast("success", "Student Banned", banPopupStudent?.name + " has been banned.");
       } else {
         addToast("error", "Database Error", "Error retrieving data from database. Please try again or contact support if error persists.");
         // displayIdEntryError("error retrieving data from database. Please try again or contact support if error persists");
@@ -773,10 +767,10 @@ const Settings = () => {
 
   const unbanStudent = async (event) => {
     event.preventDefault();
-    docRef = await doc(db, "bannedStudents", studentEnteredID);
+    docRef = await doc(db, "bannedStudents", banPopupStudent?.studentEnteredID);
     if (docRef) {
       deleteDoc(docRef);
-      addToast("success", "Student Unbanned", studentName + " has been unbanned.");
+      addToast("success", "Student Unbanned", banPopupStudent?.name + " has been unbanned.");
     }
     else {
       displayIdEntryError("error retrieving data from database. Please try again or contact support if error persists");
@@ -786,14 +780,14 @@ const Settings = () => {
   }
 
   const cancelOperation = async (event) => {
-    event.preventDefault();
-    const banStudentsPopupContainer = document.getElementById("banStudentsPopupContainer");
-    banStudentsPopupContainer.style.display = "none";
+    if (event) event.preventDefault();
+    setIsBanPopupOpen(false);
+    setBanPopupStudent(null);
     updateBannedStudentsList();
-    document.getElementById("studentInputForm").value = "";
-    document.getElementById("banStudentReasonForm").value = "";
+    const studentInput = document.getElementById("studentInputForm");
+    if (studentInput) studentInput.value = "";
     updateReasonBanned("no reason given");
-    updateStudentIdentifier("")
+    updateStudentIdentifier("");
   }
 
 
@@ -840,6 +834,7 @@ const Settings = () => {
 
             <div className="settings-section">
               <h3 className="settings-section-title">Ban / Unban Students</h3>
+              <p className="settings-section-desc">Search for a student by username to ban or unban them.</p>
               <form className="IDSearchForm" onSubmit={handleSubmission}>
                 <input
                   id="studentInputForm"
@@ -860,22 +855,14 @@ const Settings = () => {
                 ))
                 }
               </datalist>
+            </div>
 
-              <div className="bannedStudentsHeader">
-                <h3 className="bannedStudentsListHeader">Currently Banned Students</h3>
-              </div>
-              <div className="bannedStudentsList" id="bannedStudentsList">
-                {bannedStudents.map((student, i) => (
-                  <div key={i} className="bannedStudentRow">
-                    <p className="bannedStudentName">{student.name}</p>
-                    <p className="bannedStudentDate">Unban: {student.unbanDate}</p>
-                    <button
-                      className="unbanListButton"
-                      onClick={() => unbanStudentById(student.id, student.name)}
-                    >Unban</button>
-                  </div>
-                ))}
-              </div>
+            <div className="settings-section">
+              <h3 className="settings-section-title">View Banned Students</h3>
+              <p className="settings-section-desc">View all currently banned students, update ban details, or unban them.</p>
+              <button onClick={() => setIsBannedStudentsPopupOpen(true)}>
+                View Banned Students
+              </button>
             </div>
           </div>
 
@@ -956,115 +943,43 @@ const Settings = () => {
           </div>
         </div>
 
-        {/* Ban/Unban popup */}
-        <div id="banStudentsPopupContainer" className="banStudentsPopupContainer">
-          <div className="banStudentsPopupBackground">
-            <div className="banStudentsPopup">
-              <h2 id="banStudentsPopupHeader">If you see this there is a bug</h2>
-              <p id="banStudentsPopupText" className="banStudentsPopupText"></p>
-              <p
-                id="banStudentReasonStatememnt"
-                className="banStudentReasonStatememnt">reason student is to be banned</p>
-              <input
-                className="banStudentReasonForm"
-                id="banStudentReasonForm"
-                type="text"
-                value={reasonStudentBanned}
-                placeholder="Enter reason Student is to be banned"
-                onChange={(e) => updateReasonBanned(e.target.value)}
-              />
-              <p
-                id="unbanDateStatement"
-                className="unbanDateStatement"> Date Student is to be Unbanned</p>
-              <input
-                id="unbaneDateInput"
-                className="unbaneDateInput"
-                type="Date"
-                onChange={(e) => setUnbanDate(e.target.value)}
-              />
-              <div className="popup-button-group">
-                <button
-                  className="banStudentButton"
-                  id="banStudentButton"
-                  onClick={banStudent}
-                >Ban</button>
-                <button
-                  className="cancelOperationButton"
-                  id="cancelOperationButton"
-                  onClick={cancelOperation}
-                >Cancel</button>
-                <button
-                  className="unbanStudentButton"
-                  id="unbanStudentButton"
-                  onClick={unbanStudent}
-                >Unban</button>
-                
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Ban/Unban popup (search flow) */}
+        <BanStudentPopup
+          isOpen={isBanPopupOpen}
+          student={banPopupStudent}
+          onBan={banStudent}
+          onUnban={unbanStudent}
+          onCancel={cancelOperation}
+          onReasonChange={updateReasonBanned}
+          onDateChange={setUnbanDate}
+        />
 
-        {/* ── Admin Popup ── partially generated by Claude*/}
-        {isAdminPopupOpen && (
-          <div className="adminPopupOverlay" onClick={() => { setIsAdminPopupOpen(false); cancelEditAdmin(); }}>
-            <div className="adminPopup" onClick={(e) => e.stopPropagation()}>
-              <button className="adminPopupClose" onClick={() => { setIsAdminPopupOpen(false); cancelEditAdmin(); }}>✕</button>
-              <h2>Manage Administrators</h2>
+        {/* Banned Students list popup */}
+        <BannedStudentsPopup
+          isOpen={isBannedStudentsPopupOpen}
+          onClose={() => setIsBannedStudentsPopupOpen(false)}
+          bannedStudents={bannedStudents}
+          onUnban={unbanStudentById}
+          onSaveChanges={handleSaveBannedStudentChanges}
+        />
 
-              <table className="adminTable">
-                <thead>
-                  <tr>
-                    <th>Email</th>
-                    <th>Role</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {adminList.length === 0
-                    ? <tr><td colSpan="2">No administrators found.</td></tr>
-                    : [...adminList].sort((a, b) => b.isAdmin - a.isAdmin).map((admin, i) => (
-                      <tr
-                        key={i}
-                        className={`adminTableRow ${editingAdmin?.id === admin.id ? "adminRowSelected" : ""}`}
-                        onClick={() => openEditAdmin(admin)}
-                      >
-                        <td>{admin.email || admin.Email || admin.id}</td>
-                        <td>{admin.isAdmin ? "Admin" : "Desk Worker"}</td>
-                      </tr>
-                    ))
-                  }
-                  <tr className="adminTableRow addAdminRow" onClick={openAddAdmin}>
-                    <td colSpan="2">+ Add Administrator</td>
-                  </tr>
-                </tbody>
-              </table>
-
-              {isEditingAdmin && (
-                <div className="adminEditForm">
-                  <p className="adminEditTitle">{editingAdmin ? "Edit administrator" : "Add administrator"}</p>
-                  <div className="adminEditFields">
-                    <input
-                      type="text"
-                      placeholder="Email address"
-                      value={editEmail}
-                      onChange={(e) => setEditEmail(e.target.value)}
-                    />
-                    <select value={editRole} onChange={(e) => setEditRole(e.target.value === "true")}>
-                      <option value="false">Desk Worker</option>
-                      <option value="true">Admin</option>
-                    </select>
-                  </div>
-                  <div className="adminEditButtons">
-                    <button className="adminSaveButton" onClick={handleSaveAdmin}>Save</button>
-                    <button className="adminCancelButton" onClick={cancelEditAdmin}>Cancel</button>
-                    {editingAdmin && (
-                      <button className="adminDeleteButton" onClick={handleDeleteAdmin}>Remove</button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Admin Popup */}
+        <AdminPopup
+          isOpen={isAdminPopupOpen}
+          onClose={() => { setIsAdminPopupOpen(false); cancelEditAdmin(); }}
+          adminList={adminList}
+          isEditingAdmin={isEditingAdmin}
+          editingAdmin={editingAdmin}
+          editEmail={editEmail}
+          onEmailChange={setEditEmail}
+          editRole={editRole}
+          onRoleChange={setEditRole}
+          onRowClick={openEditAdmin}
+          onAddClick={openAddAdmin}
+          onSave={handleSaveAdmin}
+          onDelete={handleDeleteAdmin}
+          onCancelEdit={cancelEditAdmin}
+        />
 
       </div>
 
