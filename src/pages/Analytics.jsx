@@ -1,6 +1,6 @@
-// This entire file was generated with help from ChatGPT 
+// This entire file was generated with help from ChatGPT and Gemini
 import React, { useState, useEffect, useRef } from "react";
-import { Bar, Pie, Line } from "react-chartjs-2"; // ✅ NEW: Added Pie chart
+import { Bar, Pie, Line } from "react-chartjs-2"; 
 import "../components/Analytics.css";
 import {
   Chart as ChartJS,
@@ -23,8 +23,8 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 
 function Analytics({ gym, updateGym }) {
 
-  // Chart type state (Swipe-ins vs Demographics)
-  const [chartType, setChartType] = useState("swipe");
+  // Chart type state updated to visual variants (Bar vs Pie) for easy scaling
+  const [chartType, setChartType] = useState("bar");
 
   const [timeRange, setTimeRange] = useState("today");
   const [interval, setInterval] = useState("hours");
@@ -274,7 +274,7 @@ function Analytics({ gym, updateGym }) {
 
     let baseName = "";
 
-    if (chartType === "demographics") {
+    if (chartType === "pie") {
       baseName = "demographic_data";
     }
     else if (isCheckoutDataset) {
@@ -314,7 +314,7 @@ function Analytics({ gym, updateGym }) {
 
   // CSV EXPORT 
   function exportSwipeDataToCSV() {
-    if (chartType !== "swipe") return;   // equipment checkouts is included in this, so still works
+    if (chartType !== "bar") return;   // equipment checkouts is included in this, so still works
 
     const { start, end } = getDateRange();
 
@@ -561,7 +561,7 @@ function Analytics({ gym, updateGym }) {
   }
 
   useEffect(() => {
-    if (chartType === "demographics" && Object.keys(studentMap).length > 0) {
+    if (chartType === "pie" && Object.keys(studentMap).length > 0) {
       processDemographics();
     }
   }, [chartType, demographicType, swipeData, timeRange, startDate, endDate, studentMap]);
@@ -938,46 +938,50 @@ function Analytics({ gym, updateGym }) {
           <div className="analytics-card-header">
             <h2>Chart Controls</h2>
           </div>
-          {/* Chart Type */}
           <div className="control-box">
+            
+            {/* 1. DATASET PICKER (FIRST) */}
+            <div className="control-content">
+              <p className="control-label">Dataset</p>
+              <select
+                value={dataFile}
+                onChange={(e) => {
+                  const selectedDataset = e.target.value;
+                  setDataFile(selectedDataset);
+                  
+                  // Auto-remove fallback: if the chosen dataset doesn't support demographic pie charts, reset back to bar
+                  const isIncomingCheckout = selectedDataset === "pepsicoCheckouts" || selectedDataset === "westerlinCheckouts" || selectedDataset === "combinedCheckouts";
+                  if ((isIncomingCheckout || selectedDataset === "guestEntrance") && chartType === "pie") {
+                    setChartType("bar");
+                  }
+                }}
+              >
+                <option value="pepsico">PepsiCo Swipes</option>
+                <option value="westerlin">Westerlin Swipes</option>
+                <option value="combined">Combined Gym Swipes</option>
+                <option value="pepsicoCheckouts">PepsiCo Equipment Checkouts</option>
+                <option value="westerlinCheckouts">Westerlin Equipment Checkouts</option>
+                <option value="combinedCheckouts">Combined Gym Equipment Checkouts</option>
+                <option value="guestEntrance">Guest Entrance</option>
+              </select>
+            </div>
+
+            {/* 2. CHART TYPE (SECOND) */}
             <div className="control-content">
               <p className="control-label">Chart Type</p>
               <select
                 value={chartType}
                 onChange={(e) => setChartType(e.target.value)}
               >
-                <option value="swipe">Swipe-ins and Equipment</option>
-                <option value="demographics">Demographics</option>
-              </select>
-            </div>
-
-            {/* Dataset */}
-            <div className="control-content">
-              <p className="control-label">Dataset</p>
-              <select
-                value={dataFile}
-                onChange={(e) => setDataFile(e.target.value)}
-              >
-                <option value="pepsico">PepsiCo Swipes</option>
-                <option value="westerlin">Westerlin Swipes</option>
-                <option value="combined">Combined Gym Swipes</option>
-
-                {/* Hide checkout datasets for demographics */}
-                {chartType !== "demographics" && (
-                  <>
-                    <option value="pepsicoCheckouts">PepsiCo Equipment Checkouts</option>
-                    <option value="westerlinCheckouts">Westerlin Equipment Checkouts</option>
-                    <option value="combinedCheckouts">Combined Gym Equipment Checkouts</option>
-
-                    <option value="guestEntrance">
-                      Guest Entrance
-                    </option>
-                  </>
+                <option value="bar">Bar Chart</option>
+                {/* Automatically removes the 'pie' option depending on what dataset is chosen */}
+                {(!isCheckoutDataset && dataFile !== "guestEntrance") && (
+                  <option value="pie">Pie Chart</option>
                 )}
               </select>
             </div>
 
-            {/* Time Range */}
+            {/* 3. TIME RANGE */}
             <div className="control-content">
               <p className="control-label">Time Range</p>
 
@@ -1006,9 +1010,10 @@ function Analytics({ gym, updateGym }) {
                 </div>
               )}
             </div>
-            {/* Interval / Demographic */}
+
+            {/* 4. DYNAMIC SUB-CONTROLS */}
             <div className="control-content">
-              {chartType === "swipe" ? (
+              {chartType === "bar" ? (
                 <div className="interval-group-row">
 
                   <div className="control-item">
@@ -1074,7 +1079,7 @@ function Analytics({ gym, updateGym }) {
           </div>
           <div className="Charts" style={{ marginTop: "30px" }}>
             <div style={{ width: "100%", height: 400, position: "relative" }}>
-              {/* 🆕 Export dropdown (swipe only) */}
+              {/* Export dropdown */}
               <div style={{ position: "absolute", top: 10, right: 10, zIndex: 10 }}>
                 <select
                   value={exportFormat}
@@ -1090,8 +1095,8 @@ function Analytics({ gym, updateGym }) {
                 >
                   <option value="">Export</option>
 
-                  {/* CSV ONLY for swipe charts */}
-                  {chartType === "swipe" && (
+                  {/* CSV ONLY for bar charts */}
+                  {chartType === "bar" && (
                     <option value="csv">Export CSV</option>
                   )}
 
@@ -1099,7 +1104,7 @@ function Analytics({ gym, updateGym }) {
                   <option value="png">Export PNG</option>
                 </select>
               </div>
-              {chartType === "swipe" ? (
+              {chartType === "bar" ? (
                 <Bar
                   ref={chartRef}
                   data={data}
