@@ -26,13 +26,15 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #edf2f7;
 }
 
 .card-header h2 {
-    margin-bottom: 30px;
+    margin: 0;
     font-size: 1.25rem;
     color: #333;
-    border-bottom: none;
 }
 
 /* Input Styling */
@@ -103,9 +105,8 @@ input:focus, select:focus {
     font-style: italic;
 }
 .active-checkouts-card .card-header {
-    padding-top: 5px;   /* Minimal space at the top */
-    text-align: center; /* Center horizontally */
-    margin-bottom: 15px; /* Space between header and the list below */
+    padding-top: 5px;
+    text-align: center;
 }
 
 /* This targets the card specifically */
@@ -118,10 +119,8 @@ input:focus, select:focus {
 .active-checkouts-card .card-header {
     width: 100%;
     display: flex;
-    justify-content: center; /* Centers the H2 horizontally */
-    padding-top: 0;          /* Moves it to the absolute top */
-    margin-bottom: 20px;
-    border-bottom: none;     /* Optional: removes the line if you want it cleaner */
+    justify-content: center;
+    padding-top: 0;
 }
 
 .active-checkouts-card .card-header h2 {
