@@ -1,6 +1,6 @@
 // This entire file was generated with help from ChatGPT 
 import React, { useState, useEffect, useRef } from "react";
-import { Bar, Pie } from "react-chartjs-2"; // ✅ NEW: Added Pie chart
+import { Bar, Pie, Line } from "react-chartjs-2"; // ✅ NEW: Added Pie chart
 import "../components/Analytics.css";
 import {
   Chart as ChartJS,
@@ -9,10 +9,12 @@ import {
   BarElement,
   ArcElement, // Needed for pie chart
   Tooltip,
-  Legend
+  Legend,
+  LineElement,
+  PointElement
 } from "chart.js";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend, LineElement, PointElement);
 
 
 // Firebase imports
@@ -232,6 +234,9 @@ function Analytics({ gym, updateGym }) {
     setNormalData(generateNormalDataset());
   }, []);
 
+
+
+  // Key useEffect that reloads charts anytime an attribute of the chart changes (one of the drop-downs). This one leads to swipeData being generated (based off a given collection, gets swipes for that range)
   useEffect(() => {
     async function loadData() {
 
@@ -772,6 +777,7 @@ function Analytics({ gym, updateGym }) {
     setChartData(formatted);
   }
 
+  // Key useEffect that triggers a new chart! This one helps create/calculate the given intervals of time on the x-axis and number of swipes on the y axis
   useEffect(() => {
     if (groupBy === "none") {
       processData();
