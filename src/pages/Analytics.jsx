@@ -1,6 +1,6 @@
-// This entire file was generated with help from ChatGPT 
+// This entire file was generated with help from ChatGPT and Gemini
 import React, { useState, useEffect, useRef } from "react";
-import { Bar, Pie, Line } from "react-chartjs-2"; // ✅ NEW: Added Pie chart
+import { Bar, Pie, Line } from "react-chartjs-2"; 
 import "../components/Analytics.css";
 import {
   Chart as ChartJS,
@@ -23,8 +23,8 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 
 function Analytics({ gym, updateGym }) {
 
-  // Chart type state (Swipe-ins vs Demographics)
-  const [chartType, setChartType] = useState("swipe");
+  // Chart type state updated to visual variants (Bar vs Pie) for easy scaling
+  const [chartType, setChartType] = useState("bar");
 
   const [timeRange, setTimeRange] = useState("today");
   const [interval, setInterval] = useState("hours");
@@ -43,9 +43,7 @@ function Analytics({ gym, updateGym }) {
   // Cached student data (FULL FETCH)
   const [studentMap, setStudentMap] = useState({});
 
-  const [dataFile, setDataFile] = useState("normal");
-
-  const [normalData, setNormalData] = useState([]);
+  const [dataFile, setDataFile] = useState("combined");
 
   // 🆕 Export dropdown state
   const [exportFormat, setExportFormat] = useState("");
@@ -175,67 +173,6 @@ function Analytics({ gym, updateGym }) {
     loadStudents();
   }, []);
 
-  function generateNormalDataset() {
-    const startDate = new Date();
-    startDate.setMonth(startDate.getMonth() - 12);
-    const endDate = new Date();
-
-    const data = [];
-
-    function randomStudent() {
-      return Math.floor(10000 + Math.random() * 90000);
-    }
-
-    function getHoursForDay(day) {
-      switch (day) {
-        case 0: return [10, 22];
-        case 1:
-        case 2:
-        case 3:
-        case 4: return [7, 22];
-        case 5: return [7, 20];
-        case 6: return [9, 18];
-        default: return [7, 22];
-      }
-    }
-
-    let cursor = new Date(startDate);
-
-    while (cursor <= endDate) {
-      const day = cursor.getDay();
-      const [open, close] = getHoursForDay(day);
-      const swipes = Math.floor(Math.random() * 40) + 20;
-
-      for (let i = 0; i < swipes; i++) {
-        const hour = Math.floor(Math.random() * (close - open)) + open;
-
-        const d = new Date(cursor);
-        d.setHours(hour);
-        d.setMinutes(Math.floor(Math.random() * 60));
-        d.setSeconds(Math.floor(Math.random() * 60));
-
-        data.push({
-          studentId: randomStudent(),
-          time: d.toISOString().slice(0, 19)
-        });
-      }
-
-      cursor.setDate(cursor.getDate() + 1);
-    }
-
-    return data;
-  }
-
-  const datasets = {
-    normal: generateNormalDataset,
-  };
-
-  useEffect(() => {
-    setNormalData(generateNormalDataset());
-  }, []);
-
-
-
   // Key useEffect that reloads charts anytime an attribute of the chart changes (one of the drop-downs). This one leads to swipeData being generated (based off a given collection, gets swipes for that range)
   useEffect(() => {
     async function loadData() {
@@ -261,9 +198,6 @@ function Analytics({ gym, updateGym }) {
       else if (dataFile === "guestEntrance") {
         await fetchGuestEntrance();
       }
-      else if (dataFile === "normal") {
-        setSwipeData(normalData);
-      }
       else {
         setSwipeData(datasets[dataFile] || []);
       }
@@ -271,7 +205,7 @@ function Analytics({ gym, updateGym }) {
     }
 
     loadData();
-  }, [dataFile, timeRange, startDate, endDate, normalData]);
+  }, [dataFile, timeRange, startDate, endDate]);
 
   // Based on the given time range chosen by a user, this function selects the start/end times
   function getDateRange() {
@@ -340,7 +274,7 @@ function Analytics({ gym, updateGym }) {
 
     let baseName = "";
 
-    if (chartType === "demographics") {
+    if (chartType === "pie") {
       baseName = "demographic_data";
     }
     else if (isCheckoutDataset) {
@@ -380,7 +314,7 @@ function Analytics({ gym, updateGym }) {
 
   // CSV EXPORT 
   function exportSwipeDataToCSV() {
-    if (chartType !== "swipe") return;   // equipment checkouts is included in this, so still works
+    if (chartType !== "bar") return;   // equipment checkouts is included in this, so still works
 
     const { start, end } = getDateRange();
 
@@ -627,7 +561,7 @@ function Analytics({ gym, updateGym }) {
   }
 
   useEffect(() => {
-    if (chartType === "demographics" && Object.keys(studentMap).length > 0) {
+    if (chartType === "pie" && Object.keys(studentMap).length > 0) {
       processDemographics();
     }
   }, [chartType, demographicType, swipeData, timeRange, startDate, endDate, studentMap]);
@@ -654,26 +588,22 @@ function Analytics({ gym, updateGym }) {
 
     // Increments cursor from the start time until the end time, designating the labels for the buckets
     while (cursor <= end) {
-      let label = "";
+
+      let label = getLabel(cursor);
 
       if (interval === "hours") {
-        label = `${cursor.getMonth() + 1}/${cursor.getDate()}/${cursor.getFullYear()} ${cursor.getHours()}:00`;
         cursor.setHours(cursor.getHours() + 1);
       }
       else if (interval === "days") {
-        label = `${cursor.getMonth() + 1}/${cursor.getDate()}/${cursor.getFullYear()}`;
         cursor.setDate(cursor.getDate() + 1);
       }
       else if (interval === "weeks") {
-        label = `${cursor.getMonth() + 1}/${cursor.getDate()}/${cursor.getFullYear()}`;
         cursor.setDate(cursor.getDate() + 7);
       }
       else if (interval === "months") {
-        label = `${cursor.getMonth() + 1}/${cursor.getFullYear()}`;
         cursor.setMonth(cursor.getMonth() + 1);
       }
       else if (interval === "years") {
-        label = `${cursor.getFullYear()}`;
         cursor.setFullYear(cursor.getFullYear() + 1);
       }
 
@@ -695,22 +625,13 @@ function Analytics({ gym, updateGym }) {
       if (isNaN(date)) return;
       if (date < start || date > end) return;
 
-      let label = "";
+      let label = getLabel(date);
 
-      if (interval === "hours")
-        label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()} ${date.getHours()}:00`;
-      else if (interval === "days")
-        label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
-      else if (interval === "weeks") {
+      if (interval === "weeks") {
         const weekStart = new Date(date);
         weekStart.setDate(date.getDate() - date.getDay());
         weekStart.setHours(0, 0, 0, 0);
-        label = `${weekStart.getMonth() + 1}/${weekStart.getDate()}/${weekStart.getFullYear()}`;
       }
-      else if (interval === "months")
-        label = `${date.getMonth() + 1}/${date.getFullYear()}`;
-      else if (interval === "years")
-        label = `${date.getFullYear()}`;
 
       if (buckets[label] !== undefined) buckets[label] += 1;
     });
@@ -905,23 +826,15 @@ function Analytics({ gym, updateGym }) {
           categoryMap[category] = { ...buckets };
         }
 
-        let label = "";
+        let label = getLabel(date);
 
         // Same interval logic as processData()
-        if (interval === "hours")
-          label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()} ${date.getHours()}:00`;
-        else if (interval === "days")
-          label = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
-        else if (interval === "weeks") {
+        if (interval === "weeks") {
           const weekStart = new Date(date);
           weekStart.setDate(date.getDate() - date.getDay());
           weekStart.setHours(0, 0, 0, 0);
-          label = `${weekStart.getMonth() + 1}/${weekStart.getDate()}/${weekStart.getFullYear()}`;
         }
-        else if (interval === "months")
-          label = `${date.getMonth() + 1}/${date.getFullYear()}`;
-        else if (interval === "years")
-          label = `${date.getFullYear()}`;
+
 
         // Increments the correct category + time bucket
         if (categoryMap[category][label] !== undefined) {
@@ -994,6 +907,27 @@ function Analytics({ gym, updateGym }) {
     );
   }
 
+  function getLabel(cursor) {
+    let label = "";
+
+    if (interval === "hours") {
+      label = `${cursor.getMonth() + 1}/${cursor.getDate()}/${cursor.getFullYear()} ${cursor.getHours()}:00`;
+    }
+    else if (interval === "days") {
+      label = `${cursor.getMonth() + 1}/${cursor.getDate()}/${cursor.getFullYear()}`;
+    }
+    else if (interval === "weeks") {
+      label = `${cursor.getMonth() + 1}/${cursor.getDate()}/${cursor.getFullYear()}`;
+    }
+    else if (interval === "months") {
+      label = `${cursor.getMonth() + 1}/${cursor.getFullYear()}`;
+    }
+    else if (interval === "years") {
+      label = `${cursor.getFullYear()}`;
+    }
+    return label
+  }
+
   return (
     <>
       <div className="page-header">
@@ -1004,47 +938,50 @@ function Analytics({ gym, updateGym }) {
           <div className="analytics-card-header">
             <h2>Chart Controls</h2>
           </div>
-          {/* Chart Type */}
           <div className="control-box">
+            
+            {/* 1. DATASET PICKER (FIRST) */}
+            <div className="control-content">
+              <p className="control-label">Dataset</p>
+              <select
+                value={dataFile}
+                onChange={(e) => {
+                  const selectedDataset = e.target.value;
+                  setDataFile(selectedDataset);
+                  
+                  // Auto-remove fallback: if the chosen dataset doesn't support demographic pie charts, reset back to bar
+                  const isIncomingCheckout = selectedDataset === "pepsicoCheckouts" || selectedDataset === "westerlinCheckouts" || selectedDataset === "combinedCheckouts";
+                  if ((isIncomingCheckout || selectedDataset === "guestEntrance") && chartType === "pie") {
+                    setChartType("bar");
+                  }
+                }}
+              >
+                <option value="pepsico">PepsiCo Swipes</option>
+                <option value="westerlin">Westerlin Swipes</option>
+                <option value="combined">Combined Gym Swipes</option>
+                <option value="pepsicoCheckouts">PepsiCo Equipment Checkouts</option>
+                <option value="westerlinCheckouts">Westerlin Equipment Checkouts</option>
+                <option value="combinedCheckouts">Combined Gym Equipment Checkouts</option>
+                <option value="guestEntrance">Guest Entrance</option>
+              </select>
+            </div>
+
+            {/* 2. CHART TYPE (SECOND) */}
             <div className="control-content">
               <p className="control-label">Chart Type</p>
               <select
                 value={chartType}
                 onChange={(e) => setChartType(e.target.value)}
               >
-                <option value="swipe">Swipe-ins and Equipment</option>
-                <option value="demographics">Demographics</option>
-              </select>
-            </div>
-
-            {/* Dataset */}
-            <div className="control-content">
-              <p className="control-label">Dataset</p>
-              <select
-                value={dataFile}
-                onChange={(e) => setDataFile(e.target.value)}
-              >
-                <option value="normal">Randomly Generated (non-firebase data)</option>
-                <option value="pepsico">PepsiCo Swipes</option>
-                <option value="westerlin">Westerlin Swipes</option>
-                <option value="combined">Combined Gym Swipes</option>
-
-                {/* Hide checkout datasets for demographics */}
-                {chartType !== "demographics" && (
-                  <>
-                    <option value="pepsicoCheckouts">PepsiCo Equipment Checkouts</option>
-                    <option value="westerlinCheckouts">Westerlin Equipment Checkouts</option>
-                    <option value="combinedCheckouts">Combined Gym Equipment Checkouts</option>
-
-                    <option value="guestEntrance">
-                      Guest Entrance
-                    </option>
-                  </>
+                <option value="bar">Bar Chart</option>
+                {/* Automatically removes the 'pie' option depending on what dataset is chosen */}
+                {(!isCheckoutDataset && dataFile !== "guestEntrance") && (
+                  <option value="pie">Pie Chart</option>
                 )}
               </select>
             </div>
 
-            {/* Time Range */}
+            {/* 3. TIME RANGE */}
             <div className="control-content">
               <p className="control-label">Time Range</p>
 
@@ -1073,9 +1010,10 @@ function Analytics({ gym, updateGym }) {
                 </div>
               )}
             </div>
-            {/* Interval / Demographic */}
+
+            {/* 4. DYNAMIC SUB-CONTROLS */}
             <div className="control-content">
-              {chartType === "swipe" ? (
+              {chartType === "bar" ? (
                 <div className="interval-group-row">
 
                   <div className="control-item">
@@ -1141,7 +1079,7 @@ function Analytics({ gym, updateGym }) {
           </div>
           <div className="Charts" style={{ marginTop: "30px" }}>
             <div style={{ width: "100%", height: 400, position: "relative" }}>
-              {/* 🆕 Export dropdown (swipe only) */}
+              {/* Export dropdown */}
               <div style={{ position: "absolute", top: 10, right: 10, zIndex: 10 }}>
                 <select
                   value={exportFormat}
@@ -1157,8 +1095,8 @@ function Analytics({ gym, updateGym }) {
                 >
                   <option value="">Export</option>
 
-                  {/* CSV ONLY for swipe charts */}
-                  {chartType === "swipe" && (
+                  {/* CSV ONLY for bar charts */}
+                  {chartType === "bar" && (
                     <option value="csv">Export CSV</option>
                   )}
 
@@ -1166,7 +1104,7 @@ function Analytics({ gym, updateGym }) {
                   <option value="png">Export PNG</option>
                 </select>
               </div>
-              {chartType === "swipe" ? (
+              {chartType === "bar" ? (
                 <Bar
                   ref={chartRef}
                   data={data}
