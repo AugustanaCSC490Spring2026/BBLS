@@ -6,14 +6,18 @@
 
 /* Move the border-radius and background to a wrapper or the item itself */
 .nav-dropdown-item {
-  border-radius: 6px; /* Keep the rounded look on the actual button */
+  border-radius: 6px;
+  /* Keep the rounded look on the actual button */
   /* ... rest of your styles */
 }
+
 /* Move the border-radius and background to a wrapper or the item itself */
 .nav-dropdown-item {
-  border-radius: 6px; /* Keep the rounded look on the actual button */
+  border-radius: 6px;
+  /* Keep the rounded look on the actual button */
   /* ... rest of your styles */
 }
+
 /* The Main Button */
 .nav-dropdown-trigger {
   display: flex;
@@ -21,10 +25,11 @@
   justify-content: center;
   margin-bottom: 0px;
   min-width: 150px;
-  padding: 6px 12px;
+  padding: 12px 20px;
   font-size: 14px;
-  font-weight: 600; /* Bumped to 600 for better readability on white */
-  color: white; 
+  font-weight: 600;
+  /* Bumped to 600 for better readability on white */
+  color: white;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -38,12 +43,14 @@
 .nav-dropdown-trigger[data-theme="primary"],
 .nav-dropdown-item[data-theme="primary"] {
   background-color: #002F6C;
-  color: white; /* Text matches the Blue Theme color */
+  color: white;
+  /* Text matches the Blue Theme color */
 }
 
 .nav-dropdown-trigger[data-theme="primary"]:hover,
 .nav-dropdown-item[data-theme="primary"]:hover {
-  background-color: #002F6C; /* Slight off-white for hover feedback */
+  background-color: #002F6C;
+  /* Slight off-white for hover feedback */
 }
 
 /* Blue Theme (Secondary) */
@@ -76,20 +83,22 @@
   top: 100%;
   left: 0;
   width: 100%;
-  
+
   /* REMOVE this: */
   /* margin-top: 4px; */
 
   /* ADD this: */
-  padding-top: 8px; /* This creates the visual gap but keeps the "hover" active */
-  background-color: transparent; 
+  padding-top: 8px;
+  /* This creates the visual gap but keeps the "hover" active */
+  background-color: transparent;
   z-index: 10;
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.15));
 }
 
 /* Move the border-radius and background to a wrapper or the item itself */
 .nav-dropdown-item {
-  border-radius: 6px; /* Keep the rounded look on the actual button */
+  border-radius: 6px;
+  /* Keep the rounded look on the actual button */
   /* ... rest of your styles */
 }
 

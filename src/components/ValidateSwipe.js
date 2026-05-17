@@ -1,5 +1,6 @@
 import  { doc, getDoc } from "firebase/firestore";
 import { db } from "../Firebase.js";
+import { hashId } from "./HashId.js";
 
 
 /**
@@ -43,8 +44,11 @@ async function ValidateSwipe(swipe){
   
   // backend validation now that we know the ID number.
   try{
-    const studentSnapPromise =  getDoc(doc(db, "currentStudents", swipe));
-    const bannedSnapPromise  =  getDoc(doc(db, "bannedStudents", swipe));
+    const hashedId = await hashId(swipe);
+
+    const studentSnapPromise = getDoc(doc(db, "currentStudents", hashedId));
+    const bannedSnapPromise = getDoc(doc(db, "bannedStudents", hashedId));
+
     const [studentSnap, bannedSnap] = await Promise.all([studentSnapPromise, bannedSnapPromise]);
     // student does exist, update variables
     // ben Amuller wrote lines 30 and 31

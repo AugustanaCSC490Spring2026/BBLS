@@ -27,4 +27,4 @@ const githubProvider = new GithubAuthProvider();
 const db = getFirestore();
 
 
-export { auth, provider, githubProvider, db }
+export { auth, provider, githubProvider, db, app }

@@ -12,6 +12,7 @@ import { db } from "../Firebase.js";
 
 // Firestore tools
 import { doc, writeBatch, collection, serverTimestamp, getDoc, deleteDoc, setDoc, getDocs, addDoc, updateDoc } from "firebase/firestore";
+import { hashId } from "../components/HashId.js";
 
 import "../components/Settings.css";
 
@@ -20,7 +21,7 @@ import AddInventoryPopup from "../components/AddInventoryPopup.jsx";
 import RemoveInventoryPopup from "../components/RemoveInventoryPopup.jsx";
 import NavDropdown from "../components/NavDropdown.jsx";
 
-
+const currentStaffRef = collection(db, "currentStaff"); // New reference
 const bannedStudentsRef = collection(db, "bannedStudents");
 const currentStudentsRef = collection(db, "currentStudents");
 const adminListRef = collection(db, "authorized_users");
@@ -90,68 +91,162 @@ const Settings = () => {
   };
 
   const openEditAdmin = (admin) => {
-  setEditingAdmin(admin);
-  setEditEmail(admin.email || admin.Email || admin.id);
-  setEditRole(admin.isAdmin || false);
-  setIsEditingAdmin(true);
-};
+    setEditingAdmin(admin);
+    setEditEmail(admin.email || admin.Email || admin.id);
+    setEditRole(admin.isAdmin || false);
+    setIsEditingAdmin(true);
+  };
 
-const openAddAdmin = () => {
-  setEditingAdmin(null);
-  setEditEmail("");
-  setEditRole(false);
-  setIsEditingAdmin(true);
-};
+  const openAddAdmin = () => {
+    setEditingAdmin(null);
+    setEditEmail("");
+    setEditRole(false);
+    setIsEditingAdmin(true);
+  };
 
-const cancelEditAdmin = () => {
-  setIsEditingAdmin(false);
-  setEditingAdmin(null);
-  setEditEmail("");
-  setEditRole(false);
-};
- // the next 50 lines were helped code with claude
-const handleSaveAdmin = async () => {
-  if (!editEmail.trim()) return;
-  try {
-    if (editingAdmin) {
-      // FIRESTORE: updateDoc on existing admin doc
-      const ref = doc(db, "authorized_users", editingAdmin.id);
-      await updateDoc(ref, { email: editEmail.trim(), isAdmin: editRole });
-      addToast("success", "Admin Updated", `${editEmail} has been updated.`);
-    } else {
-      // Check for duplicate email before adding
-      const duplicate = adminList.some(
-        (admin) => (admin.email || admin.Email || admin.id).toLowerCase() === editEmail.trim().toLowerCase()
-      );
-      if (duplicate) {
-        addToast("error", "Already Exists", `${editEmail} is already an administrator.`);
-        return;
-      }
-      // FIRESTORE: addDoc for new admin
-      await addDoc(adminListRef, { email: editEmail.trim(), isAdmin: editRole });
-      addToast("success", "Admin Added", `${editEmail} has been added.`);
+  const cancelEditAdmin = () => {
+    setIsEditingAdmin(false);
+    setEditingAdmin(null);
+    setEditEmail("");
+    setEditRole(false);
+  };
+
+  const handleStaffFileChange = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (file.type !== "text/csv" && !file.name.toLowerCase().endsWith(".csv")) {
+      addToast("error", "Invalid File", "Please upload a valid .csv file.");
+      event.target.value = null;
+      return;
     }
-    cancelEditAdmin();
-    fetchAdminList();
-  } catch (err) {
-    console.error(err);
-    addToast("error", "Save Failed", "Could not save administrator.");
-  }
-};
 
-const handleDeleteAdmin = async () => {
-  if (!editingAdmin) return;
-  try {
-    // FIRESTORE: deleteDoc on existing admin doc
-    await deleteDoc(doc(db, "authorized_users", editingAdmin.id));
-    addToast("success", "Admin Removed", `${editEmail} has been removed.`);
-    cancelEditAdmin();
-    fetchAdminList();
-  } catch (err) {
-    console.error(err);
-    addToast("error", "Delete Failed", "Could not remove administrator.");
-  }
-};
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const data = results.data;
+
+        const confirmUpload = window.confirm(
+          "This will DELETE all existing staff and replace them with the uploaded CSV.\n\nAre you sure?"
+        );
+
+        if (!confirmUpload) {
+          addToast("error", "Upload Cancelled", "Staff upload cancelled.");
+          event.target.value = null;
+          return;
+        }
+
+        // Clear existing staff collection
+        await clearCollection("currentStaff");
+
+        let successCount = 0;
+        let failCount = 0;
+        let batch = writeBatch(db);
+        let operationCount = 0;
+
+        for (const row of data) {
+          try {
+            let staffId = row.ID?.trim();
+
+            if (!staffId || staffId.length !== 7) {
+              failCount++;
+              continue;
+            }
+
+            const hashedId = await hashId(staffId);
+
+            const staffData = {
+              ID: hashedId,
+              LastName: row.LastName || "",
+              FirstName: row.Pref_FirstName || "",
+            };
+
+            const docRef = doc(db, "currentStaff", hashedId);
+            batch.set(docRef, staffData);
+
+            operationCount++;
+            successCount++;
+
+            if (operationCount === 500) {
+              await batch.commit();
+              batch = writeBatch(db);
+              operationCount = 0;
+            }
+          } catch (err) {
+            console.error("Error processing row:", err);
+            failCount++;
+          }
+        }
+
+        if (operationCount > 0) {
+          await batch.commit();
+        }
+
+        addToast("success", "Upload Complete", `Staff Success: ${successCount}, Failed: ${failCount}`);
+        event.target.value = null;
+      },
+      error: (err) => {
+        addToast("error", "CSV Error", "Error parsing staff CSV.");
+      }
+    });
+  };
+
+  // the next 50 lines were helped code with claude
+  const handleSaveAdmin = async () => {
+    if (!editEmail.trim()) return;
+
+    // Normalize the email to lowercase to ensure consistency in Document IDs
+    const adminId = editEmail.trim().toLowerCase();
+
+    try {
+      if (editingAdmin) {
+        // UPDATE: Use the existing document ID
+        const ref = doc(db, "authorized_users", editingAdmin.id);
+        await updateDoc(ref, { isAdmin: editRole });
+        addToast("success", "Admin Updated", `${adminId} has been updated.`);
+      } else {
+        // NEW ADMIN: The ID is the email itself
+        const newAdminRef = doc(db, "authorized_users", adminId);
+
+        // Check for duplicate by looking at the document ID in your local list
+        const duplicate = adminList.some(
+          (admin) => admin.id.toLowerCase() === adminId
+        );
+
+        if (duplicate) {
+          addToast("error", "Already Exists", `${adminId} is already an administrator.`);
+          return;
+        }
+
+        // Save ONLY the isAdmin field. The "name" of the doc is the email.
+        await setDoc(newAdminRef, {
+          isAdmin: editRole
+        });
+
+        addToast("success", "Admin Added", `${adminId} has been added.`);
+      }
+      cancelEditAdmin();
+      fetchAdminList();
+    } catch (err) {
+      console.error(err);
+      addToast("error", "Save Failed", "Could not save administrator.");
+    }
+  };
+
+  const handleDeleteAdmin = async () => {
+    if (!editingAdmin) return;
+    try {
+      // FIRESTORE: deleteDoc on existing admin doc
+      await deleteDoc(doc(db, "authorized_users", editingAdmin.id));
+      addToast("success", "Admin Removed", `${editEmail} has been removed.`);
+      cancelEditAdmin();
+      fetchAdminList();
+    } catch (err) {
+      console.error(err);
+      addToast("error", "Delete Failed", "Could not remove administrator.");
+    }
+  };
 
   useEffect(() => {
     updateBannedStudentsList();
@@ -348,9 +443,11 @@ const handleDeleteAdmin = async () => {
               continue;
             }
 
+            const hashedId = await hashId(studentId);
+
             // Build the student object to store in Firestore
             const studentData = {
-              ID: studentId,
+              ID: hashedId,
               Email: row.AUGIE_EMAIL || "",
               LastName: row.LastName || "",
               FirstName: row.Pref_FirstName || "",
@@ -365,7 +462,7 @@ const handleDeleteAdmin = async () => {
             };
 
             // Create a document reference using student ID as the document ID
-            const docRef = doc(db, "currentStudents", studentId);
+            const docRef = doc(db, "currentStudents", hashedId);
 
             // Add this write operation to the batch
             batch.set(docRef, studentData);
@@ -545,12 +642,12 @@ const handleDeleteAdmin = async () => {
         //if student is not banned only gives option to ban
         if (!docSnap.exists()) {
           isbanned = false;
-          displayPopup(isbanned);
+          displayPopup(isbanned, docSnap);
         }
         else {
           isbanned = true;
           differentReasonBanned = docSnap.data().reasonBanned;
-          displayPopup(isbanned);
+          displayPopup(isbanned, docSnap);
           console.log(docSnap.data().reasonBanned);
         }
       })
@@ -574,7 +671,7 @@ const handleDeleteAdmin = async () => {
 
   // }
 
-  function displayPopup(isbanned) {
+  function displayPopup(isbanned, enteredStudent) {
     const banStudentsPopupContainer = document.getElementById("banStudentsPopupContainer");
     const banStudentButton = document.getElementById("banStudentButton");
     const unbanStudentButton = document.getElementById("unbanStudentButton");
@@ -592,25 +689,25 @@ const handleDeleteAdmin = async () => {
 
     if (isbanned) {
       banStudentsPopupHeader.textContent = studentName + " is currently banned.";
-      banStudentsPopupText.textContent = "Would you like to unban this student?";
+      banStudentsPopupText.textContent = "Would you like to unban this student or edit information?";
       unbanStudentButton.style.display = "flex";
-      banStudentButton.style.display = "none";
-      banStudentReasonStatememnt.style.display = "none";
-      banStudentReasonForm.style.display = "none";
-      unbanDateStatement.style.display = "none";
-      unbanDateInput.style.display = "none";
+      let date = enteredStudent.data().dateToBeUnbanned;
+      setUnbanDate(date);
+      unbanDateInput.value = date;
+      let reasonBanned = enteredStudent.data().reasonBanned;
+      banStudentReasonForm.value = reasonBanned;
+      banStudentButton.textContent = "edit ban"
     }
     else {
       banStudentsPopupHeader.textContent = studentName + " is currently not banned.";
       banStudentsPopupText.textContent = "Would you like to ban this student?";
       unbanStudentButton.style.display = "none";
-      banStudentButton.style.display = "flex";
-      banStudentReasonStatememnt.style.display = "flex";
-      banStudentReasonForm.style.display = "flex";
-      unbanDateStatement.style.display = "flex";
-      unbanDateInput.style.display = "flex";
-      setUnbanDate(new Date().toLocaleDateString('en-CA'));
-      unbanDateInput.value = new Date().toLocaleDateString('en-CA');
+      banStudentButton.textContent = "ban"
+      let date = new Date();
+      date.setDate(date.getDate() + 1);
+      date = date.toLocaleDateString('en-CA');
+      setUnbanDate(date);
+      unbanDateInput.value = date;
     }
     banStudentsPopupContainer.style.display = "flex";
   }
@@ -636,10 +733,14 @@ const handleDeleteAdmin = async () => {
 
   const fetchAdminList = async () => {
     const snapshot = await getDocs(adminListRef);
-    const admins = snapshot.docs.map(d => ({
-      id: d.id,
-      ...d.data()
+
+    // We map the documents so that the "Document ID" (the email)
+    // becomes the 'id' property of our object.
+    const admins = snapshot.docs.map(doc => ({
+      id: doc.id,      // This is the email address string
+      ...doc.data()    // This spreads the 'isAdmin' field
     }));
+
     setAdminList(admins);
   };
 
@@ -720,6 +821,20 @@ const handleDeleteAdmin = async () => {
                 accept=".csv"
                 style={{ display: "none" }}
                 onChange={handleFileChange}
+              />
+            </div>
+            <div className="settings-section">
+              <h3 className="settings-section-title">Import Staff Body</h3>
+              <p className="settings-section-desc">Replace the current staff list with a new CSV file.</p>
+              <button onClick={() => document.getElementById("staffFileInput").click()}>
+                Import Staff CSV
+              </button>
+              <input
+                id="staffFileInput"
+                type="file"
+                accept=".csv"
+                style={{ display: "none" }}
+                onChange={handleStaffFileChange}
               />
             </div>
 
@@ -846,9 +961,10 @@ const handleDeleteAdmin = async () => {
           <div className="banStudentsPopupBackground">
             <div className="banStudentsPopup">
               <h2 id="banStudentsPopupHeader">If you see this there is a bug</h2>
+              <p id="banStudentsPopupText" className="banStudentsPopupText"></p>
               <p
                 id="banStudentReasonStatememnt"
-                className="banStudentReasonStatememnt">Why would you like to ban this student?</p>
+                className="banStudentReasonStatememnt">reason student is to be banned</p>
               <input
                 className="banStudentReasonForm"
                 id="banStudentReasonForm"
@@ -859,14 +975,13 @@ const handleDeleteAdmin = async () => {
               />
               <p
                 id="unbanDateStatement"
-                className="unbanDateStatement"> Enter Date Student should be Unbanned</p>
+                className="unbanDateStatement"> Date Student is to be Unbanned</p>
               <input
                 id="unbaneDateInput"
                 className="unbaneDateInput"
                 type="Date"
                 onChange={(e) => setUnbanDate(e.target.value)}
               />
-              <p id="banStudentsPopupText"></p>
               <div className="popup-button-group">
                 <button
                   className="banStudentButton"
@@ -874,15 +989,16 @@ const handleDeleteAdmin = async () => {
                   onClick={banStudent}
                 >Ban</button>
                 <button
-                  className="unbanStudentButton"
-                  id="unbanStudentButton"
-                  onClick={unbanStudent}
-                >Unban</button>
-                <button
                   className="cancelOperationButton"
                   id="cancelOperationButton"
                   onClick={cancelOperation}
                 >Cancel</button>
+                <button
+                  className="unbanStudentButton"
+                  id="unbanStudentButton"
+                  onClick={unbanStudent}
+                >Unban</button>
+                
               </div>
             </div>
           </div>
@@ -890,65 +1006,65 @@ const handleDeleteAdmin = async () => {
 
         {/* ── Admin Popup ── partially generated by Claude*/}
         {isAdminPopupOpen && (
-  <div className="adminPopupOverlay" onClick={() => { setIsAdminPopupOpen(false); cancelEditAdmin(); }}>
-    <div className="adminPopup" onClick={(e) => e.stopPropagation()}>
-      <button className="adminPopupClose" onClick={() => { setIsAdminPopupOpen(false); cancelEditAdmin(); }}>✕</button>
-      <h2>Manage Administrators</h2>
+          <div className="adminPopupOverlay" onClick={() => { setIsAdminPopupOpen(false); cancelEditAdmin(); }}>
+            <div className="adminPopup" onClick={(e) => e.stopPropagation()}>
+              <button className="adminPopupClose" onClick={() => { setIsAdminPopupOpen(false); cancelEditAdmin(); }}>✕</button>
+              <h2>Manage Administrators</h2>
 
-      <table className="adminTable">
-        <thead>
-          <tr>
-            <th>Email</th>
-            <th>Role</th>
-          </tr>
-        </thead>
-        <tbody>
-          {adminList.length === 0
-            ? <tr><td colSpan="2">No administrators found.</td></tr>
-            : [...adminList].sort((a, b) => b.isAdmin - a.isAdmin).map((admin, i) => (
-                <tr
-                  key={i}
-                  className={`adminTableRow ${editingAdmin?.id === admin.id ? "adminRowSelected" : ""}`}
-                  onClick={() => openEditAdmin(admin)}
-                >
-                  <td>{admin.email || admin.Email || admin.id}</td>
-                  <td>{admin.isAdmin ? "Admin" : "Desk Worker"}</td>
-                </tr>
-              ))
-          }
-          <tr className="adminTableRow addAdminRow" onClick={openAddAdmin}>
-            <td colSpan="2">+ Add Administrator</td>
-          </tr>
-        </tbody>
-      </table>
+              <table className="adminTable">
+                <thead>
+                  <tr>
+                    <th>Email</th>
+                    <th>Role</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {adminList.length === 0
+                    ? <tr><td colSpan="2">No administrators found.</td></tr>
+                    : [...adminList].sort((a, b) => b.isAdmin - a.isAdmin).map((admin, i) => (
+                      <tr
+                        key={i}
+                        className={`adminTableRow ${editingAdmin?.id === admin.id ? "adminRowSelected" : ""}`}
+                        onClick={() => openEditAdmin(admin)}
+                      >
+                        <td>{admin.email || admin.Email || admin.id}</td>
+                        <td>{admin.isAdmin ? "Admin" : "Desk Worker"}</td>
+                      </tr>
+                    ))
+                  }
+                  <tr className="adminTableRow addAdminRow" onClick={openAddAdmin}>
+                    <td colSpan="2">+ Add Administrator</td>
+                  </tr>
+                </tbody>
+              </table>
 
-      {isEditingAdmin && (
-        <div className="adminEditForm">
-          <p className="adminEditTitle">{editingAdmin ? "Edit administrator" : "Add administrator"}</p>
-          <div className="adminEditFields">
-            <input
-              type="text"
-              placeholder="Email address"
-              value={editEmail}
-              onChange={(e) => setEditEmail(e.target.value)}
-            />
-            <select value={editRole} onChange={(e) => setEditRole(e.target.value === "true")}>
-              <option value="false">Desk Worker</option>
-              <option value="true">Admin</option>
-            </select>
+              {isEditingAdmin && (
+                <div className="adminEditForm">
+                  <p className="adminEditTitle">{editingAdmin ? "Edit administrator" : "Add administrator"}</p>
+                  <div className="adminEditFields">
+                    <input
+                      type="text"
+                      placeholder="Email address"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                    />
+                    <select value={editRole} onChange={(e) => setEditRole(e.target.value === "true")}>
+                      <option value="false">Desk Worker</option>
+                      <option value="true">Admin</option>
+                    </select>
+                  </div>
+                  <div className="adminEditButtons">
+                    <button className="adminSaveButton" onClick={handleSaveAdmin}>Save</button>
+                    <button className="adminCancelButton" onClick={cancelEditAdmin}>Cancel</button>
+                    {editingAdmin && (
+                      <button className="adminDeleteButton" onClick={handleDeleteAdmin}>Remove</button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="adminEditButtons">
-            <button className="adminSaveButton" onClick={handleSaveAdmin}>Save</button>
-            <button className="adminCancelButton" onClick={cancelEditAdmin}>Cancel</button>
-            {editingAdmin && (
-              <button className="adminDeleteButton" onClick={handleDeleteAdmin}>Remove</button>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  </div>
-)}
+        )}
 
       </div>
 
