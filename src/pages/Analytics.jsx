@@ -1146,8 +1146,8 @@ function Analytics({ gym, updateGym }) {
                   options={{
                     responsive: true,
                     scales: {
-                      x: { stacked: true },
-                      y: { stacked: true }
+                      x: { stacked: false },
+                      y: { stacked: false }
                     }
                   }}
                 />
