@@ -1,6 +1,6 @@
 // This entire file was generated with help from ChatGPT and Gemini
 import React, { useState, useEffect, useRef } from "react";
-import { Bar, Pie, Line, Radar } from "react-chartjs-2"; 
+import { Bar, Pie, Line, Radar, Doughnut } from "react-chartjs-2"; 
 import "../components/Analytics.css";
 import {
   Chart as ChartJS,
@@ -8,7 +8,7 @@ import {
   LinearScale,
   RadialLinearScale, // Required for radar mapping
   BarElement,
-  ArcElement, // Needed for pie chart
+  ArcElement, // Needed for pie and doughnut charts
   Tooltip,
   Legend,
   LineElement,
@@ -24,7 +24,7 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 
 function Analytics({ gym, updateGym }) {
 
-  // Chart type state updated to visual variants (Bar vs Pie vs Line vs Radar) for easy scaling
+  // Chart type state updated to visual variants (Bar vs Pie vs Line vs Radar vs Doughnut) for easy scaling
   const [chartType, setChartType] = useState("bar");
 
   const [timeRange, setTimeRange] = useState("today");
@@ -275,7 +275,7 @@ function Analytics({ gym, updateGym }) {
 
     let baseName = "";
 
-    if (chartType === "pie" || dataFile === "demographics") {
+    if (chartType === "pie" || chartType === "doughnut" || dataFile === "demographics") {
       baseName = "demographic_data";
     }
     else if (isCheckoutDataset) {
@@ -332,7 +332,7 @@ function Analytics({ gym, updateGym }) {
       return;
     }
 
-    if (chartType === "pie") return;   // Allowed for both bar and line charts
+    if (chartType === "pie" || chartType === "doughnut") return;   // Allowed for bar, line, radar charts
 
     const { start, end } = getDateRange();
 
@@ -951,7 +951,7 @@ function Analytics({ gym, updateGym }) {
                   if (selectedDataset === "demographics") {
                     if (chartType === "line") setChartType("bar");
                   } else {
-                    if (chartType === "pie" || chartType === "radar") {
+                    if (chartType === "pie" || chartType === "radar" || chartType === "doughnut") {
                       setChartType("bar");
                     }
                   }
@@ -981,13 +981,18 @@ function Analytics({ gym, updateGym }) {
                   <option value="line">Line Chart</option>
                 )}
 
-                {/* 🆕 Radar is strictly exclusive to demographics now */}
+                {/* Radar is strictly exclusive to demographics */}
                 {dataFile === "demographics" && (
                   <option value="radar">Radar Chart</option>
                 )}
 
                 {dataFile === "demographics" && (
                   <option value="pie">Pie Chart</option>
+                )}
+
+                {/* 🆕 Doughnut is strictly exclusive to demographics */}
+                {dataFile === "demographics" && (
+                  <option value="doughnut">Doughnut Chart</option>
                 )}
               </select>
             </div>
@@ -1103,7 +1108,7 @@ function Analytics({ gym, updateGym }) {
                   }}
                 >
                   <option value="">Export</option>
-                  {(chartType !== "pie" || dataFile === "demographics") && (
+                  {(chartType !== "pie" && chartType !== "doughnut" || dataFile === "demographics") && (
                     <option value="csv">Export CSV</option>
                   )}
                   <option value="png">Export PNG</option>
@@ -1185,8 +1190,10 @@ function Analytics({ gym, updateGym }) {
                 }}>
                   No data
                 </div>
-              ) : (
+              ) : chartType === "pie" ? (
                 <Pie ref={chartRef} data={pieData} plugins={[whiteBackgroundPlugin]} />
+              ) : (
+                <Doughnut ref={chartRef} data={pieData} plugins={[whiteBackgroundPlugin]} />
               )}
             </div>
           </div>
