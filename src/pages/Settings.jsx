@@ -13,6 +13,9 @@ import { db } from "../Firebase.js";
 // Firestore tools
 import { doc, writeBatch, collection, serverTimestamp, getDoc, deleteDoc, setDoc, getDocs, addDoc, updateDoc } from "firebase/firestore";
 
+
+
+
 import "../components/Settings.css";
 
 import ToastContainer from "../components/ToastContainer.jsx";
@@ -531,11 +534,9 @@ const Settings = () => {
     verified_data = studentEmail;
     const studentList = await getDocs(currentStudentsRef);
     //loops through all the current students to find one that matches
-    let foundStudent = false;
     studentList.forEach((student) => {
       if (student.data().Email == studentEmail) {
         studentEntered = student;
-        foundStudent = true;
       }
     })
     //displays error if student is not found
@@ -592,9 +593,7 @@ const Settings = () => {
     const unbanStudentButton = document.getElementById("unbanStudentButton");
     const banStudentsPopupHeader = document.getElementById("banStudentsPopupHeader");
     const banStudentsPopupText = document.getElementById("banStudentsPopupText");
-    const banStudentReasonStatememnt = document.getElementById("banStudentReasonStatememnt");
     const banStudentReasonForm = document.getElementById("banStudentReasonForm");
-    const unbanDateStatement = document.getElementById("unbanDateStatement");
     const unbanDateInput = document.getElementById("unbaneDateInput");
 
     /*if the student is currently banned allows admins to edit that students ban info
