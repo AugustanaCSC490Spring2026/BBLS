@@ -371,14 +371,12 @@ function Analytics({ gym, updateGym }) {
         `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 
       if (hasGuestData) {
-        // ✅ unchanged guest behavior
         rows.push([
           swipe.studentId,
           swipe.studentId === "guest" ? (swipe.name || "") : "",
           localTime
         ]);
       } else {
-        // ✅ NEW: pull email from studentMap
         const student = studentMap[swipe.studentId];
         const email = student?.Email || "";
 
@@ -545,7 +543,7 @@ function Analytics({ gym, updateGym }) {
 
       data.push({
         studentId: "guest",
-        name: d.name || "", //  Only for guests
+        name: d.name || "", 
         category: d.category || "N/A",
         time: d.timestamp.toDate()
       });
@@ -557,10 +555,10 @@ function Analytics({ gym, updateGym }) {
   // Called when a user wants to see Demographic data
   function processDemographics() {
     const { start, end } = getDateRange();
-    const counts = {};    // A map containing a demographic value and the count of students that lie within that demographic value
+    const counts = {};    
 
-    swipeData.forEach((swipe) => { // goes through each swipe that occured in a given time range
-      if (swipe.studentId === "guest") return; // Makes sure the guest data doesn't potentially mess up the grpah since there is no deomgraphics for guests
+    swipeData.forEach((swipe) => { 
+      if (swipe.studentId === "guest") return; 
 
       const date = swipe.time instanceof Date ? swipe.time : new Date(swipe.time);
       if (isNaN(date) || date < start || date > end) return;
@@ -570,7 +568,7 @@ function Analytics({ gym, updateGym }) {
       const fieldName = demographicFieldMap[demographicType];
       let value = student?.[fieldName];
 
-      if (!value || value.trim() === "") value = "N/A";   // If the given value (demogrpahic type) doesn't exist for a student, it is assigned "N/A"
+      if (!value || value.trim() === "") value = "N/A";   
 
       counts[value] = (counts[value] || 0) + 1;
     });
@@ -604,7 +602,6 @@ function Analytics({ gym, updateGym }) {
       cursor.setHours(0, 0, 0, 0);
     }
 
-    // Increments cursor from the start time until the end time, designating the labels for the buckets
     while (cursor <= end) {
 
       let label = getLabel(cursor);
@@ -636,7 +633,6 @@ function Analytics({ gym, updateGym }) {
     const { start, end } = getDateRange();
     const buckets = generateIntervals(start, end);
 
-    // Takes all swipes, and for each swipe it ensures it is valid, calculates the interval for the swipe in time, and increments the value of "buckets" for that given interval (increments the y-axis)
     swipeData.forEach((swipe) => {
       const date = swipe.time instanceof Date ? swipe.time : new Date(swipe.time);
 
@@ -654,7 +650,6 @@ function Analytics({ gym, updateGym }) {
       if (buckets[label] !== undefined) buckets[label] += 1;
     });
 
-    // Formats it to an array for chart use
     const formatted = Object.keys(buckets).map((key) => ({
       interval: key,
       swipes: buckets[key]
@@ -663,7 +658,7 @@ function Analytics({ gym, updateGym }) {
     setChartData(formatted);
   }
 
-  // This is important for grouping data across time, for instance it can group swipes across a given amount of time based off days of the week (Mon, Tue, Wed, etc...)
+  // This is important for grouping data across time
   function processGroupedData() {
     const { start, end } = getDateRange();
 
@@ -716,7 +711,6 @@ function Analytics({ gym, updateGym }) {
     setChartData(formatted);
   }
 
-  // Key useEffect that triggers a new chart! This one helps create/calculate the given intervals of time on the x-axis and number of swipes on the y axis
   useEffect(() => {
     if (groupBy === "none") {
       processData();
@@ -754,18 +748,14 @@ function Analytics({ gym, updateGym }) {
   };
 
 
-  // Takes care of guest swipes and equipment checkouts. The reason this is done separately than normal swipes is so users can see the reason for visit for each guest or equipment type.
-  // Otherwise, it functions similarly to normal swipe ins.
   if (dataFile === "guestEntrance" || isCheckoutDataset) {
     const { start, end } = getDateRange();
 
-    const categoryMap = {};   // Stores each guest category and its associated counts
-    let labels = [];          // Labels for the x-axis (depends on grouping type)
+    const categoryMap = {};   
+    let labels = [];          
 
-    // If the user selected a grouping option (day of week, hour, etc...)
     if (groupBy !== "none") {
 
-      // Determines what labels should be used for the x-axis
       if (groupBy === "dayOfWeek") {
         labels = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
       } else if (groupBy === "hourOfDay") {
@@ -776,7 +766,6 @@ function Analytics({ gym, updateGym }) {
         labels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
       }
 
-      // Initializes each category with an array of 0s (one for each label)
       swipeData.forEach((swipe) => {
         const category =
           dataFile === "guestEntrance"
@@ -788,11 +777,9 @@ function Analytics({ gym, updateGym }) {
         }
       });
 
-      // Processes each swipe and increments the correct grouped bucket
       swipeData.forEach((swipe) => {
         const date = swipe.time instanceof Date ? swipe.time : new Date(swipe.time);
 
-        // Ensures the swipe is valid and within selected date range
         if (isNaN(date) || date < start || date > end) return;
 
         const category =
@@ -802,19 +789,16 @@ function Analytics({ gym, updateGym }) {
 
         let index;
 
-        // Determines which index to increment based on grouping selection
         if (groupBy === "dayOfWeek") index = date.getDay();
         else if (groupBy === "hourOfDay") index = date.getHours();
         else if (groupBy === "dayOfMonth") index = date.getDate() - 1;
         else if (groupBy === "monthOfYear") index = date.getMonth();
 
-        // Increments the correct category + grouped bucket
         if (categoryMap[category] && index !== undefined) {
           categoryMap[category][index] += 1;
         }
       });
 
-      // Formats grouped data for chart display (stacked by category)
       data = {
         labels,
         datasets: Object.keys(categoryMap).map((cat) => ({
@@ -826,43 +810,36 @@ function Analytics({ gym, updateGym }) {
       };
 
     } else {
-      // ORIGINAL behavior when no grouping is selected (time-based intervals)
       const buckets = generateIntervals(start, end);
 
       swipeData.forEach((swipe) => {
         const date =
-          swipe.time instanceof Date ? swipe.time : new Date(swipe.time);   // Converts to Date if needed
+          swipe.time instanceof Date ? swipe.time : new Date(swipe.time);   
 
-        // Ensures swipe is valid and within selected time range
         if (isNaN(date) || date < start || date > end) return;
 
         const category =
           dataFile === "guestEntrance"
             ? (swipe.category || "N/A")
-            : (swipe.equipment || "Unknown");   // Defaults to N/A if category is missing
+            : (swipe.equipment || "Unknown");   
 
-        // Creates a bucket set for each category
         if (!categoryMap[category]) {
           categoryMap[category] = { ...buckets };
         }
 
         let label = getLabel(date);
 
-        // Same interval logic as processData()
         if (interval === "weeks") {
           const weekStart = new Date(date);
           weekStart.setDate(date.getDate() - date.getDay());
           weekStart.setHours(0, 0, 0, 0);
         }
 
-
-        // Increments the correct category + time bucket
         if (categoryMap[category][label] !== undefined) {
           categoryMap[category][label] += 1;
         }
       });
 
-      // Formats guest data into stacked datasets for chart display
       data = {
         labels: Object.keys(buckets),
         datasets: Object.keys(categoryMap).map((cat) => ({
@@ -961,7 +938,7 @@ function Analytics({ gym, updateGym }) {
           </div>
           <div className="control-box">
             
-            {/* 1. DATASET PICKER (FIRST) */}
+            {/* 1. DATASET PICKER */}
             <div className="control-content">
               <p className="control-label">Dataset</p>
               <select
@@ -970,9 +947,13 @@ function Analytics({ gym, updateGym }) {
                   const selectedDataset = e.target.value;
                   setDataFile(selectedDataset);
                   
-                  // Auto-remove pie chart option if changing to a non-demographic configuration
-                  if (selectedDataset !== "demographics" && chartType === "pie") {
-                    setChartType("bar");
+                  // Guard rails for chart types when switching datasets
+                  if (selectedDataset === "demographics") {
+                    if (chartType === "line") setChartType("bar");
+                  } else {
+                    if (chartType === "pie" || chartType === "radar") {
+                      setChartType("bar");
+                    }
                   }
                 }}
               >
@@ -987,7 +968,7 @@ function Analytics({ gym, updateGym }) {
               </select>
             </div>
 
-            {/* 2. CHART TYPE (SECOND) */}
+            {/* 2. CHART TYPE */}
             <div className="control-content">
               <p className="control-label">Chart Type</p>
               <select
@@ -995,9 +976,16 @@ function Analytics({ gym, updateGym }) {
                 onChange={(e) => setChartType(e.target.value)}
               >
                 <option value="bar">Bar Chart</option>
-                <option value="line">Line Chart</option>
-                <option value="radar">Radar Chart</option>
-                {/* Automatically hides the 'pie' option depending on what dataset is chosen */}
+                
+                {dataFile !== "demographics" && (
+                  <option value="line">Line Chart</option>
+                )}
+
+                {/* 🆕 Radar is strictly exclusive to demographics now */}
+                {dataFile === "demographics" && (
+                  <option value="radar">Radar Chart</option>
+                )}
+
                 {dataFile === "demographics" && (
                   <option value="pie">Pie Chart</option>
                 )}
@@ -1044,7 +1032,7 @@ function Analytics({ gym, updateGym }) {
                     <select
                       value={interval}
                       onChange={(e) => setInterval(e.target.value)}
-                      disabled={groupBy !== "none"} // makes the interval selector disabled (unable to click) when we are grouping data
+                      disabled={groupBy !== "none"} 
                     >
                       <option value="hours">Hours</option>
                       <option value="days">Days</option>
@@ -1054,7 +1042,6 @@ function Analytics({ gym, updateGym }) {
                     </select>
                   </div>
 
-                  {/* Handles grouping by week, day, month, etc ... */}
                   <div className="control-item">
                     <p className="control-label">Group By</p>
                     <select
@@ -1102,7 +1089,6 @@ function Analytics({ gym, updateGym }) {
           </div>
           <div className="Charts" style={{ marginTop: "30px" }}>
             <div style={{ width: "100%", height: 400, position: "relative" }}>
-              {/* Export dropdown */}
               <div style={{ position: "absolute", top: 10, right: 10, zIndex: 10 }}>
                 <select
                   value={exportFormat}
@@ -1117,13 +1103,9 @@ function Analytics({ gym, updateGym }) {
                   }}
                 >
                   <option value="">Export</option>
-
-                  {/* CSV available for both bar, line, radar, and demographic formats */}
                   {(chartType !== "pie" || dataFile === "demographics") && (
                     <option value="csv">Export CSV</option>
                   )}
-
-                  {/* PNG available for ALL chart types */}
                   <option value="png">Export PNG</option>
                 </select>
               </div>
@@ -1172,7 +1154,7 @@ function Analytics({ gym, updateGym }) {
               ) : chartType === "radar" ? (
                 <Radar
                   ref={chartRef}
-                  data={dataFile === "demographics" ? {
+                  data={{
                     labels: Object.keys(demographicData),
                     datasets: [{
                       label: demographicType,
@@ -1181,13 +1163,6 @@ function Analytics({ gym, updateGym }) {
                       borderColor: "#002F6C",
                       pointBackgroundColor: "#002F6C"
                     }]
-                  } : {
-                    labels: data.labels,
-                    datasets: data.datasets.map(ds => ({
-                      ...ds,
-                      // Appends low alpha visibility mapping to prevent overlapping solid covers on multiple lines
-                      backgroundColor: ds.backgroundColor.startsWith("#") ? `${ds.backgroundColor}33` : ds.backgroundColor
-                    }))
                   }}
                   plugins={[whiteBackgroundPlugin]}
                   options={{
