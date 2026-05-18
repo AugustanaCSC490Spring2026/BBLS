@@ -1,11 +1,12 @@
 // This entire file was generated with help from ChatGPT and Gemini
 import React, { useState, useEffect, useRef } from "react";
-import { Bar, Pie, Line } from "react-chartjs-2"; 
+import { Bar, Pie, Line, Radar } from "react-chartjs-2"; 
 import "../components/Analytics.css";
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
+  RadialLinearScale, // Required for radar mapping
   BarElement,
   ArcElement, // Needed for pie chart
   Tooltip,
@@ -14,7 +15,7 @@ import {
   PointElement
 } from "chart.js";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend, LineElement, PointElement);
+ChartJS.register(CategoryScale, LinearScale, RadialLinearScale, BarElement, ArcElement, Tooltip, Legend, LineElement, PointElement);
 
 
 // Firebase imports
@@ -23,7 +24,7 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 
 function Analytics({ gym, updateGym }) {
 
-  // Chart type state updated to visual variants (Bar vs Pie vs Line) for easy scaling
+  // Chart type state updated to visual variants (Bar vs Pie vs Line vs Radar) for easy scaling
   const [chartType, setChartType] = useState("bar");
 
   const [timeRange, setTimeRange] = useState("today");
@@ -183,7 +184,7 @@ function Analytics({ gym, updateGym }) {
       else if (dataFile === "westerlin") {
         await fetchSpecificCollection("westerlinGym");
       }
-      else if (dataFile === "combined") {
+      else if (dataFile === "combined" || dataFile === "demographics") {
         await fetchCombinedCollections();
       }
       else if (dataFile === "pepsicoCheckouts") {
@@ -274,7 +275,7 @@ function Analytics({ gym, updateGym }) {
 
     let baseName = "";
 
-    if (chartType === "pie") {
+    if (chartType === "pie" || dataFile === "demographics") {
       baseName = "demographic_data";
     }
     else if (isCheckoutDataset) {
@@ -314,6 +315,23 @@ function Analytics({ gym, updateGym }) {
 
   // CSV EXPORT 
   function exportSwipeDataToCSV() {
+    // Custom formatted CSV print for aggregated demographic summaries
+    if (dataFile === "demographics") {
+      const rows = [["Demographic Variant", "Total Count"]];
+      Object.entries(demographicData).forEach(([key, value]) => {
+        rows.push([key, value]);
+      });
+      const csvContent = "data:text/csv;charset=utf-8," + rows.map((e) => e.join(",")).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", generateExportFileName("csv"));
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
+
     if (chartType === "pie") return;   // Allowed for both bar and line charts
 
     const { start, end } = getDateRange();
@@ -561,10 +579,10 @@ function Analytics({ gym, updateGym }) {
   }
 
   useEffect(() => {
-    if (chartType === "pie" && Object.keys(studentMap).length > 0) {
+    if (dataFile === "demographics" && Object.keys(studentMap).length > 0) {
       processDemographics();
     }
-  }, [chartType, demographicType, swipeData, timeRange, startDate, endDate, studentMap]);
+  }, [dataFile, demographicType, swipeData, timeRange, startDate, endDate, studentMap]);
 
   // Generates the "buckets" of time which will display on the x axis. Dependant on the interval the user chooses
   function generateIntervals(start, end) {
@@ -952,9 +970,8 @@ function Analytics({ gym, updateGym }) {
                   const selectedDataset = e.target.value;
                   setDataFile(selectedDataset);
                   
-                  // Auto-remove fallback: if the chosen dataset doesn't support demographic pie charts, reset back to bar
-                  const isIncomingCheckout = selectedDataset === "pepsicoCheckouts" || selectedDataset === "westerlinCheckouts" || selectedDataset === "combinedCheckouts";
-                  if ((isIncomingCheckout || selectedDataset === "guestEntrance") && chartType === "pie") {
+                  // Auto-remove pie chart option if changing to a non-demographic configuration
+                  if (selectedDataset !== "demographics" && chartType === "pie") {
                     setChartType("bar");
                   }
                 }}
@@ -966,6 +983,7 @@ function Analytics({ gym, updateGym }) {
                 <option value="westerlinCheckouts">Westerlin Equipment Checkouts</option>
                 <option value="combinedCheckouts">Combined Gym Equipment Checkouts</option>
                 <option value="guestEntrance">Guest Entrance</option>
+                <option value="demographics">Demographics</option>
               </select>
             </div>
 
@@ -978,8 +996,9 @@ function Analytics({ gym, updateGym }) {
               >
                 <option value="bar">Bar Chart</option>
                 <option value="line">Line Chart</option>
-                {/* Automatically removes the 'pie' option depending on what dataset is chosen */}
-                {(!isCheckoutDataset && dataFile !== "guestEntrance") && (
+                <option value="radar">Radar Chart</option>
+                {/* Automatically hides the 'pie' option depending on what dataset is chosen */}
+                {dataFile === "demographics" && (
                   <option value="pie">Pie Chart</option>
                 )}
               </select>
@@ -1017,7 +1036,7 @@ function Analytics({ gym, updateGym }) {
 
             {/* 4. DYNAMIC SUB-CONTROLS */}
             <div className="control-content">
-              {chartType !== "pie" ? (
+              {dataFile !== "demographics" ? (
                 <div className="interval-group-row">
 
                   <div className="control-item">
@@ -1099,8 +1118,8 @@ function Analytics({ gym, updateGym }) {
                 >
                   <option value="">Export</option>
 
-                  {/* CSV available for both bar and line charts */}
-                  {chartType !== "pie" && (
+                  {/* CSV available for both bar, line, radar, and demographic formats */}
+                  {(chartType !== "pie" || dataFile === "demographics") && (
                     <option value="csv">Export CSV</option>
                   )}
 
@@ -1111,7 +1130,15 @@ function Analytics({ gym, updateGym }) {
               {chartType === "bar" ? (
                 <Bar
                   ref={chartRef}
-                  data={data}
+                  data={dataFile === "demographics" ? {
+                    labels: Object.keys(demographicData),
+                    datasets: [{
+                      label: demographicType,
+                      data: Object.values(demographicData),
+                      backgroundColor: "#002F6C",
+                      borderColor: "#002F6C"
+                    }]
+                  } : data}
                   plugins={[whiteBackgroundPlugin]}
                   options={{
                     responsive: true,
@@ -1124,13 +1151,51 @@ function Analytics({ gym, updateGym }) {
               ) : chartType === "line" ? (
                 <Line
                   ref={chartRef}
-                  data={data}
+                  data={dataFile === "demographics" ? {
+                    labels: Object.keys(demographicData),
+                    datasets: [{
+                      label: demographicType,
+                      data: Object.values(demographicData),
+                      backgroundColor: "rgba(0, 47, 108, 0.2)",
+                      borderColor: "#002F6C"
+                    }]
+                  } : data}
                   plugins={[whiteBackgroundPlugin]}
                   options={{
                     responsive: true,
                     scales: {
                       x: { stacked: true },
                       y: { stacked: true }
+                    }
+                  }}
+                />
+              ) : chartType === "radar" ? (
+                <Radar
+                  ref={chartRef}
+                  data={dataFile === "demographics" ? {
+                    labels: Object.keys(demographicData),
+                    datasets: [{
+                      label: demographicType,
+                      data: Object.values(demographicData),
+                      backgroundColor: "rgba(0, 47, 108, 0.2)",
+                      borderColor: "#002F6C",
+                      pointBackgroundColor: "#002F6C"
+                    }]
+                  } : {
+                    labels: data.labels,
+                    datasets: data.datasets.map(ds => ({
+                      ...ds,
+                      // Appends low alpha visibility mapping to prevent overlapping solid covers on multiple lines
+                      backgroundColor: ds.backgroundColor.startsWith("#") ? `${ds.backgroundColor}33` : ds.backgroundColor
+                    }))
+                  }}
+                  plugins={[whiteBackgroundPlugin]}
+                  options={{
+                    responsive: true,
+                    scales: {
+                      r: {
+                        beginAtZero: true
+                      }
                     }
                   }}
                 />
