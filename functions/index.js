@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 /* eslint-disable */
 /**
  * Import function triggers from their respective submodules:
@@ -11,7 +10,6 @@
  */
 
 
-import { setGlobalOptions } from "firebase-functions";
 //const {onRequest} = require("firebase-functions/https");
 //const logger = require("firebase-functions/logger");
 
@@ -25,13 +23,14 @@ import { setGlobalOptions } from "firebase-functions";
 // functions should each use functions.runWith({ maxInstances: 10 }) instead.
 // In the v1 API, each function can only serve one request per container, so
 // this will be the maximum concurrent request count.
+const { setGlobalOptions } = require("firebase-functions");
+const { dailyUnbanTask } = require("./ScheduledTasks.js");
+
+// Set global configuration options
 setGlobalOptions({ maxInstances: 10 });
-// /functions/index.js
-import { dailyUnbanTask } from "./ScheduledTasks.js";
 
-export const dailyUnban = dailyUnbanTask;
-
-
+// Export the function so the Firebase CLI can find it
+exports.dailyUnban = dailyUnbanTask;
 // Create and deploy your first functions
 // https://firebase.google.com/docs/functions/get-started
 
@@ -39,7 +38,6 @@ export const dailyUnban = dailyUnbanTask;
 //   logger.info("Hello logs!", {structuredData: true});
 //   response.send("Hello from Firebase!");
 // });
-=======
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const crypto = require("crypto");
 
@@ -66,4 +64,3 @@ exports.hashStudentId = onCall(
     return { hashed };
   }
 );
->>>>>>> 8edee8e05287dc143b6e8bd83f24d7c865742fb4

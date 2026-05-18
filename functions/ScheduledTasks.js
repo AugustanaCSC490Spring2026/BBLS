@@ -1,3 +1,4 @@
+//this file was created with google gemini
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
@@ -6,8 +7,10 @@ import { getFirestore } from "firebase-admin/firestore";
 initializeApp();
 const adminDb = getFirestore();
 
-export const dailyUnbanTask = onSchedule("0 0 * * *", async () => {
-    console.log("this is a test");
+export const dailyUnbanTask = onSchedule({
+  schedule: "0 0 * * *",        // 1. Sets it to 4:30 PM (16:30)
+  timeZone: "America/Chicago",   // 2. Locks it to your local Central Time
+}, async () => {    console.log("this is a test");
   try {
     // Server-side SDK uses the chainable collection() method directly on the db object
     const bannedRef = adminDb.collection("bannedStudents");
