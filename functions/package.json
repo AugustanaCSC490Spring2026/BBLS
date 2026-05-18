@@ -1,13 +1,9 @@
 {
   "name": "functions",
   "description": "Cloud Functions for Firebase",
-<<<<<<< HEAD
   "type": "module",
   "scripts": {
     "lint": "eslint .",
-=======
-  "scripts": {
->>>>>>> 8edee8e05287dc143b6e8bd83f24d7c865742fb4
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
     "start": "npm run shell",
@@ -22,13 +18,11 @@
     "firebase-admin": "^13.6.0",
     "firebase-functions": "^7.0.0"
   },
-<<<<<<< HEAD
   "devDependencies": {
     "eslint": "^8.15.0",
     "eslint-config-google": "^0.14.0",
     "firebase-functions-test": "^3.4.1"
   },
-=======
->>>>>>> 8edee8e05287dc143b6e8bd83f24d7c865742fb4
   "private": true
 }
+
