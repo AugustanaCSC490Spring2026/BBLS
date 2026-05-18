@@ -14,6 +14,9 @@ import { db } from "../Firebase.js";
 import { doc, writeBatch, collection, serverTimestamp, getDoc, deleteDoc, setDoc, getDocs, addDoc, updateDoc } from "firebase/firestore";
 import { hashId } from "../components/HashId.js";
 
+
+
+
 import "../components/Settings.css";
 
 import ToastContainer from "../components/ToastContainer.jsx";
@@ -635,11 +638,9 @@ const Settings = () => {
     verified_data = studentEmail;
     const studentList = await getDocs(currentStudentsRef);
     //loops through all the current students to find one that matches
-    let foundStudent = false;
     studentList.forEach((student) => {
       if (student.data().Email == studentEmail) {
         studentEntered = student;
-        foundStudent = true;
       }
     })
     //displays error if student is not found
@@ -667,7 +668,6 @@ const Settings = () => {
           isbanned = true;
           differentReasonBanned = docSnap.data().reasonBanned;
           displayPopup(isbanned, docSnap);
-          console.log(docSnap.data().reasonBanned);
         }
       })
     }
@@ -691,9 +691,17 @@ const Settings = () => {
   // }
 
   function displayPopup(isbanned, enteredStudent) {
-    let date, reasonBanned;
+
+    /*if the student is banned displays only the unban and cancel buttons
+      if the student is not banned displays only the ban and cancel buttons as well
+      as why the student is being banned and the date the student is to be unbanned
+      */
+     let date;
+     let reasonBanned;
+
     if (isbanned) {
       date = enteredStudent.data().dateToBeUnbanned;
+      console.log(date);
       reasonBanned = enteredStudent.data().reasonBanned || "";
     } else {
       date = new Date();
