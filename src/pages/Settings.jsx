@@ -668,7 +668,6 @@ const Settings = () => {
           isbanned = true;
           differentReasonBanned = docSnap.data().reasonBanned;
           displayPopup(isbanned, docSnap);
-          console.log(docSnap.data().reasonBanned);
         }
       })
     }
@@ -692,23 +691,17 @@ const Settings = () => {
   // }
 
   function displayPopup(isbanned, enteredStudent) {
-    const banStudentsPopupContainer = document.getElementById("banStudentsPopupContainer");
-    const banStudentButton = document.getElementById("banStudentButton");
-    const unbanStudentButton = document.getElementById("unbanStudentButton");
-    const banStudentsPopupHeader = document.getElementById("banStudentsPopupHeader");
-    const banStudentsPopupText = document.getElementById("banStudentsPopupText");
-    const banStudentReasonStatememnt = document.getElementById("banStudentReasonStatememnt");
-    const banStudentReasonForm = document.getElementById("banStudentReasonForm");
-    const unbanDateStatement = document.getElementById("unbanDateStatement");
-    const unbanDateInput = document.getElementById("unbaneDateInput");
 
     /*if the student is banned displays only the unban and cancel buttons
       if the student is not banned displays only the ban and cancel buttons as well
       as why the student is being banned and the date the student is to be unbanned
       */
+     let date;
+     let reasonBanned;
 
     if (isbanned) {
       date = enteredStudent.data().dateToBeUnbanned;
+      console.log(date);
       reasonBanned = enteredStudent.data().reasonBanned || "";
     } else {
       date = new Date();
