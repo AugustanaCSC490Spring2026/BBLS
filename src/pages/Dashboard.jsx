@@ -13,6 +13,11 @@ import "../components/Dashboard.css";
 import GuestPopup from "../components/GuestTab.jsx";
 import ValidateSwipe from "../components/ValidateSwipe.js";
 import AwayModeOverlay from "../components/AwayModeOverlay.jsx";
+import BannedStudentOverlay from "../components/BannedStudentOverlay.jsx";
+
+// IMPORT HASH UTILITY: Reusing the hashing function from your settings configuration
+import { hashId } from "../components/HashId.js";
+
 const pepsicoCenterRef = collection(db, 'pepsicoCenter')
 const westerlinGymRef = collection(db, 'westerlinGym')
 const invalidSwipeInRef = collection(db, 'invalidSwipeIns');
@@ -28,6 +33,8 @@ function Dashboard({ gym, updateGym }) {
   const inputRef = useRef(null);
   const overlaySwipeRef = useRef(null);
   const [awayMode, setAwayMode] = useState(false);
+  const awayModeRef = useRef(false);
+  const [bannedOverlay, setBannedOverlay] = useState({ visible: false, message: "" });
   const [toasts, setToasts] = useState([]);
   const toastIdRef = useRef(0);
 
@@ -39,6 +46,10 @@ function Dashboard({ gym, updateGym }) {
   useEffect(() => {
     overlaySwipeRef.current = handleOverlaySwipe;
   }, [gym]);
+
+  useEffect(() => {
+    awayModeRef.current = awayMode;
+  }, [awayMode]);
 
   // Keeps input focused every 5 seconds
   useEffect(() => {
@@ -53,12 +64,14 @@ function Dashboard({ gym, updateGym }) {
 
     return () => clearInterval(focusInterval);
   }, [isGuestPopupOpen]);
+
   const handleOverlaySwipe = async (rawId) => {
     const validationResult = await ValidateSwipe(rawId);
     const { isValid, studentId: verified_data, name, reasonDenied } = validationResult;
 
     try {
-      storeSwipeIn(gym, isValid, verified_data, serverTimestamp(), reasonDenied, name);
+      // MODIFIED: Awaiting storeSwipeIn since it is now asynchronous
+      await storeSwipeIn(gym, isValid, verified_data, serverTimestamp(), reasonDenied, name);
     } catch (err) {
       console.error("Error saving swipe:", err);
     }
@@ -69,6 +82,7 @@ function Dashboard({ gym, updateGym }) {
       reason: reasonDenied,
     };
   };
+
   const handleKeyDown = (input) => {
     if (input.key === "Enter") {
       input.preventDefault();
@@ -133,14 +147,6 @@ function Dashboard({ gym, updateGym }) {
     }
   };
 
-  function displayIdEntryError(swipeOutput) {
-    const customAlert = document.getElementById("customAlert");
-    const alertText = document.getElementById("alertText");
-    alertText.textContent = swipeOutput;
-    customAlert.style.display = "flex";
-    setTimeout(() => { customAlert.style.display = "none"; }, 3000);
-  }
-
   async function processGuestEntry(guestData) {
     const timeStamp = serverTimestamp();
     let validBool = true;
@@ -176,24 +182,28 @@ function Dashboard({ gym, updateGym }) {
     }
   };
 
+  // MODIFIED: Turned into an async function to allow hashing execution
+  async function storeSwipeIn(gym, swipeValid, verified_data, timeStamp, reasonSwipeDenied, studentName) {
+    // Generate the hashed ID if verified_data exists
+    const hashedId = verified_data ? await hashId(String(verified_data).trim()) : "";
 
-
-  //saves data to firebase
-  function storeSwipeIn(gym, swipeValid, verified_data, timeStamp, reasonSwipeDenied, studentName) {
     if (swipeValid && gym !== "None Selected") {
       addToast("success", "ID Accepted", `Welcome, ${studentName}!`);
 
       if (gym === "Pepsi-Co Center") {
-        addDoc(pepsicoCenterRef, { ID: verified_data, swipeInTime: timeStamp });
+        // MODIFIED: Replaced verified_data with hashedId
+        await addDoc(pepsicoCenterRef, { ID: hashedId, swipeInTime: timeStamp });
       } else if (gym === "Westerlin Gym") {
-        addDoc(westerlinGymRef, { ID: verified_data, swipeInTime: timeStamp });
+        // MODIFIED: Replaced verified_data with hashedId
+        await addDoc(westerlinGymRef, { ID: hashedId, swipeInTime: timeStamp });
       }
 
-    } else if (!swipeValid && reasonSwipeDenied.includes("banned")){
-      displayIdEntryError(reasonSwipeDenied);
+    } else if (!swipeValid && reasonSwipeDenied.includes("banned") && !awayModeRef.current){
+      setBannedOverlay({ visible: true, message: reasonSwipeDenied });
     } else if (!swipeValid) {
       addToast("error", "ID Denied", reasonSwipeDenied);
-      addDoc(invalidSwipeInRef, { gym: gym, ID: verified_data, swipeInTime: timeStamp });
+      // MODIFIED: Replaced verified_data with hashedId for invalid swipe logging
+      await addDoc(invalidSwipeInRef, { gym: gym, ID: hashedId, swipeInTime: timeStamp });
     }
   }
 
@@ -210,7 +220,7 @@ function Dashboard({ gym, updateGym }) {
         </div>
         <div className="dash-left">
           <button onClick={() => setAwayMode(true)}>
-            <img src={awayModeIcon} alt="Away Mode" />
+            Away
           </button>
         </div>
       </div>
@@ -220,6 +230,12 @@ function Dashboard({ gym, updateGym }) {
           isActive={awayMode}
           onDismiss={() => setAwayMode(false)}
           onSwipe={(id) => overlaySwipeRef.current?.(id)}
+        />
+
+        <BannedStudentOverlay
+          isVisible={bannedOverlay.visible}
+          message={bannedOverlay.message}
+          onDismiss={() => setBannedOverlay({ visible: false, message: "" })}
         />
 
         <div className="swipe-card">
@@ -272,12 +288,6 @@ function Dashboard({ gym, updateGym }) {
           removeToast={removeToast}
         />
       )}
-      <div className="customAlert" id="customAlert">
-        <div className="alertContent" id="alertContent">
-          <h2 className="alertHeading">ID entry error</h2>
-          <p id="alertText"></p>
-        </div>
-      </div>
     </>
   );
 }
