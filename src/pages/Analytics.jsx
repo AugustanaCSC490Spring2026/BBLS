@@ -23,7 +23,7 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 
 function Analytics({ gym, updateGym }) {
 
-  // Chart type state updated to visual variants (Bar vs Pie) for easy scaling
+  // Chart type state updated to visual variants (Bar vs Pie vs Line) for easy scaling
   const [chartType, setChartType] = useState("bar");
 
   const [timeRange, setTimeRange] = useState("today");
@@ -314,7 +314,7 @@ function Analytics({ gym, updateGym }) {
 
   // CSV EXPORT 
   function exportSwipeDataToCSV() {
-    if (chartType !== "bar") return;   // equipment checkouts is included in this, so still works
+    if (chartType === "pie") return;   // Allowed for both bar and line charts
 
     const { start, end } = getDateRange();
 
@@ -717,7 +717,8 @@ function Analytics({ gym, updateGym }) {
       {
         label: "Swipes",
         data: chartData.map((d) => d.swipes),
-        backgroundColor: "#002F6C"
+        backgroundColor: "#002F6C",
+        borderColor: "#002F6C"
       }
     ]
   };
@@ -801,7 +802,8 @@ function Analytics({ gym, updateGym }) {
         datasets: Object.keys(categoryMap).map((cat) => ({
           label: cat,
           data: categoryMap[cat],
-          backgroundColor: getCategoryColor(cat)
+          backgroundColor: getCategoryColor(cat),
+          borderColor: getCategoryColor(cat)
         }))
       };
 
@@ -848,7 +850,8 @@ function Analytics({ gym, updateGym }) {
         datasets: Object.keys(categoryMap).map((cat) => ({
           label: cat,
           data: Object.keys(buckets).map((b) => categoryMap[cat][b] || 0),
-          backgroundColor: getCategoryColor(cat)
+          backgroundColor: getCategoryColor(cat),
+          borderColor: getCategoryColor(cat)
         }))
       };
     }
@@ -974,6 +977,7 @@ function Analytics({ gym, updateGym }) {
                 onChange={(e) => setChartType(e.target.value)}
               >
                 <option value="bar">Bar Chart</option>
+                <option value="line">Line Chart</option>
                 {/* Automatically removes the 'pie' option depending on what dataset is chosen */}
                 {(!isCheckoutDataset && dataFile !== "guestEntrance") && (
                   <option value="pie">Pie Chart</option>
@@ -1013,7 +1017,7 @@ function Analytics({ gym, updateGym }) {
 
             {/* 4. DYNAMIC SUB-CONTROLS */}
             <div className="control-content">
-              {chartType === "bar" ? (
+              {chartType !== "pie" ? (
                 <div className="interval-group-row">
 
                   <div className="control-item">
@@ -1095,17 +1099,30 @@ function Analytics({ gym, updateGym }) {
                 >
                   <option value="">Export</option>
 
-                  {/* CSV ONLY for bar charts */}
-                  {chartType === "bar" && (
+                  {/* CSV available for both bar and line charts */}
+                  {chartType !== "pie" && (
                     <option value="csv">Export CSV</option>
                   )}
 
-                  {/* PNG available for BOTH chart types */}
+                  {/* PNG available for ALL chart types */}
                   <option value="png">Export PNG</option>
                 </select>
               </div>
               {chartType === "bar" ? (
                 <Bar
+                  ref={chartRef}
+                  data={data}
+                  plugins={[whiteBackgroundPlugin]}
+                  options={{
+                    responsive: true,
+                    scales: {
+                      x: { stacked: true },
+                      y: { stacked: true }
+                    }
+                  }}
+                />
+              ) : chartType === "line" ? (
+                <Line
                   ref={chartRef}
                   data={data}
                   plugins={[whiteBackgroundPlugin]}
