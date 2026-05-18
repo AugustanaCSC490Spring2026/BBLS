@@ -40,13 +40,16 @@ function Analytics({ gym, updateGym }) {
 
   // Stores aggregated demographic counts
   const [demographicData, setDemographicData] = useState({});
+  
+  // 🆕 Stores non-demographic categorical data (Equipment types, Guest categories, or Swipe locations)
+  const [categoricalData, setCategoricalData] = useState({});
 
   // Cached student data (FULL FETCH)
   const [studentMap, setStudentMap] = useState({});
 
   const [dataFile, setDataFile] = useState("combined");
 
-  // 🆕 Export dropdown state
+  // Export dropdown state
   const [exportFormat, setExportFormat] = useState("");
 
   // State to handle weekly/monthly/daily grouping
@@ -79,27 +82,26 @@ function Analytics({ gym, updateGym }) {
     dataFile === "westerlinCheckouts" ||
     dataFile === "combinedCheckouts";
 
+  // Shared color palette used across different pie and doughnut distributions
+  const colorPalette = [
+    "#8dd1e1",
+    "#82ca9d",
+    "#8884d8",
+    "#ff7f7f",
+    "#ffc658",
+    "#d0ed57",
+    "#a4de6c",
+    "#a78bfa",
+    "#fb7185",
+    "#34d399"
+  ];
+
   // Gives categories for guest swipes different colors on the graph. Color codes the guest swipes
   const categoryColorMap = {};
   function getCategoryColor(category) {
     if (categoryColorMap[category]) return categoryColorMap[category];
-
-    const palette = [
-      "#8884d8",
-      "#82ca9d",
-      "#ffc658",
-      "#ff7f7f",
-      "#8dd1e1",
-      "#d0ed57",
-      "#a4de6c",
-      "#a78bfa",
-      "#fb7185",
-      "#34d399"
-    ];
-
-    const index = Object.keys(categoryColorMap).length % palette.length;
-    categoryColorMap[category] = palette[index];
-
+    const index = Object.keys(categoryColorMap).length % colorPalette.length;
+    categoryColorMap[category] = colorPalette[index];
     return categoryColorMap[category];
   }
 
@@ -179,10 +181,10 @@ function Analytics({ gym, updateGym }) {
     async function loadData() {
 
       if (dataFile === "pepsico") {
-        await fetchSpecificCollection("pepsicoCenter");
+        await fetchSpecificCollection("pepsicoCenter", "PepsiCo Center");
       }
       else if (dataFile === "westerlin") {
-        await fetchSpecificCollection("westerlinGym");
+        await fetchSpecificCollection("westerlinGym", "Westerlin Gym");
       }
       else if (dataFile === "combined" || dataFile === "demographics") {
         await fetchCombinedCollections();
@@ -276,7 +278,7 @@ function Analytics({ gym, updateGym }) {
     let baseName = "";
 
     if (chartType === "pie" || chartType === "doughnut" || dataFile === "demographics") {
-      baseName = "demographic_data";
+      baseName = "distribution_data";
     }
     else if (isCheckoutDataset) {
       baseName = "equipment_data";
@@ -292,7 +294,6 @@ function Analytics({ gym, updateGym }) {
   function exportChartToPNG() {
     let chartInstance = chartRef.current;
 
-    // Some versions wrap it like this:
     if (chartInstance?.chart) {
       chartInstance = chartInstance.chart;
     }
@@ -332,7 +333,22 @@ function Analytics({ gym, updateGym }) {
       return;
     }
 
-    if (chartType === "pie" || chartType === "doughnut") return;   // Allowed for bar, line, radar charts
+    // 🆕 Custom CSV output for other categorical charts (Equipment popularity, Location swipes, Guest types)
+    if (chartType === "pie" || chartType === "doughnut") {
+      const rows = [["Category / Metric", "Total Distribution Count"]];
+      Object.entries(categoricalData).forEach(([key, value]) => {
+        rows.push([key, value]);
+      });
+      const csvContent = "data:text/csv;charset=utf-8," + rows.map((e) => e.join(",")).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", generateExportFileName("csv"));
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return;
+    }
 
     const { start, end } = getDateRange();
 
@@ -359,8 +375,8 @@ function Analytics({ gym, updateGym }) {
       : "Swipe Time";
 
     const rows = hasGuestData
-      ? [["Student ID", "Name", timeColumnLabel]]
-      : [["Student ID", "Email", timeColumnLabel]];
+      ? [["Student ID", "Name", "Location/Category", timeColumnLabel]]
+      : [["Student ID", "Email", "Location", timeColumnLabel]];
 
     filtered.forEach((swipe) => {
       const date =
@@ -374,6 +390,7 @@ function Analytics({ gym, updateGym }) {
         rows.push([
           swipe.studentId,
           swipe.studentId === "guest" ? (swipe.name || "") : "",
+          swipe.location || swipe.category || "N/A",
           localTime
         ]);
       } else {
@@ -383,6 +400,7 @@ function Analytics({ gym, updateGym }) {
         rows.push([
           swipe.studentId,
           email,
+          swipe.location || "N/A",
           localTime
         ]);
       }
@@ -404,7 +422,7 @@ function Analytics({ gym, updateGym }) {
   }
 
   // Fetches the given collection form firestore
-  async function fetchSpecificCollection(collectionName) {
+  async function fetchSpecificCollection(collectionName, visibleLocationName) {
     const { start, end } = getDateRange();
     const ref = collection(db, collectionName);
 
@@ -423,22 +441,27 @@ function Analytics({ gym, updateGym }) {
 
       data.push({
         studentId: d.ID,
-        time: d.swipeInTime.toDate()
+        time: d.swipeInTime.toDate(),
+        location: visibleLocationName // 🆕 Map specific location string for single datasets
       });
     });
 
     setSwipeData(data);
   }
 
-  // Fetches sspecifically pepsico and westerlin
+  // Fetches specifically pepsico and westerlin
   async function fetchCombinedCollections() {
     const { start, end } = getDateRange();
-    const collections = ["pepsicoCenter", "westerlinGym"];
-
     let combined = [];
 
-    for (let name of collections) {
-      const ref = collection(db, name);
+    // Map specific readable facility names
+    const targetCollections = [
+      { id: "pepsicoCenter", label: "PepsiCo Center" },
+      { id: "westerlinGym", label: "Westerlin Gym" }
+    ];
+
+    for (let col of targetCollections) {
+      const ref = collection(db, col.id);
 
       const q = query(
         ref,
@@ -454,7 +477,8 @@ function Analytics({ gym, updateGym }) {
 
         combined.push({
           studentId: d.ID,
-          time: d.swipeInTime.toDate()
+          time: d.swipeInTime.toDate(),
+          location: col.label // 🆕 Attach label for accurate visual composition breakdowns
         });
       });
     }
@@ -581,6 +605,32 @@ function Analytics({ gym, updateGym }) {
       processDemographics();
     }
   }, [dataFile, demographicType, swipeData, timeRange, startDate, endDate, studentMap]);
+
+  // 🆕 Processes all categorical counts (Equipment distribution, location traffic share, or guest types)
+  useEffect(() => {
+    if (dataFile === "demographics") return;
+
+    const { start, end } = getDateRange();
+    const counts = {};
+
+    swipeData.forEach((swipe) => {
+      const date = swipe.time instanceof Date ? swipe.time : new Date(swipe.time);
+      if (isNaN(date) || date < start || date > end) return;
+
+      let key = "Unknown";
+      if (isCheckoutDataset) {
+        key = swipe.equipment || "Unknown";
+      } else if (dataFile === "guestEntrance") {
+        key = swipe.category || "N/A";
+      } else {
+        key = swipe.location || "Unspecified Location";
+      }
+
+      counts[key] = (counts[key] || 0) + 1;
+    });
+
+    setCategoricalData(counts);
+  }, [dataFile, swipeData, timeRange, startDate, endDate]);
 
   // Generates the "buckets" of time which will display on the x axis. Dependant on the interval the user chooses
   function generateIntervals(start, end) {
@@ -852,21 +902,24 @@ function Analytics({ gym, updateGym }) {
     }
   }
 
-  // Data for demographics
+  // Data configuration object for demographic distributions
   const pieData = {
     labels: Object.keys(demographicData),
     datasets: [
       {
         data: Object.values(demographicData),
-        backgroundColor: [
-          "#8dd1e1",
-          "#82ca9d",
-          "#8884d8",
-          "#ff7f7f",
-          "#ffc658",
-          "#d0ed57",
-          "#a4de6c"
-        ]
+        backgroundColor: colorPalette
+      }
+    ]
+  };
+
+  // 🆕 Unified configuration object for new custom categorical distributions
+  const generalCategoricalChartData = {
+    labels: Object.keys(categoricalData),
+    datasets: [
+      {
+        data: Object.values(categoricalData),
+        backgroundColor: colorPalette
       }
     ]
   };
@@ -947,13 +1000,9 @@ function Analytics({ gym, updateGym }) {
                   const selectedDataset = e.target.value;
                   setDataFile(selectedDataset);
                   
-                  // Guard rails for chart types when switching datasets
-                  if (selectedDataset === "demographics") {
-                    if (chartType === "line") setChartType("bar");
-                  } else {
-                    if (chartType === "pie" || chartType === "radar" || chartType === "doughnut") {
-                      setChartType("bar");
-                    }
+                  // Reset back to safe default bar chart configurations on core category dataset swaps
+                  if (selectedDataset !== "demographics" && chartType === "radar") {
+                    setChartType("bar");
                   }
                 }}
               >
@@ -986,14 +1035,9 @@ function Analytics({ gym, updateGym }) {
                   <option value="radar">Radar Chart</option>
                 )}
 
-                {dataFile === "demographics" && (
-                  <option value="pie">Pie Chart</option>
-                )}
-
-                {/* 🆕 Doughnut is strictly exclusive to demographics */}
-                {dataFile === "demographics" && (
-                  <option value="doughnut">Doughnut Chart</option>
-                )}
+                {/* 🆕 Pie and Doughnut are now fully supported across all descriptive categorical data files */}
+                <option value="pie">Pie Chart</option>
+                <option value="doughnut">Doughnut Chart</option>
               </select>
             </div>
 
@@ -1037,7 +1081,7 @@ function Analytics({ gym, updateGym }) {
                     <select
                       value={interval}
                       onChange={(e) => setInterval(e.target.value)}
-                      disabled={groupBy !== "none"} 
+                      disabled={groupBy !== "none" || chartType === "pie" || chartType === "doughnut"} 
                     >
                       <option value="hours">Hours</option>
                       <option value="days">Days</option>
@@ -1052,6 +1096,7 @@ function Analytics({ gym, updateGym }) {
                     <select
                       value={groupBy}
                       onChange={(e) => setGroupBy(e.target.value)}
+                      disabled={chartType === "pie" || chartType === "doughnut"}
                     >
                       <option value="none">None</option>
                       <option value="hourOfDay">Hour of Day</option>
@@ -1108,9 +1153,7 @@ function Analytics({ gym, updateGym }) {
                   }}
                 >
                   <option value="">Export</option>
-                  {(chartType !== "pie" && chartType !== "doughnut" || dataFile === "demographics") && (
-                    <option value="csv">Export CSV</option>
-                  )}
+                  <option value="csv">Export CSV</option>
                   <option value="png">Export PNG</option>
                 </select>
               </div>
@@ -1179,7 +1222,8 @@ function Analytics({ gym, updateGym }) {
                     }
                   }}
                 />
-              ) : Object.keys(demographicData).length === 0 ? (
+              /*  Validation checks for empty structures on Pie / Doughnut renders */
+              ) : (dataFile === "demographics" ? Object.keys(demographicData).length === 0 : Object.keys(categoricalData).length === 0) ? (
                 <div style={{
                   display: "flex",
                   alignItems: "center",
@@ -1188,12 +1232,20 @@ function Analytics({ gym, updateGym }) {
                   fontSize: "18px",
                   fontWeight: "500"
                 }}>
-                  No data
+                  No data available for this range
                 </div>
               ) : chartType === "pie" ? (
-                <Pie ref={chartRef} data={pieData} plugins={[whiteBackgroundPlugin]} />
+                <Pie 
+                  ref={chartRef} 
+                  data={dataFile === "demographics" ? pieData : generalCategoricalChartData} 
+                  plugins={[whiteBackgroundPlugin]} 
+                />
               ) : (
-                <Doughnut ref={chartRef} data={pieData} plugins={[whiteBackgroundPlugin]} />
+                <Doughnut 
+                  ref={chartRef} 
+                  data={dataFile === "demographics" ? pieData : generalCategoricalChartData} 
+                  plugins={[whiteBackgroundPlugin]} 
+                />
               )}
             </div>
           </div>
