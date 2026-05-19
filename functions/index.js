@@ -24,8 +24,6 @@
 
 import { setGlobalOptions } from "firebase-functions";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
-import { defineSecret } from "firebase-functions/params";
-import nodemailer from "nodemailer";
 import crypto from "crypto";
 import { dailyUnbanTask } from "./ScheduledTasks.js";
 
@@ -34,6 +32,7 @@ setGlobalOptions({ maxInstances: 10 });
 
 // Export the function so the Firebase CLI can find it
 export const dailyUnban = dailyUnbanTask;
+export { sendEmail } from "./Email.js";
 
 export const hashStudentId = onCall(
   { secrets: ["SECRET_SALT"] },
