@@ -774,7 +774,7 @@ const Settings = () => {
         await sendEmail({
           to: docSnap.data().Email + "@augustana.edu",
           subject: "Augustana Recreation Ban Notice",
-          html: "<h1>Due to " + reasonStudentBanned + ", you have been banned from recreation facilities including Pepsico and the Westerlin Activity Center. You will be unbanned on " + dateStudentIsUnbanned + ".</h1>"
+          html: "<h1>Due to this reason '" + reasonStudentBanned + "', you have been banned from recreation facilities including Pepsico and the Westerlin Activity Center. You will be unbanned on " + dateStudentIsUnbanned + ".</h1>"
         });
         addToast("success", "Student Banned", banPopupStudent?.name + " has been banned.");
       } else {
