@@ -1,6 +1,8 @@
 import  { doc, getDoc } from "firebase/firestore";
 import { db } from "../Firebase.js";
 import { hashId } from "./HashId.js";
+import { getFunctions, httpsCallable } from "firebase/functions";
+
 
 
 /**
@@ -48,6 +50,8 @@ async function ValidateSwipe(swipe){
 
     const studentSnapPromise = getDoc(doc(db, "currentStudents", hashedId));
     const bannedSnapPromise = getDoc(doc(db, "bannedStudents", hashedId));
+    const functions = getFunctions();
+    const sendEmail = httpsCallable(functions, "sendEmail");
 
     const [studentSnap, bannedSnap] = await Promise.all([studentSnapPromise, bannedSnapPromise]);
     // student does exist, update variables
@@ -71,9 +75,16 @@ async function ValidateSwipe(swipe){
     // Ben Aumuller wrote lines 46 and 47
     if (bannedSnap.exists()) {
       studentName = bannedSnap.data().FirstName + " " + bannedSnap.data().LastName;
-      console.log("banned user");
       swipeValid = false;
       reasonSwipeDenied = studentName + " is currently banned from entering Augustana Rec Facilities.";
+
+      const now = new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' });
+
+      await sendEmail({
+        to: "bengeorgia23@augustana.edu",
+        subject: "Banned Student Attempted Entry",
+        html: "<h1>Banned student, " + studentName + ", attempted entry at " + now + "</h1>"
+      });
     }
 
   }

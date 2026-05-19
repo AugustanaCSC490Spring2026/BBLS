@@ -14,6 +14,8 @@ import { db } from "../Firebase.js";
 import { doc, writeBatch, collection, serverTimestamp, getDoc, deleteDoc, setDoc, getDocs, addDoc, updateDoc } from "firebase/firestore";
 import { hashId } from "../components/HashId.js";
 
+import { getFunctions, httpsCallable } from "firebase/functions";
+
 
 
 
@@ -78,6 +80,9 @@ const Settings = () => {
   const [isAddInventoryOpen, setIsAddInventoryOpen] = useState(false);
   const [isRemoveInventoryOpen, setIsRemoveInventoryOpen] = useState(false);
   const [availableEquipment, setAvailableEquipment] = useState([]);
+
+  const functions = getFunctions();
+  const sendEmail = httpsCallable(functions, "sendEmail");
 
   const pepsicoInventoryRef = collection(db, "pepsicoEquipmentInventory");
   const westerlinInventoryRef = collection(db, "westerlinEquipmentInventory");
@@ -276,6 +281,8 @@ const Settings = () => {
     }));
     setBannedStudents(bannedList); // use state instead of direct DOM manipulation
     //updatePossibleStudents(bannedList)
+
+
   };
 
   const createListOfPossibleStudents = async (input) => {
@@ -696,8 +703,8 @@ const Settings = () => {
       if the student is not banned displays only the ban and cancel buttons as well
       as why the student is being banned and the date the student is to be unbanned
       */
-     let date;
-     let reasonBanned;
+    let date;
+    let reasonBanned;
 
     if (isbanned) {
       date = enteredStudent.data().dateToBeUnbanned;
@@ -752,7 +759,7 @@ const Settings = () => {
       reasonStudentBanned = "no reason given";
     }
     docRef = await doc(db, "currentStudents", banPopupStudent?.studentId);
-    await getDoc(docRef).then((docSnap) => {
+    await getDoc(docRef).then(async (docSnap) => {
       if (docSnap.exists()) {
         setDoc(doc(db, "bannedStudents", docSnap.data().ID), {
           ID: docSnap.data().ID,
@@ -763,6 +770,12 @@ const Settings = () => {
           dateBanned: new Date().toLocaleDateString('en-CA'),
           dateToBeUnbanned: dateStudentIsUnbanned
         })
+
+        await sendEmail({
+          to: docSnap.data().Email + "@augustana.edu",
+          subject: "Augustana Recreation Ban Notice",
+          html: "<h1>Due to " + reasonStudentBanned + ", you have been banned from recreation facilities including Pepsico and the Westerlin Activity Center. You will be unbanned on " + dateStudentIsUnbanned + ".</h1>"
+        });
         addToast("success", "Student Banned", banPopupStudent?.name + " has been banned.");
       } else {
         addToast("error", "Database Error", "Error retrieving data from database. Please try again or contact support if error persists.");
@@ -777,16 +790,23 @@ const Settings = () => {
     event.preventDefault();
     docRef = await doc(db, "bannedStudents", banPopupStudent?.studentEnteredID);
     if (docRef) {
-      deleteDoc(docRef);
-      addToast("success", "Student Unbanned", banPopupStudent?.name + " has been unbanned.");
-    }
-    else {
-      displayIdEntryError("error retrieving data from database. Please try again or contact support if error persists");
+      const snap = await getDoc(docRef);
+      const email = snap.data()?.Email;
 
+      await deleteDoc(docRef);
+
+      await sendEmail({
+        to: email + "@augustana.edu",
+        subject: "Augustana Recreation Unban Notice",
+        html: "<h1>You have been unbanned from campus recreation facilities. Please be responsible moving forward.</h1>"
+      });
+
+      addToast("success", "Student Unbanned", banPopupStudent?.name + " has been unbanned.");
+    } else {
+      displayIdEntryError("error retrieving data from database. Please try again or contact support if error persists");
     }
     cancelOperation(event);
   }
-
   const cancelOperation = async (event) => {
     if (event) event.preventDefault();
     setIsBanPopupOpen(false);

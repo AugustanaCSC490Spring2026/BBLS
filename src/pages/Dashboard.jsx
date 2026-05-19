@@ -200,6 +200,8 @@ function Dashboard({ gym, updateGym }) {
 
     } else if (!swipeValid && reasonSwipeDenied.includes("banned") && !awayModeRef.current){
       setBannedOverlay({ visible: true, message: reasonSwipeDenied });
+      await addDoc(invalidSwipeInRef, { gym: gym, ID: hashedId, swipeInTime: timeStamp });
+
     } else if (!swipeValid) {
       addToast("error", "ID Denied", reasonSwipeDenied);
       // MODIFIED: Replaced verified_data with hashedId for invalid swipe logging
