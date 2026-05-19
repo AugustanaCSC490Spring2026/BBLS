@@ -10,8 +10,8 @@
  */
 
 
-//const {onRequest} = require("firebase-functions/https");
-//const logger = require("firebase-functions/logger");
+//import {onRequest} from "firebase-functions/https";
+//import logger from "firebase-functions/logger";
 
 // For cost control, you can set the maximum number of containers that can be
 // running at the same time. This helps mitigate the impact of unexpected
@@ -23,25 +23,21 @@
 // functions should each use functions.runWith({ maxInstances: 10 }) instead.
 // In the v1 API, each function can only serve one request per container, so
 // this will be the maximum concurrent request count.
-const { setGlobalOptions } = require("firebase-functions");
-const { dailyUnbanTask } = require("./ScheduledTasks.js");
+
+import { setGlobalOptions } from "firebase-functions";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { defineSecret } from "firebase-functions/params";
+import nodemailer from "nodemailer";
+import crypto from "crypto";
+import { dailyUnbanTask } from "./ScheduledTasks.js";
 
 // Set global configuration options
 setGlobalOptions({ maxInstances: 10 });
 
 // Export the function so the Firebase CLI can find it
-exports.dailyUnban = dailyUnbanTask;
-// Create and deploy your first functions
-// https://firebase.google.com/docs/functions/get-started
+export const dailyUnban = dailyUnbanTask;
 
-// exports.helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
-const crypto = require("crypto");
-
-exports.hashStudentId = onCall(
+export const hashStudentId = onCall(
   { secrets: ["SECRET_SALT"] },
   (request) => {
     // v2 uses request.auth instead of context.auth
