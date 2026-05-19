@@ -1,8 +1,12 @@
 /* ── Page layout ─────────────────────────────────────────── */
 .settings-page {
-  padding: 24px;
+  padding: clamp(12px, 2vw, 24px);
   background-color: #f8f9fa;
-  flex: 1;
+  height: calc(100vh - 102px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .settings-title {
@@ -14,19 +18,23 @@
 /* ── Two-column card row ─────────────────────────────────── */
 .settings-cards {
   display: flex;
-  gap: 24px;
+  gap: clamp(12px, 2vw, 24px);
   align-items: stretch;
+  flex: 1;
+  min-height: 0;
 }
 
 .settings-card {
   flex: 1;
   background: white;
   border-radius: 12px;
-  padding: 24px;
+  padding: clamp(12px, 2vw, 24px);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   border: 1px solid rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  box-sizing: border-box;
 }
 
 .settings-card-header {
@@ -295,25 +303,23 @@
   }
 }
 
-/* ── Updated Two-column card row ─────────────────────────── */
-.settings-cards {
-  display: flex;
-  gap: 24px;
-  align-items: stretch;
-}
-
 /* NEW: This container stacks the Right-side cards vertically */
 .settings-column {
   display: flex;
   flex-direction: column;
-  gap: 24px; /* Matches the gap between main columns */
-  flex: 1;   /* Ensures it takes up the same width as the Students card */
+  gap: clamp(12px, 2vw, 24px);
+  flex: 1;
+  min-height: 0;
 }
 
 /* ── Administrative Card Specifics ────────────────────────── */
+.administrative-card {
+  flex: 0 0 auto;
+}
+
 .administrative-card h1 {
   margin: 0;
-  font-size: 1.25rem; /* Matches the H2 size for visual consistency */
+  font-size: 1.25rem;
   color: #333;
 }
 

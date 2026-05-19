@@ -236,7 +236,7 @@ export default function Equipment({ gym, updateGym }) {
                     <div style={{ display: "flex", gap: "16px", flex: 1, minHeight: 0 }}>
 
                         {/* Left: New Checkout Form */}
-                        <div className="card" style={{ flex: 1, minHeight: 0, maxHeight: "none", overflow: "hidden" }}>
+                        <div className="card" style={{ flex: 1, minHeight: 0 }}>
                             <div className="card-header">
                                 <h2>New Checkout</h2>
                                 <NavDropdown
@@ -246,7 +246,7 @@ export default function Equipment({ gym, updateGym }) {
                                 />
                             </div>
 
-                            <div className="card-body" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                            <div className="card-body" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                                 <div>
                                     <label style={labelStyle}>Student ID</label>
                                     <input
@@ -288,7 +288,6 @@ export default function Equipment({ gym, updateGym }) {
                                     onClick={handleCheckout}
                                     disabled={isProcessing}
                                     style={{
-                                        marginTop: "auto",
                                         padding: "12px",
                                         borderRadius: "10px",
                                         border: "none",
@@ -307,7 +306,7 @@ export default function Equipment({ gym, updateGym }) {
                         </div>
 
                         {/* Right: Inventory with Progress Bars */}
-                        <div className="card" style={{ flex: 1, minHeight: 0, maxHeight: "none", overflowY: "auto" }}>
+                        <div className="card" style={{ flex: 1, minHeight: 0 }}>
                             <div className="card-header">
                                 <h2>Inventory Status</h2>
                             </div>
@@ -350,7 +349,7 @@ export default function Equipment({ gym, updateGym }) {
                     </div>
 
                     {/* Bottom: Full Width Active Checkouts */}
-                    <div className="card active-checkouts-card" style={{ flex: "0 0 210px", overflowY: "auto" }}>
+                    <div className="card active-checkouts-card" style={{ flex: "0 0 210px" }}>
                         <div className="card-header">
                             <h2>Active Checkouts</h2>
                         </div>
