@@ -20,7 +20,7 @@ ChartJS.register(CategoryScale, LinearScale, RadialLinearScale, BarElement, ArcE
 
 // Firebase imports
 import { db } from "../Firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, getCountFromServer } from "firebase/firestore";
 
 function Analytics({ gym, updateGym }) {
 
@@ -155,10 +155,25 @@ function Analytics({ gym, updateGym }) {
     fetchStatCardData();
   }, []);
 
-  // Fetch entire currentStudents collection ONCE and cache it
+  // Cached student data with 24-hour LocalStorage fallback. Basically, stores a version of currentStudents locally every 24 hours. Prevents excessive firebae reads.
   useEffect(() => {
     async function loadStudents() {
       try {
+        const CACHE_KEY = "cached_student_map";
+        const CACHE_TIMESTAMP_KEY = "cached_student_map_timestamp";
+        const ONE_DAY_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+        const cachedData = localStorage.getItem(CACHE_KEY);
+        const cachedTimestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+        const now = Date.now();
+
+        // Check if valid cache exists and is less than 24 hours old
+        if (cachedData && cachedTimestamp && (now - Number(cachedTimestamp) < ONE_DAY_MS)) {
+          setStudentMap(JSON.parse(cachedData));
+          return; // Exit function early, bypassing Firestore reads entirely!
+        }
+
+        // Fallback to Firestore if cache is missing or expired
         const snapshot = await getDocs(collection(db, "currentStudents"));
         const map = {};
 
@@ -167,6 +182,10 @@ function Analytics({ gym, updateGym }) {
           map[data.ID] = data;
         });
 
+        // Save fresh data and current time to localStorage
+        localStorage.setItem(CACHE_KEY, JSON.stringify(map));
+        localStorage.setItem(CACHE_TIMESTAMP_KEY, now.toString());
+        
         setStudentMap(map);
       } catch (err) {
         console.error("Error loading students:", err);
