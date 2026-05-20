@@ -362,7 +362,7 @@ function Analytics({ gym, updateGym }) {
       return;
     }
 
-    // 🆕 Custom CSV output for other categorical charts (Equipment popularity, Location swipes, Guest types)
+    // Custom CSV output for other categorical charts (Equipment popularity, Location swipes, Guest types)
     if (chartType === "pie" || chartType === "doughnut") {
       const rows = [["Category / Metric", "Total Distribution Count"]];
       Object.entries(categoricalData).forEach(([key, value]) => {
@@ -396,16 +396,29 @@ function Analytics({ gym, updateGym }) {
 
     const pad = (n) => String(n).padStart(2, "0");
 
-    const hasGuestData = filtered.some(swipe => swipe.studentId === "guest");
+    const timeColumnLabel = isCheckoutDataset ? "Checkout Time" : "Swipe Time";
 
-    // Controls headers within the CSV file
-    const timeColumnLabel = isCheckoutDataset
-      ? "Checkout Time"
-      : "Swipe Time";
+    // 1 & 2 & 3. Build unique headers dynamically determined by dataset (No Student ID columns)
+    let headers = [];
+    if (isCheckoutDataset) {
+      headers = ["Email", "Equipment", timeColumnLabel];
+    } else if (dataFile === "guestEntrance") {
+      headers = ["Name", "Guest Type", timeColumnLabel];
+    } else {
+      headers = ["Email", "Location", timeColumnLabel];
+    }
 
-    const rows = hasGuestData
-      ? [["Student ID", "Name", "Location/Category", timeColumnLabel]]
-      : [["Student ID", "Email", "Location", timeColumnLabel]];
+    // 4. Append standard tracking header dynamically if grouping is active
+    if (groupBy !== "none") {
+      let groupHeader = "Group Value";
+      if (groupBy === "dayOfWeek") groupHeader = "Day of Week";
+      else if (groupBy === "hourOfDay") groupHeader = "Hour of Day";
+      else if (groupBy === "dayOfMonth") groupHeader = "Day of Month";
+      else if (groupBy === "monthOfYear") groupHeader = "Month of Year";
+      headers.push(groupHeader);
+    }
+
+    const rows = [headers];
 
     filtered.forEach((swipe) => {
       const date =
@@ -415,29 +428,45 @@ function Analytics({ gym, updateGym }) {
         `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
         `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 
-      if (hasGuestData) {
-        rows.push([
-          swipe.studentId,
-          swipe.studentId === "guest" ? (swipe.name || "") : "",
-          swipe.location || swipe.category || "N/A",
-          localTime
-        ]);
+      let rowData = [];
+
+      // Structure rows according to your rules (omitting Student ID)
+      if (isCheckoutDataset) {
+        const student = studentMap[swipe.studentId];
+        const email = student?.Email || "";
+        rowData = [email, swipe.equipment || "Unknown", localTime];
+      } else if (dataFile === "guestEntrance") {
+        rowData = [swipe.name || "", swipe.category || "N/A", localTime];
       } else {
         const student = studentMap[swipe.studentId];
         const email = student?.Email || "";
-
-        rows.push([
-          swipe.studentId,
-          email,
-          swipe.location || "N/A",
-          localTime
-        ]);
+        rowData = [email, swipe.location || "N/A", localTime];
       }
+
+      // 4. Compute context tracking cell values dynamically if grouped
+      if (groupBy !== "none") {
+        let groupValue = "";
+        if (groupBy === "dayOfWeek") {
+          const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+          groupValue = days[date.getDay()];
+        } else if (groupBy === "hourOfDay") {
+          groupValue = `${date.getHours()}:00`;
+        } else if (groupBy === "dayOfMonth") {
+          groupValue = `${date.getDate()}`;
+        } else if (groupBy === "monthOfYear") {
+          const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+          groupValue = months[date.getMonth()];
+        }
+        rowData.push(groupValue);
+      }
+
+      rows.push(rowData);
     });
 
+    // Wrapped in double-quotes to preserve syntax integrity if data values have internal commas
     const csvContent =
       "data:text/csv;charset=utf-8," +
-      rows.map((row) => row.join(",")).join("\n");
+      rows.map((row) => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
