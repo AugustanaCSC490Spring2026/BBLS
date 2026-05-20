@@ -195,6 +195,16 @@ function Analytics({ gym, updateGym }) {
     loadStudents();
   }, []);
 
+  // Automatically force interval to "days" if the selected range is longer than a week
+  useEffect(() => {
+    const { start, end } = getDateRange();
+    const diffDays = (end - start) / (1000 * 60 * 60 * 24);
+    
+    if (diffDays > 7 && interval === "hours") {
+      setInterval("days");
+    }
+  }, [timeRange, startDate, endDate, interval]);
+
   // Key useEffect that reloads charts anytime an attribute of the chart changes (one of the drop-downs). This one leads to swipeData being generated (based off a given collection, gets swipes for that range)
   useEffect(() => {
     async function loadData() {
@@ -440,7 +450,7 @@ function Analytics({ gym, updateGym }) {
     document.body.removeChild(link);
   }
 
-  // Fetches the given collection form firestore
+  // Fetches the given collection from firestore
   async function fetchSpecificCollection(collectionName, visibleLocationName) {
     const { start, end } = getDateRange();
     const ref = collection(db, collectionName);
@@ -998,6 +1008,10 @@ function Analytics({ gym, updateGym }) {
     return label
   }
 
+  // Calculate if the current view exceeds a week right before rendering the controls
+  const { start: currentStart, end: currentEnd } = getDateRange();
+  const isRangeGreaterThanWeek = ((currentEnd - currentStart) / (1000 * 60 * 60 * 24)) > 7;
+
   return (
     <>
       <div className="page-header">
@@ -1102,7 +1116,8 @@ function Analytics({ gym, updateGym }) {
                       onChange={(e) => setInterval(e.target.value)}
                       disabled={groupBy !== "none" || chartType === "pie" || chartType === "doughnut"} 
                     >
-                      <option value="hours">Hours</option>
+                      {/* Only show "Hours" if the selected date range is 7 days or less */}
+                      {!isRangeGreaterThanWeek && <option value="hours">Hours</option>}
                       <option value="days">Days</option>
                       <option value="weeks">Weeks</option>
                       <option value="months">Months</option>
