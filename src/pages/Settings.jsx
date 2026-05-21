@@ -70,7 +70,7 @@ const Settings = () => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, [setToasts]);
 
-  const [equipmentGym, setEquipmentGym] = useState("Pepsi-Co Center");
+  const [equipmentGym, setEquipmentGym] = useState("PepsiCo Center");
   const [bannedStudents, setBannedStudents] = useState([]);
   const [possibleStudents, updatePossibleStudents] = useState([]);
   const [isAdminPopupOpen, setIsAdminPopupOpen] = useState(false);
@@ -88,7 +88,7 @@ const Settings = () => {
   const westerlinInventoryRef = collection(db, "westerlinEquipmentInventory");
 
   const getInventoryCollection = () => {
-    if (equipmentGym === "Pepsi-Co Center") return pepsicoInventoryRef;
+    if (equipmentGym === "PepsiCo Center") return pepsicoInventoryRef;
     if (equipmentGym === "Westerlin Gym") return westerlinInventoryRef;
     return null;
   };
@@ -163,7 +163,7 @@ const Settings = () => {
           try {
             let staffId = row.ID?.trim();
 
-            if (!staffId || staffId.length !== 7) {
+            if (!staffId || staffId.length !== 9) {
               failCount++;
               continue;
             }
@@ -906,7 +906,7 @@ const Settings = () => {
               <div className="settings-card-header">
                 <h2>Equipment</h2>
                 <NavDropdown
-                  options={["Pepsi-Co Center", "Westerlin Gym"]}
+                  options={["PepsiCo Center", "Westerlin Gym"]}
                   defaultOption={equipmentGym}
                   onChange={setEquipmentGym}
                 />

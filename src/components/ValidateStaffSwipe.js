@@ -20,7 +20,7 @@ async function ValidateStaffSwipe(swipe) {
 
 
 
-  if (swipe.length !== 7 && swipe.length !== 16) {
+  if (swipe.length !== 9 && swipe.length !== 16) {
 
     return {
 
@@ -36,7 +36,7 @@ async function ValidateStaffSwipe(swipe) {
 
   }
 
-  // if it's 7 we dont need to do anything
+  // if it's 9 we dont need to do anything
 
   // if its 16 we need to trim the extra characters off.
 
