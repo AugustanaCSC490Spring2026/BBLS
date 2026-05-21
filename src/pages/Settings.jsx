@@ -684,9 +684,9 @@ const Settings = () => {
   }
 
   let dateStudentIsUnbanned;
-  function setUnbanDate(input) {
-    dateStudentIsUnbanned = input;
-  }
+  // function setUnbanDate(input) {
+  //   dateStudentIsUnbanned = input;
+  // }
 
   // function displayIdEntryError(swipeOutput) {
   //   const customAlert = document.getElementById("customAlert");
@@ -771,10 +771,12 @@ const Settings = () => {
           dateToBeUnbanned: dateStudentIsUnbanned
         })
 
-        await sendEmail({
+        sendEmail({
           to: docSnap.data().Email + "@augustana.edu",
           subject: "Augustana Recreation Ban Notice",
           html: "<h1>Due to this reason '" + reasonStudentBanned + "', you have been banned from recreation facilities including Pepsico and the Westerlin Activity Center. You will be unbanned on " + dateStudentIsUnbanned + ".</h1>"
+        }).catch((err) => {
+        console.error("Failed to send ban alert email:", err);
         });
         addToast("success", "Student Banned", banPopupStudent?.name + " has been banned.");
       } else {
@@ -795,10 +797,12 @@ const Settings = () => {
 
       await deleteDoc(docRef);
 
-      await sendEmail({
+      sendEmail({
         to: email + "@augustana.edu",
         subject: "Augustana Recreation Unban Notice",
         html: "<h1>You have been unbanned from campus recreation facilities. Please be responsible moving forward.</h1>"
+      }).catch((err) => {
+        console.error("Failed to send ban alert email:", err);
       });
 
       addToast("success", "Student Unbanned", banPopupStudent?.name + " has been unbanned.");
