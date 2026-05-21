@@ -7,6 +7,9 @@ import ValidateSwipe from "../components/ValidateSwipe.js";
 import ToastContainer from "../components/ToastContainer";
 import NavDropdown from "../components/NavDropdown.jsx";
 
+// IMPORT HASH UTILITY: Reusing the hashing function from your settings configuration
+import { hashId } from "../components/HashId.js";
+
 import {
     collection,
     doc,
@@ -143,10 +146,14 @@ export default function Equipment({ gym, updateGym }) {
         }
 
         const studentName = validation.name;
+        const verifiedData = validation.studentId; // Extracted verified student ID from validation response
         const inventoryRef = getInventoryCollection();
         const checkoutRef = getCheckoutCollection();
 
         try {
+            // MODIFIED: Generate the hashed ID using verifiedData if it exists
+            const hashedId = verifiedData ? await hashId(String(verifiedData).trim()) : "";
+
             const equipmentDocRef = doc(inventoryRef, selectedEquipment);
             const equipmentSnap = await getDoc(equipmentDocRef);
             if (!equipmentSnap.exists()) return;
@@ -164,7 +171,7 @@ export default function Equipment({ gym, updateGym }) {
             addToast("success", "Checkout Successful", `${studentName} checked out ${quantity} ${selectedEquipment}(s)`);
 
             await addDoc(checkoutRef, {
-                studentId,
+                studentId: hashedId, // MODIFIED: Replaced raw studentId with hashedId
                 studentName,
                 equipment: selectedEquipment,
                 quantity,
