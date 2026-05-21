@@ -20,7 +20,7 @@ ChartJS.register(CategoryScale, LinearScale, RadialLinearScale, BarElement, ArcE
 
 // Firebase imports
 import { db } from "../Firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, getCountFromServer } from "firebase/firestore";
 
 function Analytics({ gym, updateGym }) {
 
@@ -155,10 +155,25 @@ function Analytics({ gym, updateGym }) {
     fetchStatCardData();
   }, []);
 
-  // Fetch entire currentStudents collection ONCE and cache it
+  // Cached student data with 24-hour LocalStorage fallback. Basically, stores a version of currentStudents locally every 24 hours. Prevents excessive firebae reads.
   useEffect(() => {
     async function loadStudents() {
       try {
+        const CACHE_KEY = "cached_student_map";
+        const CACHE_TIMESTAMP_KEY = "cached_student_map_timestamp";
+        const ONE_DAY_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+        const cachedData = localStorage.getItem(CACHE_KEY);
+        const cachedTimestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+        const now = Date.now();
+
+        // Check if valid cache exists and is less than 24 hours old
+        if (cachedData && cachedTimestamp && (now - Number(cachedTimestamp) < ONE_DAY_MS)) {
+          setStudentMap(JSON.parse(cachedData));
+          return; // Exit function early, bypassing Firestore reads entirely!
+        }
+
+        // Fallback to Firestore if cache is missing or expired
         const snapshot = await getDocs(collection(db, "currentStudents"));
         const map = {};
 
@@ -167,6 +182,10 @@ function Analytics({ gym, updateGym }) {
           map[data.ID] = data;
         });
 
+        // Save fresh data and current time to localStorage
+        localStorage.setItem(CACHE_KEY, JSON.stringify(map));
+        localStorage.setItem(CACHE_TIMESTAMP_KEY, now.toString());
+        
         setStudentMap(map);
       } catch (err) {
         console.error("Error loading students:", err);
@@ -175,6 +194,16 @@ function Analytics({ gym, updateGym }) {
 
     loadStudents();
   }, []);
+
+  // Automatically force interval to "days" if the selected range is longer than a week
+  useEffect(() => {
+    const { start, end } = getDateRange();
+    const diffDays = (end - start) / (1000 * 60 * 60 * 24);
+    
+    if (diffDays > 7 && interval === "hours") {
+      setInterval("days");
+    }
+  }, [timeRange, startDate, endDate, interval]);
 
   // Key useEffect that reloads charts anytime an attribute of the chart changes (one of the drop-downs). This one leads to swipeData being generated (based off a given collection, gets swipes for that range)
   useEffect(() => {
@@ -333,7 +362,7 @@ function Analytics({ gym, updateGym }) {
       return;
     }
 
-    // 🆕 Custom CSV output for other categorical charts (Equipment popularity, Location swipes, Guest types)
+    // Custom CSV output for other categorical charts (Equipment popularity, Location swipes, Guest types)
     if (chartType === "pie" || chartType === "doughnut") {
       const rows = [["Category / Metric", "Total Distribution Count"]];
       Object.entries(categoricalData).forEach(([key, value]) => {
@@ -367,16 +396,29 @@ function Analytics({ gym, updateGym }) {
 
     const pad = (n) => String(n).padStart(2, "0");
 
-    const hasGuestData = filtered.some(swipe => swipe.studentId === "guest");
+    const timeColumnLabel = isCheckoutDataset ? "Checkout Time" : "Swipe Time";
 
-    // Controls headers within the CSV file
-    const timeColumnLabel = isCheckoutDataset
-      ? "Checkout Time"
-      : "Swipe Time";
+    // 1 & 2 & 3. Build unique headers dynamically determined by dataset (No Student ID columns)
+    let headers = [];
+    if (isCheckoutDataset) {
+      headers = ["Email", "Equipment", timeColumnLabel];
+    } else if (dataFile === "guestEntrance") {
+      headers = ["Name", "Guest Type", timeColumnLabel];
+    } else {
+      headers = ["Email", "Location", timeColumnLabel];
+    }
 
-    const rows = hasGuestData
-      ? [["Student ID", "Name", "Location/Category", timeColumnLabel]]
-      : [["Student ID", "Email", "Location", timeColumnLabel]];
+    // 4. Append standard tracking header dynamically if grouping is active
+    if (groupBy !== "none") {
+      let groupHeader = "Group Value";
+      if (groupBy === "dayOfWeek") groupHeader = "Day of Week";
+      else if (groupBy === "hourOfDay") groupHeader = "Hour of Day";
+      else if (groupBy === "dayOfMonth") groupHeader = "Day of Month";
+      else if (groupBy === "monthOfYear") groupHeader = "Month of Year";
+      headers.push(groupHeader);
+    }
+
+    const rows = [headers];
 
     filtered.forEach((swipe) => {
       const date =
@@ -386,29 +428,45 @@ function Analytics({ gym, updateGym }) {
         `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
         `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 
-      if (hasGuestData) {
-        rows.push([
-          swipe.studentId,
-          swipe.studentId === "guest" ? (swipe.name || "") : "",
-          swipe.location || swipe.category || "N/A",
-          localTime
-        ]);
+      let rowData = [];
+
+      // Structure rows according to your rules (omitting Student ID)
+      if (isCheckoutDataset) {
+        const student = studentMap[swipe.studentId];
+        const email = student?.Email || "";
+        rowData = [email, swipe.equipment || "Unknown", localTime];
+      } else if (dataFile === "guestEntrance") {
+        rowData = [swipe.name || "", swipe.category || "N/A", localTime];
       } else {
         const student = studentMap[swipe.studentId];
         const email = student?.Email || "";
-
-        rows.push([
-          swipe.studentId,
-          email,
-          swipe.location || "N/A",
-          localTime
-        ]);
+        rowData = [email, swipe.location || "N/A", localTime];
       }
+
+      // 4. Compute context tracking cell values dynamically if grouped
+      if (groupBy !== "none") {
+        let groupValue = "";
+        if (groupBy === "dayOfWeek") {
+          const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+          groupValue = days[date.getDay()];
+        } else if (groupBy === "hourOfDay") {
+          groupValue = `${date.getHours()}:00`;
+        } else if (groupBy === "dayOfMonth") {
+          groupValue = `${date.getDate()}`;
+        } else if (groupBy === "monthOfYear") {
+          const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+          groupValue = months[date.getMonth()];
+        }
+        rowData.push(groupValue);
+      }
+
+      rows.push(rowData);
     });
 
+    // Wrapped in double-quotes to preserve syntax integrity if data values have internal commas
     const csvContent =
       "data:text/csv;charset=utf-8," +
-      rows.map((row) => row.join(",")).join("\n");
+      rows.map((row) => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -421,7 +479,7 @@ function Analytics({ gym, updateGym }) {
     document.body.removeChild(link);
   }
 
-  // Fetches the given collection form firestore
+  // Fetches the given collection from firestore
   async function fetchSpecificCollection(collectionName, visibleLocationName) {
     const { start, end } = getDateRange();
     const ref = collection(db, collectionName);
@@ -979,6 +1037,10 @@ function Analytics({ gym, updateGym }) {
     return label
   }
 
+  // Calculate if the current view exceeds a week right before rendering the controls
+  const { start: currentStart, end: currentEnd } = getDateRange();
+  const isRangeGreaterThanWeek = ((currentEnd - currentStart) / (1000 * 60 * 60 * 24)) > 7;
+
   return (
     <>
       <div className="page-header">
@@ -1083,7 +1145,8 @@ function Analytics({ gym, updateGym }) {
                       onChange={(e) => setInterval(e.target.value)}
                       disabled={groupBy !== "none" || chartType === "pie" || chartType === "doughnut"} 
                     >
-                      <option value="hours">Hours</option>
+                      {/* Only show "Hours" if the selected date range is 7 days or less */}
+                      {!isRangeGreaterThanWeek && <option value="hours">Hours</option>}
                       <option value="days">Days</option>
                       <option value="weeks">Weeks</option>
                       <option value="months">Months</option>
