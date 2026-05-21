@@ -42,14 +42,14 @@ export default function Equipment({ gym, updateGym }) {
 
 
     const getInventoryCollection = () => {
-        if (gym === "Pepsi-Co Center") return pepsicoInventoryRef;
+        if (gym === "PepsiCo Center") return pepsicoInventoryRef;
         if (gym === "Westerlin Gym") return westerlinInventoryRef;
         return null;
     };
 
 
     const getCheckoutCollection = () => {
-        if (gym === "Pepsi-Co Center") return pepsicoCheckoutRef;
+        if (gym === "PepsiCo Center") return pepsicoCheckoutRef;
         if (gym === "Westerlin Gym") return westerlinCheckoutRef;
         return null;
     };
@@ -240,7 +240,7 @@ export default function Equipment({ gym, updateGym }) {
                             <div className="card-header">
                                 <h2>New Checkout</h2>
                                 <NavDropdown
-                                    options={["Pepsi-Co Center", "Westerlin Gym"]}
+                                    options={["PepsiCo Center", "Westerlin Gym"]}
                                     defaultOption={gym}
                                     onChange={updateGym}
                                 />

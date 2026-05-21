@@ -190,7 +190,7 @@ function Dashboard({ gym, updateGym }) {
     if (swipeValid && gym !== "None Selected") {
       addToast("success", "ID Accepted", `Welcome, ${studentName}!`);
 
-      if (gym === "Pepsi-Co Center") {
+      if (gym === "PepsiCo Center") {
         // MODIFIED: Replaced verified_data with hashedId
         await addDoc(pepsicoCenterRef, { ID: hashedId, swipeInTime: timeStamp });
       } else if (gym === "Westerlin Gym") {
@@ -215,7 +215,7 @@ function Dashboard({ gym, updateGym }) {
       <div className="top-dashboard">
         <div className="dash-right">
           <NavDropdown
-            options={["Pepsi-Co Center", "Westerlin Gym"]}
+            options={["PepsiCo Center", "Westerlin Gym"]}
             defaultOption={gym}
             onChange={updateGym}
           />

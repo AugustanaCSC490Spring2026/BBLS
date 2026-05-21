@@ -24,7 +24,7 @@ function Location( { onSelectGym } ) {
         className="gym-button pepsi-color"
         style={{ fontSize: "2rem" }}
       >
-        Pepsi-Co
+        PepsiCo
       </button>
 
       <button
