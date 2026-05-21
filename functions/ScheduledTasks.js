@@ -8,7 +8,6 @@ import { createTransporter, gmailUser, gmailPass } from "./Email.js";
 // Initialize the Admin SDK natively
 initializeApp();
 const adminDb = getFirestore();
-const transporter = createTransporter();
 
 export const dailyUnbanTask = onSchedule({
   schedule: "0 0 * * *",        // 1. Sets it to 4:30 PM (16:30)
@@ -29,6 +28,8 @@ export const dailyUnbanTask = onSchedule({
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = tomorrow.toLocaleDateString('en-CA');
+    const transporter = createTransporter();
+
 
     // Use a regular for...of loop for reliable async/await execution inside the function
     for (const doc of snapshot.docs) {
