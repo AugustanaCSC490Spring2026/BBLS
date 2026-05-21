@@ -40,6 +40,9 @@ function AwayModeOverlay({ isActive, onDismiss, onSwipe }) {
     if (result.success) {
       setFlashState("success");
       setMessage({ heading: "ID Accepted", sub: `Welcome, ${result.name}!` });
+    } else if (result.reason && result.reason.toLowerCase().includes("banned")) {
+      setFlashState("banned");
+      setMessage({ heading: "BANNED", sub: result.reason });
     } else {
       setFlashState("denied");
       setMessage({ heading: "ID Denied", sub: result.reason });
@@ -56,7 +59,7 @@ function AwayModeOverlay({ isActive, onDismiss, onSwipe }) {
   const bgColor =
     flashState === "success"
       ? "#14AB00"
-      : flashState === "denied"
+      : flashState === "denied" || flashState === "banned"
         ? "#E80000"
         : "#000";
 
@@ -100,7 +103,8 @@ function AwayModeOverlay({ isActive, onDismiss, onSwipe }) {
       <h1
         style={{
           color: "#fff",
-          fontSize: "3rem",
+          textAlign: "center",
+          fontSize: "12rem",
           letterSpacing: "0.1em",
           margin: 0,
           transition: "opacity 0.2s",
