@@ -278,6 +278,7 @@ const Settings = () => {
       name: d.data().FirstName + " " + d.data().LastName,
       unbanDate: d.data().dateToBeUnbanned,
       reason: d.data().reasonBanned || "",
+      email: d.data().Email || "",
     }));
     setBannedStudents(bannedList); // use state instead of direct DOM manipulation
     //updatePossibleStudents(bannedList)
@@ -301,10 +302,17 @@ const Settings = () => {
     updateBannedStudentsList();
   };
 
-  const handleSaveBannedStudentChanges = async ({ studentId, reasonBanned, dateToBeUnbanned }) => {
+  const handleSaveBannedStudentChanges = async ({ studentId, reasonBanned, dateToBeUnbanned, email}) => {
     try {
       const ref = doc(db, "bannedStudents", studentId);
       await updateDoc(ref, { reasonBanned, dateToBeUnbanned });
+
+      sendEmail({
+        to: `${email}@augustana.edu`,
+        subject: "Augustana Recreation Ban Update",
+        html: `<h1>Your ban details have been updated. You are now scheduled to be unbanned on ${dateToBeUnbanned}.</h1>`
+      }).catch((err) => console.error("Failed to send ban update email:", err));
+
       addToast("success", "Ban Updated", "Ban details have been updated.");
       updateBannedStudentsList();
     } catch (err) {
@@ -736,6 +744,7 @@ const Settings = () => {
   }
 
   function setUnbanDate(input) {
+
     dateStudentIsUnbanned = input;
     console.log(input);
   }
