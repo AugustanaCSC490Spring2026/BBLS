@@ -40,9 +40,10 @@ async function ValidateStaffSwipe(swipe) {
 
   // if its 16 we need to trim the extra characters off.
 
-  else if (swipe.length == 16) {
+  else if (swipe.length == 16) { //;000775530=0087? staff id includes leading 0's unlike student ids, so we trim differently
 
-    swipe = swipe.slice(3, 10);
+
+    swipe = swipe.slice(1, 10);
 
   }
 
