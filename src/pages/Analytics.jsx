@@ -139,7 +139,14 @@ function Analytics({ gym, updateGym }) {
             const d = doc.data();
             if (!d.checkoutTime) return;
             const t = d.checkoutTime.toDate();
-            if (t >= thisWeekStart) twCheckouts++; else lwCheckouts++;
+            
+            // FIXED: Incrementing by the actual quantity value instead of 1
+            const itemQuantity = Number(d.quantity) || 1;
+            if (t >= thisWeekStart) {
+              twCheckouts += itemQuantity;
+            } else {
+              lwCheckouts += itemQuantity;
+            }
           });
         }
       } catch (err) {
@@ -398,17 +405,17 @@ function Analytics({ gym, updateGym }) {
 
     const timeColumnLabel = isCheckoutDataset ? "Checkout Time" : "Swipe Time";
 
-    // 1 & 2 & 3. Build unique headers dynamically determined by dataset (No Student ID columns)
+    // Build unique headers dynamically determined by dataset (No Student ID columns)
     let headers = [];
     if (isCheckoutDataset) {
-      headers = ["Email", "Equipment", timeColumnLabel];
+      headers = ["Email", "Equipment", "Quantity", timeColumnLabel]; // FIXED: Added Quantity to headers
     } else if (dataFile === "guestEntrance") {
       headers = ["Name", "Guest Type", timeColumnLabel];
     } else {
       headers = ["Email", "Location", timeColumnLabel];
     }
 
-    // 4. Append standard tracking header dynamically if grouping is active
+    // Append standard tracking header dynamically if grouping is active
     if (groupBy !== "none") {
       let groupHeader = "Group Value";
       if (groupBy === "dayOfWeek") groupHeader = "Day of Week";
@@ -434,7 +441,7 @@ function Analytics({ gym, updateGym }) {
       if (isCheckoutDataset) {
         const student = studentMap[swipe.studentId];
         const email = student?.Email || "";
-        rowData = [email, swipe.equipment || "Unknown", localTime];
+        rowData = [email, swipe.equipment || "Unknown", swipe.quantity || 1, localTime]; // FIXED: Added quantity value
       } else if (dataFile === "guestEntrance") {
         rowData = [swipe.name || "", swipe.category || "N/A", localTime];
       } else {
@@ -443,7 +450,7 @@ function Analytics({ gym, updateGym }) {
         rowData = [email, swipe.location || "N/A", localTime];
       }
 
-      // 4. Compute context tracking cell values dynamically if grouped
+      // Compute context tracking cell values dynamically if grouped
       if (groupBy !== "none") {
         let groupValue = "";
         if (groupBy === "dayOfWeek") {
@@ -565,7 +572,8 @@ function Analytics({ gym, updateGym }) {
       data.push({
         studentId: d.studentId,
         equipment: d.equipment || "Unknown",
-        time: d.checkoutTime.toDate()
+        time: d.checkoutTime.toDate(),
+        quantity: Number(d.quantity) || 1 // FIXED: Retaining quantity field values
       });
     });
 
@@ -597,7 +605,8 @@ function Analytics({ gym, updateGym }) {
         combined.push({
           studentId: d.studentId,
           equipment: d.equipment || "Unknown",
-          time: d.checkoutTime.toDate()
+          time: d.checkoutTime.toDate(),
+          quantity: Number(d.quantity) || 1 // FIXED: Retaining quantity field values
         });
       });
     }
@@ -684,7 +693,9 @@ function Analytics({ gym, updateGym }) {
         key = swipe.location || "Unspecified Location";
       }
 
-      counts[key] = (counts[key] || 0) + 1;
+      // FIXED: Sum using the specific checkout quantity if we are looking at equipment checkouts
+      const itemWeight = isCheckoutDataset ? (Number(swipe.quantity) || 1) : 1;
+      counts[key] = (counts[key] || 0) + itemWeight;
     });
 
     setCategoricalData(counts);
@@ -755,6 +766,8 @@ function Analytics({ gym, updateGym }) {
         weekStart.setHours(0, 0, 0, 0);
       }
 
+      // Note: If you are looking at standard non-checkout intervals, it counts entries.
+      // Equipment data falls under the specialized categorical condition below.
       if (buckets[label] !== undefined) buckets[label] += 1;
     });
 
@@ -903,7 +916,9 @@ function Analytics({ gym, updateGym }) {
         else if (groupBy === "monthOfYear") index = date.getMonth();
 
         if (categoryMap[category] && index !== undefined) {
-          categoryMap[category][index] += 1;
+          // FIXED: Increment by actual item quantity instead of adding 1
+          const incrementalVolume = isCheckoutDataset ? (Number(swipe.quantity) || 1) : 1;
+          categoryMap[category][index] += incrementalVolume;
         }
       });
 
@@ -944,7 +959,9 @@ function Analytics({ gym, updateGym }) {
         }
 
         if (categoryMap[category][label] !== undefined) {
-          categoryMap[category][label] += 1;
+          // FIXED: Increment by actual item quantity instead of adding 1
+          const incrementalVolume = isCheckoutDataset ? (Number(swipe.quantity) || 1) : 1;
+          categoryMap[category][label] += incrementalVolume;
         }
       });
 
@@ -1285,7 +1302,7 @@ function Analytics({ gym, updateGym }) {
                     }
                   }}
                 />
-              /*  Validation checks for empty structures on Pie / Doughnut renders */
+              /* Validation checks for empty structures on Pie / Doughnut renders */
               ) : (dataFile === "demographics" ? Object.keys(demographicData).length === 0 : Object.keys(categoricalData).length === 0) ? (
                 <div style={{
                   display: "flex",
