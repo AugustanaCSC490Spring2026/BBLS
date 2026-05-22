@@ -20,7 +20,7 @@ function Location( { onSelectGym } ) {
     <>
     <div className="selection-container">
       <button 
-        onClick={() => handleSelection("Pepsi-Co Center")}
+        onClick={() => handleSelection("PepsiCo Center")}
         className="gym-button pepsi-color"
         style={{ fontSize: "2rem" }}
       >

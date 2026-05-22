@@ -14,8 +14,12 @@ import Navbar from "./pages/Navigation.jsx";
 
 
 function App() {
+  // Add this inside App(), before the useState
+  const stored = localStorage.getItem("selectedGym");
+  if (stored === "Pepsi-Co Center") localStorage.setItem("selectedGym", "PepsiCo Center");
+  
   const [selectedGym, setSelectedGym] = useState(
-    localStorage.getItem("selectedGym") || "Pepsi-Co Center"
+    localStorage.getItem("selectedGym") || "PepsiCo Center"
   );
   const handleGymChange = (newGym) => {
     setSelectedGym(newGym);
