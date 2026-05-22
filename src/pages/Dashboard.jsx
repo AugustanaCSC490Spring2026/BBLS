@@ -250,6 +250,7 @@ function Dashboard({ gym, updateGym }) {
 
               <input
                 ref={inputRef}
+                type="password"
                 placeholder="Enter Student ID"
                 value={studentId}
                 onChange={(e) => setStudentId(e.target.value)}
