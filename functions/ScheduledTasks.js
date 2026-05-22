@@ -12,6 +12,7 @@ const adminDb = getFirestore();
 export const dailyUnbanTask = onSchedule({
   schedule: "0 0 * * *",        // 1. Sets it to 4:30 PM (16:30)
   timeZone: "America/Chicago",   // 2. Locks it to your local Central Time
+  secrets: [gmailUser, gmailPass],
 }, async () => {
   console.log("this is a test");
   try {

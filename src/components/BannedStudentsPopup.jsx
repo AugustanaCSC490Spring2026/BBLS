@@ -21,7 +21,7 @@ function BannedStudentsPopup({ isOpen, onClose, bannedStudents, onUnban, onSaveC
   };
 
   const handleSave = () => {
-    onSaveChanges({ studentId: selectedStudent.id, reasonBanned: editReason, dateToBeUnbanned: editDate });
+    onSaveChanges({ studentId: selectedStudent.id, reasonBanned: editReason, dateToBeUnbanned: editDate, email: selectedStudent.email });
     handleCancel();
   };
 

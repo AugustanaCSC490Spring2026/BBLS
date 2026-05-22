@@ -45,14 +45,14 @@ export default function Equipment({ gym, updateGym }) {
 
 
     const getInventoryCollection = () => {
-        if (gym === "Pepsi-Co Center") return pepsicoInventoryRef;
+        if (gym === "PepsiCo Center") return pepsicoInventoryRef;
         if (gym === "Westerlin Gym") return westerlinInventoryRef;
         return null;
     };
 
 
     const getCheckoutCollection = () => {
-        if (gym === "Pepsi-Co Center") return pepsicoCheckoutRef;
+        if (gym === "PepsiCo Center") return pepsicoCheckoutRef;
         if (gym === "Westerlin Gym") return westerlinCheckoutRef;
         return null;
     };
@@ -134,29 +134,36 @@ export default function Equipment({ gym, updateGym }) {
             addToast("error", "Form Error", "Please fill in all fields");
             return;
         }
+        
         setIsProcessing(true);
-        const validation = await ValidateSwipe(studentId);
-        if (!validation.isValid) {
-            addToast("error", "ID Denied", validation.reasonDenied);
-            setStudentId("");
-            setSelectedEquipment("");
-            setIsProcessing(false);
-            idInputRef.current?.focus();
-            return;
-        }
-
-        const studentName = validation.name;
-        const verifiedData = validation.studentId; // Extracted verified student ID from validation response
-        const inventoryRef = getInventoryCollection();
-        const checkoutRef = getCheckoutCollection();
 
         try {
-            // MODIFIED: Generate the hashed ID using verifiedData if it exists
+            // Validate the swipe card first inside the catch block
+            const validation = await ValidateSwipe(studentId);
+            if (!validation.isValid) {
+                addToast("error", "ID Denied", validation.reasonDenied);
+                setStudentId("");
+                setSelectedEquipment("");
+                idInputRef.current?.focus();
+                return;
+            }
+
+            const studentName = validation.name;
+            const verifiedData = validation.studentId; 
+            const inventoryRef = getInventoryCollection();
+            const checkoutRef = getCheckoutCollection();
+
+            // Generate the hashed ID safely
             const hashedId = verifiedData ? await hashId(String(verifiedData).trim()) : "";
 
+            // Target doc using the selected strict document ID instead of the item name string
             const equipmentDocRef = doc(inventoryRef, selectedEquipment);
             const equipmentSnap = await getDoc(equipmentDocRef);
-            if (!equipmentSnap.exists()) return;
+            
+            if (!equipmentSnap.exists()) {
+                addToast("error", "Database Error", "Selected equipment item could not be found.");
+                return;
+            }
 
             const equipmentData = equipmentSnap.data();
             if (equipmentData.available < quantity) {
@@ -164,21 +171,24 @@ export default function Equipment({ gym, updateGym }) {
                 return;
             }
 
+            // Decrement availability count
             await updateDoc(equipmentDocRef, {
                 available: equipmentData.available - quantity
             });
 
-            addToast("success", "Checkout Successful", `${studentName} checked out ${quantity} ${selectedEquipment}(s)`);
-
+            // Write into checkouts collection
             await addDoc(checkoutRef, {
-                studentId: hashedId, // MODIFIED: Replaced raw studentId with hashedId
+                studentId: hashedId, 
                 studentName,
-                equipment: selectedEquipment,
+                equipment: equipmentData.name, // Save human-readable name for logging lists
                 quantity,
                 checkoutTime: serverTimestamp(),
                 returned: false
             });
 
+            addToast("success", "Checkout Successful", `${studentName} checked out ${quantity} ${equipmentData.name}(s)`);
+
+            // Clear states and re-fetch UI data arrays
             fetchInventory();
             fetchCheckouts();
             setStudentId("");
@@ -188,9 +198,10 @@ export default function Equipment({ gym, updateGym }) {
             idInputRef.current?.focus();
 
         } catch (error) {
-            console.error(error);
-            addToast("error", "Checkout Failed", "An error occurred during checkout");
+            console.error("Checkout process encountered an error: ", error);
+            addToast("error", "Checkout Failed", "An error occurred during checkout execution.");
         } finally {
+            // Unlocks processing screen regardless of failures or successes above
             setIsProcessing(false);
         }
     };
@@ -209,7 +220,16 @@ export default function Equipment({ gym, updateGym }) {
 
             if (checkoutData.returned) return;
 
-            const equipmentDocRef = doc(inventoryRef, checkoutData.equipment);
+            // Find item by mapping the name back or using matching systems
+            // If your checkouts map by name strings, we search through the array to locate the exact Doc ID
+            const exactEquipmentDoc = availableEquipment.find(item => item.name === checkoutData.equipment);
+            
+            if (!exactEquipmentDoc) {
+                console.error("Could not trace back inventory item ID by name.");
+                return;
+            }
+
+            const equipmentDocRef = doc(inventoryRef, exactEquipmentDoc.id);
             const equipmentSnap = await getDoc(equipmentDocRef);
             const equipmentData = equipmentSnap.data();
 
@@ -247,7 +267,7 @@ export default function Equipment({ gym, updateGym }) {
                             <div className="card-header">
                                 <h2>New Checkout</h2>
                                 <NavDropdown
-                                    options={["Pepsi-Co Center", "Westerlin Gym"]}
+                                    options={["PepsiCo Center", "Westerlin Gym"]}
                                     defaultOption={gym}
                                     onChange={updateGym}
                                 />
@@ -275,7 +295,7 @@ export default function Equipment({ gym, updateGym }) {
                                     >
                                         <option value="">Choose item...</option>
                                         {availableEquipment.map(item => (
-                                            <option key={item.name} value={item.name}>{item.name}</option>
+                                            <option key={item.id} value={item.id}>{item.name}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -331,7 +351,7 @@ export default function Equipment({ gym, updateGym }) {
                                         }
 
                                         return (
-                                            <div key={item.name}>
+                                            <div key={item.id}>
                                                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontWeight: "600" }}>
                                                     <span>{item.name}</span>
                                                     <span style={{ color: "#666", fontSize: "0.9rem" }}>
