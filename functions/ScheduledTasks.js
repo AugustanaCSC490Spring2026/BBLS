@@ -36,22 +36,22 @@ export const dailyUnbanTask = onSchedule({
     for (const doc of snapshot.docs) {
       const studentData = doc.data();
       if (tomorrowStr === studentData.dateToBeUnbanned) {
-        transporter.sendMail({
-          from: `"Campus Recreation" <${gmailUser.value()}>`,
-          to: "bengeorgia23@augustana.edu",
-          subject: "A student is unbanned from recreation facilities tomorrow",
-          html: `<h1>${studentData.FirstName} ${studentData.LastName} is to be unbanned tomorrow. If there has been a mistake, please check and update the data in settings.</h1>`
-        }).catch((err) => console.error(`Warning email failed for ${studentData.FirstName}:`, err));
+        // transporter.sendMail({
+        //   from: `"Campus Recreation" <${gmailUser.value()}>`,
+        //   to: "bengeorgia23@augustana.edu",
+        //   subject: "A student is unbanned from recreation facilities tomorrow",
+        //   html: `<h1>${studentData.FirstName} ${studentData.LastName} is to be unbanned tomorrow. If there has been a mistake, please check and update the data in settings.</h1>`
+        // }).catch((err) => console.error(`Warning email failed for ${studentData.FirstName}:`, err));
 
 
       } else if (today >= studentData.dateToBeUnbanned) {
         console.log(`Unbanning student ID: ${doc.id}`);
-        transporter.sendMail({
-          from: `"Campus Recreation" <${gmailUser.value()}>`,
-          to: `${studentData.Email}@augustana.edu`,
-          subject: "Campus Recreation Unban",
-          html: "<h1>You have been unbanned from campus recreation. Please be responsible moving forward.</h1>"
-        }).catch((err) => console.error(`Unban email failed for ${studentData.FirstName}:`, err));
+        // transporter.sendMail({
+        //   from: `"Campus Recreation" <${gmailUser.value()}>`,
+        //   to: `${studentData.Email}@augustana.edu`,
+        //   subject: "Campus Recreation Unban",
+        //   html: "<h1>You have been unbanned from campus recreation. Please be responsible moving forward.</h1>"
+        // }).catch((err) => console.error(`Unban email failed for ${studentData.FirstName}:`, err));
         await doc.ref.delete();
 
       }
