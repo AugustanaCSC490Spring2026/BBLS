@@ -307,11 +307,11 @@ const Settings = () => {
       const ref = doc(db, "bannedStudents", studentId);
       await updateDoc(ref, { reasonBanned, dateToBeUnbanned });
 
-      sendEmail({
-        to: `${email}@augustana.edu`,
-        subject: "Augustana Recreation Ban Update",
-        html: `<h1>Your ban details have been updated. You are now scheduled to be unbanned on ${dateToBeUnbanned}.</h1>`
-      }).catch((err) => console.error("Failed to send ban update email:", err));
+      // sendEmail({
+      //   to: `${email}@augustana.edu`,
+      //   subject: "Augustana Recreation Ban Update",
+      //   html: `<h1>Your ban details have been updated. You are now scheduled to be unbanned on ${dateToBeUnbanned}.</h1>`
+      // }).catch((err) => console.error("Failed to send ban update email:", err));
 
       addToast("success", "Ban Updated", "Ban details have been updated.");
       updateBannedStudentsList();
@@ -780,13 +780,13 @@ const Settings = () => {
           dateToBeUnbanned: dateStudentIsUnbanned
         })
 
-        sendEmail({
-          to: docSnap.data().Email + "@augustana.edu",
-          subject: "Augustana Recreation Ban Notice",
-          html: "<h1>Due to this reason '" + reasonStudentBanned + "', you have been banned from recreation facilities including Pepsico and the Westerlin Activity Center. You will be unbanned on " + dateStudentIsUnbanned + ".</h1>"
-        }).catch((err) => {
-        console.error("Failed to send ban alert email:", err);
-        });
+        // sendEmail({
+        //   to: docSnap.data().Email + "@augustana.edu",
+        //   subject: "Augustana Recreation Ban Notice",
+        //   html: "<h1>Due to this reason '" + reasonStudentBanned + "', you have been banned from recreation facilities including Pepsico and the Westerlin Activity Center. You will be unbanned on " + dateStudentIsUnbanned + ".</h1>"
+        // }).catch((err) => {
+        // console.error("Failed to send ban alert email:", err);
+        // });
         addToast("success", "Student Banned", banPopupStudent?.name + " has been banned.");
       } else {
         addToast("error", "Database Error", "Error retrieving data from database. Please try again or contact support if error persists.");
@@ -806,13 +806,13 @@ const Settings = () => {
 
       await deleteDoc(docRef);
 
-      sendEmail({
-        to: email + "@augustana.edu",
-        subject: "Augustana Recreation Unban Notice",
-        html: "<h1>You have been unbanned from campus recreation facilities. Please be responsible moving forward.</h1>"
-      }).catch((err) => {
-        console.error("Failed to send ban alert email:", err);
-      });
+      // sendEmail({
+      //   to: email + "@augustana.edu",
+      //   subject: "Augustana Recreation Unban Notice",
+      //   html: "<h1>You have been unbanned from campus recreation facilities. Please be responsible moving forward.</h1>"
+      // }).catch((err) => {
+      //   console.error("Failed to send ban alert email:", err);
+      // });
 
       addToast("success", "Student Unbanned", banPopupStudent?.name + " has been unbanned.");
     } else {

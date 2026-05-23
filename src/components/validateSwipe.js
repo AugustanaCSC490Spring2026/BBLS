@@ -80,13 +80,13 @@ async function ValidateSwipe(swipe) {
 
       const now = new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' });
 
-      sendEmail({
-        to: "bengeorgia23@augustana.edu",
-        subject: "Banned Student Attempted Entry",
-        html: `<h1>Banned student, ${studentName}, attempted entry at ${now}</h1>`
-      }).catch((err) => {
-        console.error("Failed to send ban alert email:", err);
-      });
+      // sendEmail({
+      //   to: "bengeorgia23@augustana.edu",
+      //   subject: "Banned Student Attempted Entry",
+      //   html: `<h1>Banned student, ${studentName}, attempted entry at ${now}</h1>`
+      // }).catch((err) => {
+      //   console.error("Failed to send ban alert email:", err);
+      // });
     }
 
   }
