@@ -806,6 +806,7 @@ const Settings = () => {
 
       await deleteDoc(docRef);
 
+      // added comment to test discord pushes
       // sendEmail({
       //   to: email + "@augustana.edu",
       //   subject: "Augustana Recreation Unban Notice",
