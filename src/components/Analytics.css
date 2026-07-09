@@ -1,179 +1,75 @@
 .Analytics-page {
-    align-items: center;
-    padding: 20px;
+  padding: 24px 32px;
 }
 
-.Analytics-page .Charts {
-    flex: 1;
-    margin: 20px;
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-.charts-boxes{
-    display: flex;
-    gap: 20px;
-}
-.stat-cards {
-    width: 22%;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    margin-top: 20px;
+.stat-card-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .stat-card {
-    background: white;
-    border-radius: 12px;
-    height: 30%;
-    background: linear-gradient(yellow, #FFDD00);
-    padding: 20px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.analytics-card {
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    border: 1px solid rgba(0, 0, 0, 0.05);
-    overflow: hidden;
-}
-
-.analytics-card-header {
-    padding: 18px 24px;
-    border-bottom: 1px solid #edf2f7;
-}
-
-.analytics-card-header h2 {
-    margin: 0;
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: #1a202c;
-}
-
-.control-box {
-    display: flex;
-    gap: 16px;
-    padding: 20px 24px;
-}
-
-.control-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.control-label {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #444;
-    margin: 0 0 4px;
-}
-
-.control-content select,
-.control-content input[type="date"] {
-    width: 100%;
-    padding: 10px 14px;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    font-size: 0.875rem;
-    color: #1a202c;
-    background: white;
-    outline: none;
-    box-sizing: border-box;
-}
-
-.control-content select:focus,
-.control-content input[type="date"]:focus {
-    border-color: #002F6C;
-    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.10);
-}
-
-.analyatics-card {
-    text-align: center;
-}
-
-.interval-group-row {
-  display: flex;
-  gap: 15px;
-  width: 100%;
-}
-
-.control-item {
-  display: flex;
-  flex-direction: column;
   flex: 1;
-  gap: 6px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px 20px;
+  border: 1px solid #e2e2e2;
+  border-top: 3px solid transparent;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.control-item select {
-    width: 100%;
-    padding: 10px 14px;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    font-size: 0.875rem;
-    color: #1a202c;
-    background: white;
-    outline: none;
-    box-sizing: border-box;
+.stat-card.accent-navy {
+  border-top-color: #002f6c;
 }
 
-.control-item select:focus {
-    border-color: #002F6C;
-    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.10);
+.stat-card.accent-gold {
+  border-top-color: #ffc72c;
 }
 
-.stat-card {
-    flex: 1;
-    background: white;
-    border-radius: 14px;
-    padding: 14px 16px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-    border-top: 4px solid transparent;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+.stat-card-placeholder {
+  border-top-color: transparent;
+  border: 1px dashed #d0d0d0;
+  box-shadow: none;
+  background: transparent;
 }
-
-.stat-card.sc-blue   { border-top-color: #002F6C; }
-.stat-card.sc-yellow { border-top-color: #FFDD00; }
 
 .sc-label {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #9ca3af;
-    margin: 0 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  color: #666;
+  text-transform: uppercase;
+  margin: 0 0 6px;
 }
 
 .sc-value {
-    font-size: 28px;
-    font-weight: 800;
-    color: #002F6C;
-    margin: 0 0 6px;
-    line-height: 1;
+  font-size: 28px;
+  font-weight: 600;
+  color: #002f6c;
+  margin: 0;
+}
+
+.sc-sub {
+  font-size: 12px;
+  color: #999;
+  margin: 4px 0 0;
 }
 
 .sc-trend {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
 }
 
 .sc-trend-text {
-    font-size: 12px;
-    font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
 }
 
-.sc-trend-text.up   { color: #16a34a; }
-.sc-trend-text.down { color: #dc2626; }
+.sc-trend-text.up {
+  color: #16a34a;
+}
 
-.sc-sub {
-    font-size: 11px;
-    color: #9ca3af;
-    margin: 0;
+.sc-trend-text.down {
+  color: #dc2626;
 }

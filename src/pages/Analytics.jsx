@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "../firebase"; // TODO: adjust this path to match your actual firebase config file
+import { db } from "../firebase"; 
 
+
+
+import "../components/Analytics.css";
 function Analytics({ gym, updateGym }) {
 
   const [statData, setStatData] = useState({
