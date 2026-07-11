@@ -2,17 +2,17 @@ import React, { useState, useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../Firebase"; 
 import "../components/Analytics.css";
+import NavDropdown from "../components/NavDropdownAnalytics.jsx"; 
 
-// Maps the facility picker's value to the Firestore collection(s) to query.
-// "both" pulls from both gyms and combines the totals.
 const FACILITY_COLLECTIONS = {
-  both: ["pepsicoCenter", "westerlinGym"],
-  pepsico: ["pepsicoCenter"],
-  westerlin: ["westerlinGym"],
+  Both: ["pepsicoCenter", "westerlinGym"],
+  PepsiCo: ["pepsicoCenter"],
+  Westerlin: ["westerlinGym"],
 };
 
 function Analytics({ gym, updateGym }) {
-  const [facility, setFacility] = useState("both");
+  // Which facility's data the stat cards (and eventually the charts) reflect.
+  const [facility, setFacility] = useState("Both");
 
 
   const [statData, setStatData] = useState({
@@ -67,26 +67,11 @@ function Analytics({ gym, updateGym }) {
 
       <div className="Analytics-page">
         <div className="filter-row">
-          <div className="facility-picker">
-            <button
-              className={facility === "both" ? "active" : ""}
-              onClick={() => setFacility("both")}
-            >
-              Both
-            </button>
-            <button
-              className={facility === "pepsico" ? "active" : ""}
-              onClick={() => setFacility("pepsico")}
-            >
-              PepsiCo
-            </button>
-            <button
-              className={facility === "westerlin" ? "active" : ""}
-              onClick={() => setFacility("westerlin")}
-            >
-              Westerlin
-            </button>
-          </div>
+          <NavDropdown
+            options={["Both", "PepsiCo", "Westerlin"]}
+            defaultOption={facility}
+            onChange={setFacility}
+          />
         </div>
 
         <div className="stat-card-row">
@@ -100,6 +85,9 @@ function Analytics({ gym, updateGym }) {
           <div className="stat-card stat-card-placeholder" />
         </div>
 
+        {/* Charts (Visits over time, Visits by facility, Person type mix,
+            Top 5 equipment, Demographic snapshot) still to come — this is
+            where the rest of your original chart JSX will slot back in. */}
       </div>
     </>
   );
