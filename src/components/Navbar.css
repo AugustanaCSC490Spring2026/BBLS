@@ -1,112 +1,211 @@
-.logo h1 {
-  color: white;
+
+.navbar {
+  background: linear-gradient(180deg, #003a80 0%, #002F6C 100%);
+  width: 100%;
+  border-bottom: 4px solid #FFDD00;
+  padding: clamp(10px, 1.8vw, 18px) clamp(16px, 4vw, 32px);
+  box-shadow: 0 2px 12px rgba(0, 15, 40, 0.25);
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
-
-
-
-.navbar{
-background:#002F6C;
-width:100%;
-border-bottom: 10px solid #FFDD00;
-padding: 16px 24px;
-}
-
 
 .nav-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  max-width: 1400px;
+  margin: 0 auto;
+  gap: clamp(12px, 2vw, 24px);
+  flex-wrap: wrap;
 }
 
-.nav-container{
-max-width:1200px;
-margin:auto;
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:15px 25px;
+/* ---------- Logo / Brand ---------- */
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 1.2vw, 14px);
+  min-width: 0; /* allow truncation instead of overflow on tiny screens */
 }
 
-.logo{
-display: flex;
-align-items: center;
-gap:10px;
+.logo img {
+  width: clamp(36px, 5vw, 52px);
+  height: clamp(36px, 5vw, 52px);
+  flex-shrink: 0;
+  border-radius: 8px;
 }
 
-.logo h1{
-font-size: 22px;
+.logo h1 {
+  color: #ffffff;
+  font-size: clamp(0.95rem, 2.1vw, 1.35rem);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
 }
 
-.nav-links{
-display:inline;
-margin:0;
-padding:0;
+/* ---------- Nav Links ---------- */
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: clamp(4px, 1.2vw, 10px);
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
 }
 
-.nav-links a{
-color:white;
-margin: 20px;
-text-decoration:none;
-font-weight:500;
+.nav-links a,
+.nav-item {
+  position: relative;
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: clamp(0.8rem, 1.3vw, 0.95rem);
+  letter-spacing: 0.01em;
+  padding: 0.55em 0.9em;
+  border-radius: 8px;
+  white-space: nowrap;
+  transition: color 0.2s ease, background-color 0.2s ease, transform 0.15s ease;
 }
 
-.nav-links a:hover{
-border-bottom:2px solid #FFC72C;
-}
-.nav-links a.active {
-  border-bottom: 2px solid #FFC72C;
-}
-
-.active{
-border-bottom:2px solid #FFC72C;
+.nav-links a:hover,
+.nav-item:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
 }
 
-.nav-user{
-display:flex;
-align-items:center;
-gap:10px;
+.nav-links a:active,
+.nav-item:active {
+  transform: translateY(0);
 }
 
-.avatar{
-width:30px;
-height:30px;
-background:#FFC72C;
-color:#003087;
-border-radius:50%;
-display:flex;
-align-items:center;
-justify-content:center;
-font-weight:bold;
+.nav-links a:focus-visible,
+.nav-item:focus-visible {
+  outline: 2px solid #FFC72C;
+  outline-offset: 2px;
 }
+
+/* Active route indicator — underline replaced with a subtle pill + accent bar */
+.nav-links a.active,
+.nav-item.active,
+.active {
+  color: #ffffff;
+  background-color: rgba(255, 199, 44, 0.14);
+}
+
+.nav-links a.active::after,
+.nav-item.active::after {
+  content: "";
+  position: absolute;
+  left: 0.9em;
+  right: 0.9em;
+  bottom: 4px;
+  height: 2px;
+  background: #FFC72C;
+  border-radius: 2px;
+}
+
+/* ---------- User / Avatar (kept for future use) ---------- */
+
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  background: #FFC72C;
+  color: #002F6C;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+/* ---------- Sign Out Button ---------- */
 
 .sign-out-button {
-  /* Rounded corners - 8px is a soft standard, 20px+ for a pill shape */
-  border-radius: 8px; 
-  
-  /* Blue background and white text */
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
   background-color: #ffffff;
   color: #002F6C;
-  
-  /* Keeps the button looking clean */
-  border: 1px solid transparent;
-  padding: 0.3em 1.2em;
-  font-size: 1em;
+  border: none;
+  padding: 0.5em 1.15em;
+  font-size: clamp(0.8rem, 1.2vw, 0.9rem);
   font-family: inherit;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  /* Smooth transition for hover effects */
-  transition: background-color 0.25s, border-color 0.25s;
-}
-.sign-out-button img {
-  width: 16px;
-  height: 16px;
-  margin-left: 3px;
-  vertical-align: middle; 
+  min-height: 40px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 
-/* Recommended: Add a hover state so users know it's clickable */
 .sign-out-button:hover {
-  background-color: #e8e8e8;
-  border-color: #cccccc;
+  background-color: #f2f2f2;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+}
+
+.sign-out-button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.sign-out-button:focus-visible {
+  outline: 2px solid #FFDD00;
+  outline-offset: 2px;
+}
+
+.sign-out-button img {
+  width: 15px;
+  height: 15px;
+  vertical-align: middle;
+}
+
+/* ---------- Responsive breakpoints ---------- */
+
+@media (max-width: 768px) {
+  .nav-content {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .logo {
+    order: 1;
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  .nav-links {
+    order: 3;
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  .sign-out-button {
+    order: 2;
+  }
+}
+
+@media (max-width: 420px) {
+  .nav-links a,
+  .nav-item {
+    padding: 0.5em 0.65em;
+    font-size: 0.78rem;
+  }
+
+  .logo h1 {
+    font-size: 0.95rem;
+  }
 }
