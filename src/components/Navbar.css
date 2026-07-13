@@ -1,187 +1,112 @@
-:root {
-  --navy: #002F6C;
-  --navy-light: #003d8f;
-  --gold: #FFDD00;
-  --gold-accent: #FFC72C;
-}
-
 .logo h1 {
   color: white;
-  font-size: 22px;
 }
 
-.navbar {
-  background: var(--navy);
-  width: 100%;
-  border-bottom: 10px solid var(--gold);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-  position: sticky;
-  top: 0;
-  z-index: 100;
+
+
+.navbar{
+background:#002F6C;
+width:100%;
+border-bottom: 10px solid #FFDD00;
+padding: 16px 24px;
 }
 
-.nav-container {
-  width: 100%;
-  margin: 0;
+
+.nav-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 25px;
 }
 
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.nav-container{
+max-width:1200px;
+margin:auto;
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:15px 25px;
 }
 
-/* Wraps nav-links + sign-out button into one row */
-.nav-menu {
-  display: flex;
-  align-items: center;
-  gap: 20px;
+.logo{
+display: flex;
+align-items: center;
+gap:10px;
 }
 
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  margin: 0;
-  padding: 0;
+.logo h1{
+font-size: 22px;
 }
 
-.nav-links a {
-  position: relative;
-  color: white;
-  text-decoration: none;
-  font-weight: 500;
-  margin: 20px;
-  padding-bottom: 2px;
+.nav-links{
+display:inline;
+margin:0;
+padding:0;
 }
 
-.nav-links a::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: -2px;
-  width: 0;
-  height: 2px;
-  background: var(--gold-accent);
-  transition: width 0.25s ease, left 0.25s ease;
+.nav-links a{
+color:white;
+margin: 20px;
+text-decoration:none;
+font-weight:500;
 }
 
-.nav-links a:hover::after,
-.nav-links a.active::after {
-  width: 100%;
-  left: 0;
+.nav-links a:hover{
+border-bottom:2px solid #FFC72C;
+}
+.nav-links a.active {
+  border-bottom: 2px solid #FFC72C;
+}
+
+.active{
+border-bottom:2px solid #FFC72C;
+}
+
+.nav-user{
+display:flex;
+align-items:center;
+gap:10px;
+}
+
+.avatar{
+width:30px;
+height:30px;
+background:#FFC72C;
+color:#003087;
+border-radius:50%;
+display:flex;
+align-items:center;
+justify-content:center;
+font-weight:bold;
 }
 
 .sign-out-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  border-radius: 8px;
-  background: #ffffff;
-  color: var(--navy);
-  border: 3px solid rgba(255, 255, 255, 0.1);
+  /* Rounded corners - 8px is a soft standard, 20px+ for a pill shape */
+  border-radius: 8px; 
+  
+  /* Blue background and white text */
+  background-color: #ffffff;
+  color: #002F6C;
+  
+  /* Keeps the button looking clean */
+  border: 1px solid transparent;
   padding: 0.3em 1.2em;
   font-size: 1em;
   font-family: inherit;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
-  transition: background-color 0.25s ease, border-color 0.25s ease,
-    box-shadow 0.25s ease, transform 0.2s ease;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  /* Smooth transition for hover effects */
+  transition: background-color 0.25s, border-color 0.25s;
 }
-
-.sign-out-button:hover {
-  background-color: #f0f0f0;
-  border-color: var(--gold-accent);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  transform: translateY(-2px);
-}
-
-.sign-out-button:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-}
-
 .sign-out-button img {
   width: 16px;
   height: 16px;
   margin-left: 3px;
-  vertical-align: middle;
-  transition: transform 0.25s ease;
+  vertical-align: middle; 
 }
 
-.sign-out-button:hover img {
-  transform: translateX(2px);
-}
-
-/* Hamburger — hidden on desktop */
-.nav-toggle {
-  display: none;
-  flex-direction: column;
-  justify-content: center;
-  gap: 5px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 6px;
-}
-
-.nav-toggle span {
-  width: 24px;
-  height: 2px;
-  background: #fff;
-  border-radius: 2px;
-  transition: transform 0.25s ease, opacity 0.25s ease;
-}
-
-.nav-toggle.open span:nth-child(1) {
-  transform: translateY(7px) rotate(45deg);
-}
-.nav-toggle.open span:nth-child(2) {
-  opacity: 0;
-}
-.nav-toggle.open span:nth-child(3) {
-  transform: translateY(-7px) rotate(-45deg);
-}
-
-/* ---------- Responsive ---------- */
-@media (max-width: 768px) {
-  .nav-toggle {
-    display: flex;
-  }
-
-  .nav-menu {
-    display: none;
-    width: 100%;
-  }
-
-  .nav-menu.open {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    padding-top: 12px;
-  }
-
-  .nav-links {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-
-  .nav-links a {
-    margin: 8px;
-  }
-
-  .nav-right {
-    border-top: none;
-    margin-top: 0;
-    padding: 0;
-  }
+/* Recommended: Add a hover state so users know it's clickable */
+.sign-out-button:hover {
+  background-color: #e8e8e8;
+  border-color: #cccccc;
 }
