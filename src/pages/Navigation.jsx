@@ -43,7 +43,7 @@ function Navbar({}) {
             <nav className="navbar">
                 <div className="nav-content">
                     <div className="logo">
-                        <img src={logo} alt="Augie Campus Rec logo" width={60} height={60} />
+                        <img src={logo} alt="Logo" width={60} height={60} />
                         <h1>Augie Campus Rec</h1>
                     </div>
                     {shouldShowNavbarRoutes && (
@@ -66,19 +66,14 @@ function Navbar({}) {
                                     </NavLink>
                                 )}
                             </div>
-                            <button
-                                className="sign-out-button"
-                                onClick={handleSignOut}
-                                aria-label="Sign out of your account"
-                            >
-                                <span>Sign Out</span>
-                                <img src={signOutIcon} alt="" aria-hidden="true" />
+                            <button className="sign-out-button" onClick={handleSignOut}>
+                                Sign Out  <img src={signOutIcon} alt="Sign Out" />
                             </button>
                         </>
                     )}
                 </div>
             </nav>
-
+            
         )}
         </>
     );
