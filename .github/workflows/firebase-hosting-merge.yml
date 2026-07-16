@@ -29,3 +29,31 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_REC_CENTER_SWIPE_INS }}
           channelId: live
           projectId: rec-center-swipe-ins
+
+      - name: Notify Discord (success)
+        if: success()
+        run: |
+          curl -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "✅ Deploy succeeded",
+                "description": "**${{ github.event.head_commit.message }}**\nby ${{ github.actor }}",
+                "color": 5763719,
+                "url": "${{ github.event.head_commit.url }}"
+              }]
+            }' \
+            ${{ secrets.DISCORD_WEBHOOK }}
+
+      - name: Notify Discord (failure)
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "❌ Deploy failed",
+                "description": "**${{ github.event.head_commit.message }}**\nby ${{ github.actor }}",
+                "color": 15548997,
+                "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              }]
+            }' \
+            ${{ secrets.DISCORD_WEBHOOK }}
