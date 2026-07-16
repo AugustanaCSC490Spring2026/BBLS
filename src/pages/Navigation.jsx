@@ -25,6 +25,7 @@ function Navbar({}) {
     // isAdmin is a boolean that indicates whether the current user is an admin or not
     const { isAdmin } = useAuth();
     const [role, setRole] = useState("");
+    const [menuOpen, setMenuOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
     const hideNavbarRoutes = ["/Location"];
@@ -37,6 +38,11 @@ function Navbar({}) {
         setRole(storedRole);
     }, []);
 
+    // Close the mobile menu whenever the route changes
+    useEffect(() => {
+        setMenuOpen(false);
+    }, [location.pathname]);
+
     return (
         <>
         { shouldShowNavbar && (
@@ -48,32 +54,44 @@ function Navbar({}) {
                     </div>
                     {shouldShowNavbarRoutes && (
                         <>
-                            <div className="nav-links">
-                                <NavLink to="/dashboard" className="nav-item">
-                                    Swipe In
-                                </NavLink>
-                                <NavLink to="/equipment" className="nav-item">
-                                    Equipment Checkout
-                                </NavLink>
-                                {isAdmin && (
-                                    <NavLink to="/analytics" className="nav-item">
-                                        Analytics
-                                    </NavLink>
-                                )}
-                                {isAdmin && (
-                                    <NavLink to="/settings" className="nav-item">
-                                        Settings
-                                    </NavLink>
-                                )}
-                            </div>
-                            <button className="sign-out-button" onClick={handleSignOut}>
-                                Sign Out  <img src={signOutIcon} alt="Sign Out" />
+                            <button
+                                className={`nav-toggle ${menuOpen ? "open" : ""}`}
+                                onClick={() => setMenuOpen((open) => !open)}
+                                aria-label="Toggle navigation menu"
+                                aria-expanded={menuOpen}
+                            >
+                                <span></span>
+                                <span></span>
+                                <span></span>
                             </button>
+                            <div className={`nav-menu ${menuOpen ? "open" : ""}`}>
+                                <div className="nav-links">
+                                    <NavLink to="/dashboard" className="nav-item">
+                                        Swipe In
+                                    </NavLink>
+                                    <NavLink to="/equipment" className="nav-item">
+                                        Equipment Checkout
+                                    </NavLink>
+                                    {isAdmin && (
+                                        <NavLink to="/analytics" className="nav-item">
+                                            Analytics
+                                        </NavLink>
+                                    )}
+                                    {isAdmin && (
+                                        <NavLink to="/settings" className="nav-item">
+                                            Settings
+                                        </NavLink>
+                                    )}
+                                </div>
+                                <button className="sign-out-button" onClick={handleSignOut}>
+                                    Sign Out  <img src={signOutIcon} alt="Sign Out" />
+                                </button>
+                            </div>
                         </>
                     )}
                 </div>
             </nav>
-            
+
         )}
         </>
     );
