@@ -10,6 +10,18 @@ const FACILITY_COLLECTIONS = {
   Westerlin: ["westerlinGym"],
 };
 
+const CHECKOUT_COLLECTIONS = {
+  Both: ["pepsicoCheckouts", "westerlinCheckouts"],
+  PepsiCo: ["pepsicoCheckouts"],
+  Westerlin: ["westerlinCheckouts"],
+};
+
+const HOUR_LABELS = [
+  "12 AM", "1 AM", "2 AM", "3 AM", "4 AM", "5 AM", "6 AM", "7 AM",
+  "8 AM", "9 AM", "10 AM", "11 AM", "12 PM", "1 PM", "2 PM", "3 PM",
+  "4 PM", "5 PM", "6 PM", "7 PM", "8 PM", "9 PM", "10 PM", "11 PM",
+];
+
 function Analytics({ gym, updateGym }) {
   // Which facility's data the stat cards (and eventually the charts) reflect.
   const [facility, setFacility] = useState("Both");
@@ -18,12 +30,15 @@ function Analytics({ gym, updateGym }) {
   const [statData, setStatData] = useState({
     totalVisits: null,
     uniqueVisitors: null,
+    equipmentCheckedOut: null,
+    peakHour: null,
   });
 
   useEffect(() => {
     async function fetchStatCardData() {
       let totalVisits = 0;
       const uniqueIds = new Set();
+      const hourCounts = new Array(24).fill(0);
 
       try {
         for (const name of FACILITY_COLLECTIONS[facility]) {
@@ -33,15 +48,38 @@ function Analytics({ gym, updateGym }) {
             if (!d.swipeInTime) return;
             totalVisits++;
             if (d.ID) uniqueIds.add(d.ID);
+            if (d.swipeInTime.toDate) {
+              hourCounts[d.swipeInTime.toDate().getHours()]++;
+            }
           });
         }
       } catch (err) {
         console.error("Stat card fetch error:", err);
       }
 
+      let equipmentCheckedOut = 0;
+      try {
+        for (const name of CHECKOUT_COLLECTIONS[facility]) {
+          const snap = await getDocs(collection(db, name));
+          snap.forEach((doc) => {
+            const d = doc.data();
+            if (d.returned) return;
+            equipmentCheckedOut += d.quantity || 0;
+          });
+        }
+      } catch (err) {
+        console.error("Equipment checkout fetch error:", err);
+      }
+
+      const peakHourIndex = hourCounts.some((c) => c > 0)
+        ? hourCounts.indexOf(Math.max(...hourCounts))
+        : null;
+
       setStatData({
         totalVisits,
         uniqueVisitors: uniqueIds.size,
+        equipmentCheckedOut,
+        peakHour: peakHourIndex === null ? null : HOUR_LABELS[peakHourIndex],
       });
     }
 
@@ -77,11 +115,10 @@ function Analytics({ gym, updateGym }) {
         <div className="stat-card-row">
           {renderStatCard("TOTAL VISITS", statData.totalVisits, "accent-gold")}
           {renderStatCard("UNIQUE VISITORS", statData.uniqueVisitors, "accent-navy")}
+          {renderStatCard("EQUIP. CHECKED OUT", statData.equipmentCheckedOut, "accent-gold")}
+          {renderStatCard("PEAK HOUR", statData.peakHour, "accent-navy")}
 
-          {/* Reserved space for the other 3 cards from the mockup:
-              EQUIP. CHECKED OUT, INVALID SWIPES, PEAK HOUR */}
-          <div className="stat-card stat-card-placeholder" />
-          <div className="stat-card stat-card-placeholder" />
+          {/* Reserved space for the last card from the mockup: INVALID SWIPES */}
           <div className="stat-card stat-card-placeholder" />
         </div>
 
