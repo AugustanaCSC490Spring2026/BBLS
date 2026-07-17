@@ -2,6 +2,12 @@
   padding: 24px 32px;
 }
 
+.filter-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
 .stat-card-row {
   display: flex;
   gap: 16px;
