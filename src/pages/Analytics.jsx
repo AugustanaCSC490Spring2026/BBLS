@@ -22,6 +22,10 @@ const HOUR_LABELS = [
   "4 PM", "5 PM", "6 PM", "7 PM", "8 PM", "9 PM", "10 PM", "11 PM",
 ];
 
+const DAY_LABELS = [
+  "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+];
+
 function Analytics({ gym, updateGym }) {
   // Which facility's data the stat cards (and eventually the charts) reflect.
   const [facility, setFacility] = useState("Both");
@@ -30,8 +34,9 @@ function Analytics({ gym, updateGym }) {
   const [statData, setStatData] = useState({
     totalVisits: null,
     uniqueVisitors: null,
-    equipmentCheckedOut: null,
+    mostCheckedOutItem: null,
     peakHour: null,
+    busiestDay: null,
   });
 
   useEffect(() => {
@@ -39,6 +44,7 @@ function Analytics({ gym, updateGym }) {
       let totalVisits = 0;
       const uniqueIds = new Set();
       const hourCounts = new Array(24).fill(0);
+      const dayCounts = new Array(7).fill(0);
 
       try {
         for (const name of FACILITY_COLLECTIONS[facility]) {
@@ -49,7 +55,9 @@ function Analytics({ gym, updateGym }) {
             totalVisits++;
             if (d.ID) uniqueIds.add(d.ID);
             if (d.swipeInTime.toDate) {
-              hourCounts[d.swipeInTime.toDate().getHours()]++;
+              const visitDate = d.swipeInTime.toDate();
+              hourCounts[visitDate.getHours()]++;
+              dayCounts[visitDate.getDay()]++;
             }
           });
         }
@@ -57,14 +65,15 @@ function Analytics({ gym, updateGym }) {
         console.error("Stat card fetch error:", err);
       }
 
-      let equipmentCheckedOut = 0;
+      const itemCounts = {};
       try {
         for (const name of CHECKOUT_COLLECTIONS[facility]) {
           const snap = await getDocs(collection(db, name));
           snap.forEach((doc) => {
             const d = doc.data();
             if (d.returned) return;
-            equipmentCheckedOut += d.quantity || 0;
+            if (!d.equipment) return;
+            itemCounts[d.equipment] = (itemCounts[d.equipment] || 0) + (d.quantity || 0);
           });
         }
       } catch (err) {
@@ -75,11 +84,21 @@ function Analytics({ gym, updateGym }) {
         ? hourCounts.indexOf(Math.max(...hourCounts))
         : null;
 
+      const busiestDayIndex = dayCounts.some((c) => c > 0)
+        ? dayCounts.indexOf(Math.max(...dayCounts))
+        : null;
+
+      const itemEntries = Object.entries(itemCounts);
+      const mostCheckedOutItem = itemEntries.length
+        ? itemEntries.reduce((max, entry) => (entry[1] > max[1] ? entry : max))[0]
+        : null;
+
       setStatData({
         totalVisits,
         uniqueVisitors: uniqueIds.size,
-        equipmentCheckedOut,
+        mostCheckedOutItem,
         peakHour: peakHourIndex === null ? null : HOUR_LABELS[peakHourIndex],
+        busiestDay: busiestDayIndex === null ? null : DAY_LABELS[busiestDayIndex],
       });
     }
 
@@ -115,11 +134,9 @@ function Analytics({ gym, updateGym }) {
         <div className="stat-card-row">
           {renderStatCard("TOTAL VISITS", statData.totalVisits, "accent-gold")}
           {renderStatCard("UNIQUE VISITORS", statData.uniqueVisitors, "accent-navy")}
-          {renderStatCard("EQUIP. CHECKED OUT", statData.equipmentCheckedOut, "accent-gold")}
+          {renderStatCard("MOST CHECKED OUT ITEM", statData.mostCheckedOutItem, "accent-gold")}
           {renderStatCard("PEAK HOUR", statData.peakHour, "accent-navy")}
-
-          {/* Reserved space for the last card from the mockup: INVALID SWIPES */}
-          <div className="stat-card stat-card-placeholder" />
+          {renderStatCard("BUSIEST DAY", statData.busiestDay, "accent-gold")}
         </div>
 
         {/* Charts (Visits over time, Visits by facility, Person type mix,
