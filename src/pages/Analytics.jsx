@@ -4,6 +4,8 @@ import {
   ResponsiveContainer,
   LineChart,
   Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -24,6 +26,11 @@ const FACILITY_LOCATIONS = {
   Both: null,
   PepsiCo: "PepsiCo Center",
   Westerlin: "Westerlin Gym",
+};
+
+const FACILITY_COLLECTION_LABELS = {
+  pepsicoCenter: "PepsiCo Center",
+  westerlinGym: "Westerlin Gym",
 };
 
 const HOUR_LABELS = [
@@ -115,6 +122,7 @@ function Analytics({ gym, updateGym }) {
   });
 
   const [visitsOverTime, setVisitsOverTime] = useState([]);
+  const [visitsByFacility, setVisitsByFacility] = useState([]);
 
   useEffect(() => {
     async function fetchStatCardData() {
@@ -124,16 +132,19 @@ function Analytics({ gym, updateGym }) {
       const dayCounts = new Array(7).fill(0);
       const rangeStart = getRangeStartDate(timeRange);
       const visitBuckets = new Map();
+      const visitsByFacilityData = [];
 
       try {
         for (const name of FACILITY_COLLECTIONS[facility]) {
           const snap = await getDocs(collection(db, name));
+          let facilityVisitCount = 0;
           snap.forEach((doc) => {
             const d = doc.data();
             if (!d.swipeInTime || !d.swipeInTime.toDate) return;
             const visitDate = d.swipeInTime.toDate();
             if (rangeStart && visitDate < rangeStart) return;
             totalVisits++;
+            facilityVisitCount++;
             if (d.ID) uniqueIds.add(d.ID);
             hourCounts[visitDate.getHours()]++;
             dayCounts[visitDate.getDay()]++;
@@ -146,6 +157,7 @@ function Analytics({ gym, updateGym }) {
               visitBuckets.set(bucket.key, { label: bucket.label, visits: 1 });
             }
           });
+          visitsByFacilityData.push({ facility: FACILITY_COLLECTION_LABELS[name], visits: facilityVisitCount });
         }
       } catch (err) {
         console.error("Stat card fetch error:", err);
@@ -194,10 +206,70 @@ function Analytics({ gym, updateGym }) {
         busiestDay: busiestDayIndex === null ? null : DAY_LABELS[busiestDayIndex],
       });
       setVisitsOverTime(visitsOverTimeData);
+      setVisitsByFacility(visitsByFacilityData);
     }
 
     fetchStatCardData();
   }, [facility, timeRange, timeInterval]);
+
+  const CHART_TITLES = [
+    "Visits Over Time",
+    "Visits by Facility",
+    "Person Type Mix",
+    "Top 5 Equipment",
+    "Demographic Snapshot",
+  ];
+
+  function renderChartBody(title) {
+    if (title === "Visits Over Time") {
+      if (!visitsOverTime.length) return <span>No visit data for this range</span>;
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={visitsOverTime} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+            <CartesianGrid vertical={false} stroke="#eee" />
+            <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#999" }} stroke="#eee" tickLine={false} />
+            <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#999" }} stroke="#eee" tickLine={false} width={32} />
+            <Tooltip
+              cursor={{ stroke: "#e2e2e2", strokeWidth: 1 }}
+              contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e2e2" }}
+              labelStyle={{ color: "#666", fontWeight: 600 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="visits"
+              stroke="#002F6C"
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4, stroke: "#fff", strokeWidth: 2 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    if (title === "Visits by Facility") {
+      if (!visitsByFacility.length) return <span>No visit data for this range</span>;
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={visitsByFacility} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+            <CartesianGrid vertical={false} stroke="#eee" />
+            <XAxis dataKey="facility" tick={{ fontSize: 11, fill: "#999" }} stroke="#eee" tickLine={false} />
+            <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#999" }} stroke="#eee" tickLine={false} width={32} />
+            <Tooltip
+              cursor={{ fill: "#f5f5f5" }}
+              contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e2e2" }}
+              labelStyle={{ color: "#666", fontWeight: 600 }}
+            />
+            <Bar dataKey="visits" fill="#002F6C" radius={[4, 4, 0, 0]} maxBarSize={64} />
+          </BarChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    return "Chart coming soon";
+  }
+
+  const IMPLEMENTED_CHARTS = new Set(["Visits Over Time", "Visits by Facility"]);
 
   // Same shape as your original renderStatCard, just without the
   // week-over-week trend arrow for now (no "last period" number to compare
@@ -240,61 +312,17 @@ function Analytics({ gym, updateGym }) {
         </div>
 
         <div className="chart-grid">
-          {[
-            "Visits Over Time",
-            "Visits by Facility",
-            "Person Type Mix",
-            "Top 5 Equipment",
-            "Demographic Snapshot",
-          ].map((title) => (
-            <div
-              className={`chart-card ${title === "Visits Over Time" ? "" : "chart-card-placeholder"}`}
-              key={title}
-            >
-              <p className="chart-card-title">{title}</p>
-              {title === "Visits Over Time" ? (
-                <div className="chart-card-body chart-card-body-chart">
-                  {visitsOverTime.length ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={visitsOverTime} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
-                        <CartesianGrid vertical={false} stroke="#eee" />
-                        <XAxis
-                          dataKey="label"
-                          tick={{ fontSize: 11, fill: "#999" }}
-                          stroke="#eee"
-                          tickLine={false}
-                        />
-                        <YAxis
-                          allowDecimals={false}
-                          tick={{ fontSize: 11, fill: "#999" }}
-                          stroke="#eee"
-                          tickLine={false}
-                          width={32}
-                        />
-                        <Tooltip
-                          cursor={{ stroke: "#e2e2e2", strokeWidth: 1 }}
-                          contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e2e2" }}
-                          labelStyle={{ color: "#666", fontWeight: 600 }}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="visits"
-                          stroke="#002F6C"
-                          strokeWidth={2}
-                          dot={false}
-                          activeDot={{ r: 4, stroke: "#fff", strokeWidth: 2 }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <span>No visit data for this range</span>
-                  )}
+          {CHART_TITLES.map((title) => {
+            const implemented = IMPLEMENTED_CHARTS.has(title);
+            return (
+              <div className={`chart-card ${implemented ? "" : "chart-card-placeholder"}`} key={title}>
+                <p className="chart-card-title">{title}</p>
+                <div className={`chart-card-body ${implemented ? "chart-card-body-chart" : ""}`}>
+                  {renderChartBody(title)}
                 </div>
-              ) : (
-                <div className="chart-card-body">Chart coming soon</div>
-              )}
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       </div>
     </>
