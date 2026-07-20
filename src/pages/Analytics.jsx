@@ -10,10 +10,10 @@ const FACILITY_COLLECTIONS = {
   Westerlin: ["westerlinGym"],
 };
 
-const CHECKOUT_COLLECTIONS = {
-  Both: ["pepsicoCheckouts", "westerlinCheckouts"],
-  PepsiCo: ["pepsicoCheckouts"],
-  Westerlin: ["westerlinCheckouts"],
+const FACILITY_LOCATIONS = {
+  Both: null,
+  PepsiCo: "PepsiCo Center",
+  Westerlin: "Westerlin Gym",
 };
 
 const HOUR_LABELS = [
@@ -67,15 +67,14 @@ function Analytics({ gym, updateGym }) {
 
       const itemCounts = {};
       try {
-        for (const name of CHECKOUT_COLLECTIONS[facility]) {
-          const snap = await getDocs(collection(db, name));
-          snap.forEach((doc) => {
-            const d = doc.data();
-            if (d.returned) return;
-            if (!d.equipment) return;
-            itemCounts[d.equipment] = (itemCounts[d.equipment] || 0) + (d.quantity || 0);
-          });
-        }
+        const locationFilter = FACILITY_LOCATIONS[facility];
+        const snap = await getDocs(collection(db, "checkoutHistory"));
+        snap.forEach((doc) => {
+          const d = doc.data();
+          if (!d.item) return;
+          if (locationFilter && d.location !== locationFilter) return;
+          itemCounts[d.item] = (itemCounts[d.item] || 0) + 1;
+        });
       } catch (err) {
         console.error("Equipment checkout fetch error:", err);
       }
