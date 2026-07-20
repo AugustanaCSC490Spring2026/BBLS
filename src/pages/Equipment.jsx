@@ -17,10 +17,12 @@ import {
     getDoc,
     updateDoc,
     addDoc,
+    setDoc,
     serverTimestamp
 } from "firebase/firestore";
 import { db } from "../Firebase.js";
 const currentStudentsRef = collection(db, "currentStudents");
+const checkoutHistoryRef = collection(db, "checkoutHistory");
 
 
 export default function Equipment({ gym, updateGym }) {
@@ -177,13 +179,23 @@ export default function Equipment({ gym, updateGym }) {
             });
 
             // Write into checkouts collection
-            await addDoc(checkoutRef, {
-                studentId: hashedId, 
+            const newCheckoutDocRef = await addDoc(checkoutRef, {
+                studentId: hashedId,
                 studentName,
                 equipment: equipmentData.name, // Save human-readable name for logging lists
                 quantity,
                 checkoutTime: serverTimestamp(),
                 returned: false
+            });
+
+            // Write into checkoutHistory collection, keyed by the same doc ID
+            // so handleReturn can find and update this record later
+            await setDoc(doc(checkoutHistoryRef, newCheckoutDocRef.id), {
+                name: studentName,
+                item: equipmentData.name,
+                location: gym,
+                time: serverTimestamp(),
+                ifReturned: false
             });
 
             addToast("success", "Checkout Successful", `${studentName} checked out ${quantity} ${equipmentData.name}(s)`);
@@ -239,6 +251,9 @@ export default function Equipment({ gym, updateGym }) {
             await updateDoc(checkoutDocRef, {
                 returned: true,
                 returnTime: serverTimestamp()
+            });
+            await updateDoc(doc(checkoutHistoryRef, id), {
+                ifReturned: true
             });
 
             await fetchInventory();
