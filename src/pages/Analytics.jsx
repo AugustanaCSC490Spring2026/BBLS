@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../Firebase"; 
 import "../components/Analytics.css";
-import NavDropdown from "../components/NavDropdownAnalytics.jsx"; 
+import NavDropdown from "../components/NavDropdownAnalytics.jsx";
+import TimeRangeFilter from "../components/TimeRangeFilter.jsx";
 
 const FACILITY_COLLECTIONS = {
   Both: ["pepsicoCenter", "westerlinGym"],
@@ -26,9 +27,28 @@ const DAY_LABELS = [
   "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
 ];
 
+function getRangeStartDate(range) {
+  const now = new Date();
+  switch (range) {
+    case "Last 7 Days":
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+    case "Last 30 Days":
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
+    case "Last 90 Days":
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate() - 90);
+    case "This Year":
+      return new Date(now.getFullYear(), 0, 1);
+    case "All Time":
+    default:
+      return null;
+  }
+}
+
 function Analytics({ gym, updateGym }) {
   // Which facility's data the stat cards (and eventually the charts) reflect.
   const [facility, setFacility] = useState("Both");
+  const [timeInterval, setTimeInterval] = useState("Daily");
+  const [timeRange, setTimeRange] = useState("Last 30 Days");
 
 
   const [statData, setStatData] = useState({
@@ -45,20 +65,20 @@ function Analytics({ gym, updateGym }) {
       const uniqueIds = new Set();
       const hourCounts = new Array(24).fill(0);
       const dayCounts = new Array(7).fill(0);
+      const rangeStart = getRangeStartDate(timeRange);
 
       try {
         for (const name of FACILITY_COLLECTIONS[facility]) {
           const snap = await getDocs(collection(db, name));
           snap.forEach((doc) => {
             const d = doc.data();
-            if (!d.swipeInTime) return;
+            if (!d.swipeInTime || !d.swipeInTime.toDate) return;
+            const visitDate = d.swipeInTime.toDate();
+            if (rangeStart && visitDate < rangeStart) return;
             totalVisits++;
             if (d.ID) uniqueIds.add(d.ID);
-            if (d.swipeInTime.toDate) {
-              const visitDate = d.swipeInTime.toDate();
-              hourCounts[visitDate.getHours()]++;
-              dayCounts[visitDate.getDay()]++;
-            }
+            hourCounts[visitDate.getHours()]++;
+            dayCounts[visitDate.getDay()]++;
           });
         }
       } catch (err) {
@@ -73,6 +93,10 @@ function Analytics({ gym, updateGym }) {
           const d = doc.data();
           if (!d.item) return;
           if (locationFilter && d.location !== locationFilter) return;
+          if (rangeStart) {
+            const historyDate = d.time && d.time.toDate ? d.time.toDate() : null;
+            if (!historyDate || historyDate < rangeStart) return;
+          }
           itemCounts[d.item] = (itemCounts[d.item] || 0) + 1;
         });
       } catch (err) {
@@ -102,7 +126,7 @@ function Analytics({ gym, updateGym }) {
     }
 
     fetchStatCardData();
-  }, [facility]);
+  }, [facility, timeRange]);
 
   // Same shape as your original renderStatCard, just without the
   // week-over-week trend arrow for now (no "last period" number to compare
@@ -123,6 +147,12 @@ function Analytics({ gym, updateGym }) {
 
       <div className="Analytics-page">
         <div className="filter-row">
+          <TimeRangeFilter
+            interval={timeInterval}
+            range={timeRange}
+            onIntervalChange={setTimeInterval}
+            onRangeChange={setTimeRange}
+          />
           <NavDropdown
             options={["Both", "PepsiCo", "Westerlin"]}
             defaultOption={facility}
@@ -138,9 +168,20 @@ function Analytics({ gym, updateGym }) {
           {renderStatCard("BUSIEST DAY", statData.busiestDay, "accent-gold")}
         </div>
 
-        {/* Charts (Visits over time, Visits by facility, Person type mix,
-            Top 5 equipment, Demographic snapshot) still to come — this is
-            where the rest of your original chart JSX will slot back in. */}
+        <div className="chart-grid">
+          {[
+            "Visits Over Time",
+            "Visits by Facility",
+            "Person Type Mix",
+            "Top 5 Equipment",
+            "Demographic Snapshot",
+          ].map((title) => (
+            <div className="chart-card chart-card-placeholder" key={title}>
+              <p className="chart-card-title">{title}</p>
+              <div className="chart-card-body">Chart coming soon</div>
+            </div>
+          ))}
+        </div>
       </div>
     </>
   );

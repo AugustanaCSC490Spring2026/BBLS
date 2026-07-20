@@ -1,0 +1,46 @@
+.time-filter-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #fff;
+  border: 1px solid #e2e2e2;
+  border-radius: 10px;
+  padding: 8px 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.time-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.time-filter-field label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #888;
+}
+
+.time-filter-field select {
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #222;
+  background: #fafafa;
+  cursor: pointer;
+}
+
+.time-filter-field select:focus-visible {
+  outline: 2px solid #ffc72c;
+  outline-offset: 1px;
+}
+
+.time-filter-divider {
+  width: 1px;
+  align-self: stretch;
+  background: #e5e5e5;
+}
