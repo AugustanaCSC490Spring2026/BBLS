@@ -50,7 +50,7 @@ function Navbar({}) {
                 <div className="nav-content">
                     <div className="logo">
                         <img src={logo} alt="Logo" width={60} height={60} />
-                        <h1>Augie Campus Rec</h1>
+                        <h1>Augustana Campus Recreation</h1>
                     </div>
                     {shouldShowNavbarRoutes && (
                         <>

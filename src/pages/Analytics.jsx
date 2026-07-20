@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "../Firebase"; 
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from "recharts";
+import { db } from "../Firebase";
 import "../components/Analytics.css";
 import NavDropdown from "../components/NavDropdownAnalytics.jsx";
 import TimeRangeFilter from "../components/TimeRangeFilter.jsx";
@@ -44,6 +53,52 @@ function getRangeStartDate(range) {
   }
 }
 
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function startOfWeek(date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() - d.getDay());
+  return d;
+}
+
+// Sortable key + display label for the bucket a visit's timestamp falls into,
+// based on the selected time interval granularity.
+function getBucket(date, interval) {
+  const y = date.getFullYear();
+  const m = date.getMonth();
+  const day = date.getDate();
+
+  switch (interval) {
+    case "Hourly": {
+      const h = date.getHours();
+      return {
+        key: `${y}-${pad2(m + 1)}-${pad2(day)}-${pad2(h)}`,
+        label: date.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric" }),
+      };
+    }
+    case "Weekly": {
+      const weekStart = startOfWeek(date);
+      return {
+        key: `${weekStart.getFullYear()}-${pad2(weekStart.getMonth() + 1)}-${pad2(weekStart.getDate())}`,
+        label: weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      };
+    }
+    case "Monthly":
+      return {
+        key: `${y}-${pad2(m + 1)}`,
+        label: date.toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+      };
+    case "Daily":
+    default:
+      return {
+        key: `${y}-${pad2(m + 1)}-${pad2(day)}`,
+        label: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      };
+  }
+}
+
 function Analytics({ gym, updateGym }) {
   // Which facility's data the stat cards (and eventually the charts) reflect.
   const [facility, setFacility] = useState("Both");
@@ -59,6 +114,8 @@ function Analytics({ gym, updateGym }) {
     busiestDay: null,
   });
 
+  const [visitsOverTime, setVisitsOverTime] = useState([]);
+
   useEffect(() => {
     async function fetchStatCardData() {
       let totalVisits = 0;
@@ -66,6 +123,7 @@ function Analytics({ gym, updateGym }) {
       const hourCounts = new Array(24).fill(0);
       const dayCounts = new Array(7).fill(0);
       const rangeStart = getRangeStartDate(timeRange);
+      const visitBuckets = new Map();
 
       try {
         for (const name of FACILITY_COLLECTIONS[facility]) {
@@ -79,11 +137,23 @@ function Analytics({ gym, updateGym }) {
             if (d.ID) uniqueIds.add(d.ID);
             hourCounts[visitDate.getHours()]++;
             dayCounts[visitDate.getDay()]++;
+
+            const bucket = getBucket(visitDate, timeInterval);
+            const existing = visitBuckets.get(bucket.key);
+            if (existing) {
+              existing.visits++;
+            } else {
+              visitBuckets.set(bucket.key, { label: bucket.label, visits: 1 });
+            }
           });
         }
       } catch (err) {
         console.error("Stat card fetch error:", err);
       }
+
+      const visitsOverTimeData = Array.from(visitBuckets.entries())
+        .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
+        .map(([, bucket]) => bucket);
 
       const itemCounts = {};
       try {
@@ -123,10 +193,11 @@ function Analytics({ gym, updateGym }) {
         peakHour: peakHourIndex === null ? null : HOUR_LABELS[peakHourIndex],
         busiestDay: busiestDayIndex === null ? null : DAY_LABELS[busiestDayIndex],
       });
+      setVisitsOverTime(visitsOverTimeData);
     }
 
     fetchStatCardData();
-  }, [facility, timeRange]);
+  }, [facility, timeRange, timeInterval]);
 
   // Same shape as your original renderStatCard, just without the
   // week-over-week trend arrow for now (no "last period" number to compare
@@ -176,9 +247,52 @@ function Analytics({ gym, updateGym }) {
             "Top 5 Equipment",
             "Demographic Snapshot",
           ].map((title) => (
-            <div className="chart-card chart-card-placeholder" key={title}>
+            <div
+              className={`chart-card ${title === "Visits Over Time" ? "" : "chart-card-placeholder"}`}
+              key={title}
+            >
               <p className="chart-card-title">{title}</p>
-              <div className="chart-card-body">Chart coming soon</div>
+              {title === "Visits Over Time" ? (
+                <div className="chart-card-body chart-card-body-chart">
+                  {visitsOverTime.length ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={visitsOverTime} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+                        <CartesianGrid vertical={false} stroke="#eee" />
+                        <XAxis
+                          dataKey="label"
+                          tick={{ fontSize: 11, fill: "#999" }}
+                          stroke="#eee"
+                          tickLine={false}
+                        />
+                        <YAxis
+                          allowDecimals={false}
+                          tick={{ fontSize: 11, fill: "#999" }}
+                          stroke="#eee"
+                          tickLine={false}
+                          width={32}
+                        />
+                        <Tooltip
+                          cursor={{ stroke: "#e2e2e2", strokeWidth: 1 }}
+                          contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e2e2" }}
+                          labelStyle={{ color: "#666", fontWeight: 600 }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="visits"
+                          stroke="#002F6C"
+                          strokeWidth={2}
+                          dot={false}
+                          activeDot={{ r: 4, stroke: "#fff", strokeWidth: 2 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <span>No visit data for this range</span>
+                  )}
+                </div>
+              ) : (
+                <div className="chart-card-body">Chart coming soon</div>
+              )}
             </div>
           ))}
         </div>
