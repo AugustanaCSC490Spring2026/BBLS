@@ -1,0 +1,59 @@
+.chart-export-menu {
+  position: relative;
+}
+
+.chart-export-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #999;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.chart-export-trigger:hover:not(:disabled) {
+  background-color: #f2f2f2;
+  color: #444;
+}
+
+.chart-export-trigger:disabled {
+  color: #ddd;
+  cursor: not-allowed;
+}
+
+.chart-export-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  min-width: 140px;
+  background: #fff;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  z-index: 20;
+  overflow: hidden;
+}
+
+.chart-export-item {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.chart-export-item:hover {
+  background-color: #f5f5f5;
+}
