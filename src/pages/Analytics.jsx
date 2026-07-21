@@ -11,6 +11,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  LabelList,
 } from "recharts";
 import { db } from "../Firebase";
 import "../components/Analytics.css";
@@ -47,20 +48,21 @@ const DAY_LABELS = [
 
 // Validated CVD-safe categorical order (see dataviz skill palette) — assigned
 // by rank so the same slots are always used in the same order, never cycled.
-const PERSON_TYPE_HUES = ["#2a78d6", "#008300", "#e87ba4", "#eda100", "#1baf7a"];
-const PERSON_TYPE_OTHER_COLOR = "#898781";
+const CATEGORY_HUES = ["#2a78d6", "#008300", "#e87ba4", "#eda100", "#1baf7a"];
+const CATEGORY_OTHER_COLOR = "#898781";
 
-// Keeps the top 5 most common person types as their own segment and folds
-// everything past that into a single "Other" segment.
-function buildPersonTypeMix(personTypeCounts) {
-  const sorted = Array.from(personTypeCounts.entries()).sort((a, b) => b[1] - a[1]);
+// Keeps the top 5 most common values in a counts map as their own segment
+// and folds everything past that into a single "Other" segment. Used for
+// any part-to-whole category mix (person type, gender, etc).
+function buildCategoryMix(counts) {
+  const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
   const top = sorted.slice(0, 5);
   const rest = sorted.slice(5);
   const otherTotal = rest.reduce((sum, [, count]) => sum + count, 0);
 
-  const segments = top.map(([label, value], i) => ({ label, value, color: PERSON_TYPE_HUES[i] }));
+  const segments = top.map(([label, value], i) => ({ label, value, color: CATEGORY_HUES[i] }));
   if (otherTotal > 0) {
-    segments.push({ label: "Other", value: otherTotal, color: PERSON_TYPE_OTHER_COLOR });
+    segments.push({ label: "Other", value: otherTotal, color: CATEGORY_OTHER_COLOR });
   }
   return segments;
 }
@@ -173,10 +175,11 @@ function exportSvgAsPng(containerEl, filename) {
   img.src = url;
 }
 
-// Person Type Mix has an HTML legend alongside its SVG bar, so it's drawn
-// straight from the underlying data instead of rasterizing the DOM.
-function exportPersonTypeMixPng(personTypeMix, filename) {
-  const total = personTypeMix.reduce((sum, seg) => sum + seg.value, 0);
+// A category mix (Person Type Mix, Demographic Snapshot) has an HTML legend
+// alongside its SVG bar, so it's drawn straight from the underlying data
+// instead of rasterizing the DOM.
+function exportCategoryMixPng(segments, filename) {
+  const total = segments.reduce((sum, seg) => sum + seg.value, 0);
   if (!total) return;
 
   const scale = 2;
@@ -184,7 +187,7 @@ function exportPersonTypeMixPng(personTypeMix, filename) {
   const padding = 24;
   const barHeight = 48;
   const rowHeight = 24;
-  const height = padding * 2 + barHeight + 16 + personTypeMix.length * rowHeight;
+  const height = padding * 2 + barHeight + 16 + segments.length * rowHeight;
 
   const canvas = document.createElement("canvas");
   canvas.width = width * scale;
@@ -197,7 +200,7 @@ function exportPersonTypeMixPng(personTypeMix, filename) {
   const barWidth = width - padding * 2;
   const gap = 2;
   let x = padding;
-  personTypeMix.forEach((seg) => {
+  segments.forEach((seg) => {
     const segWidth = (seg.value / total) * barWidth;
     ctx.fillStyle = seg.color;
     ctx.fillRect(x, padding, Math.max(segWidth - gap, 0), barHeight);
@@ -207,7 +210,7 @@ function exportPersonTypeMixPng(personTypeMix, filename) {
   ctx.font = "13px system-ui, -apple-system, sans-serif";
   ctx.textBaseline = "middle";
   let legendY = padding + barHeight + 16 + rowHeight / 2;
-  personTypeMix.forEach((seg) => {
+  segments.forEach((seg) => {
     ctx.fillStyle = seg.color;
     ctx.fillRect(padding, legendY - 5, 10, 10);
     ctx.fillStyle = "#444444";
@@ -239,6 +242,8 @@ function Analytics({ gym, updateGym }) {
   const [visitsOverTime, setVisitsOverTime] = useState([]);
   const [visitsByFacility, setVisitsByFacility] = useState([]);
   const [personTypeMix, setPersonTypeMix] = useState([]);
+  const [demographicMix, setDemographicMix] = useState([]);
+  const [topEquipment, setTopEquipment] = useState([]);
 
   const chartBodyRefs = useRef({});
 
@@ -252,13 +257,18 @@ function Analytics({ gym, updateGym }) {
       const visitBuckets = new Map();
       const visitsByFacilityData = [];
       const personTypeCounts = new Map();
+      const genderCounts = new Map();
 
       try {
         const studentsSnap = await getDocs(collection(db, "currentStudents"));
         const personTypeById = new Map();
+        const genderById = new Map();
         studentsSnap.forEach((doc) => {
-          const type = (doc.data().PersonType || "").trim();
+          const data = doc.data();
+          const type = (data.PersonType || "").trim();
           personTypeById.set(doc.id, type || "Unknown");
+          const gender = (data.Gender || "").trim();
+          genderById.set(doc.id, gender || "Unknown");
         });
 
         for (const name of FACILITY_COLLECTIONS[facility]) {
@@ -285,6 +295,9 @@ function Analytics({ gym, updateGym }) {
 
             const personType = personTypeById.get(d.ID) || "Unknown";
             personTypeCounts.set(personType, (personTypeCounts.get(personType) || 0) + 1);
+
+            const gender = genderById.get(d.ID) || "Unknown";
+            genderCounts.set(gender, (genderCounts.get(gender) || 0) + 1);
           });
           visitsByFacilityData.push({ facility: FACILITY_COLLECTION_LABELS[name], visits: facilityVisitCount });
         }
@@ -296,7 +309,8 @@ function Analytics({ gym, updateGym }) {
         .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
         .map(([, bucket]) => bucket);
 
-      const personTypeMixData = buildPersonTypeMix(personTypeCounts);
+      const personTypeMixData = buildCategoryMix(personTypeCounts);
+      const demographicMixData = buildCategoryMix(genderCounts);
 
       const itemCounts = {};
       try {
@@ -315,6 +329,11 @@ function Analytics({ gym, updateGym }) {
       } catch (err) {
         console.error("Equipment checkout fetch error:", err);
       }
+
+      const topEquipmentData = Object.entries(itemCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([item, count]) => ({ item, count }));
 
       const peakHourIndex = hourCounts.some((c) => c > 0)
         ? hourCounts.indexOf(Math.max(...hourCounts))
@@ -339,6 +358,8 @@ function Analytics({ gym, updateGym }) {
       setVisitsOverTime(visitsOverTimeData);
       setVisitsByFacility(visitsByFacilityData);
       setPersonTypeMix(personTypeMixData);
+      setDemographicMix(demographicMixData);
+      setTopEquipment(topEquipmentData);
     }
 
     fetchStatCardData();
@@ -400,56 +421,114 @@ function Analytics({ gym, updateGym }) {
 
     if (title === "Person Type Mix") {
       if (!personTypeMix.length) return <span>No visit data for this range</span>;
-      const total = personTypeMix.reduce((sum, seg) => sum + seg.value, 0);
-      const chartRow = { name: "Visits" };
-      personTypeMix.forEach((seg) => {
-        chartRow[seg.label] = seg.value;
-      });
+      return renderCategoryMixChart(personTypeMix);
+    }
 
+    if (title === "Demographic Snapshot") {
+      if (!demographicMix.length) return <span>No visit data for this range</span>;
+      return renderCategoryMixChart(demographicMix);
+    }
+
+    if (title === "Top 5 Equipment") {
+      if (!topEquipment.length) return <span>No checkout data for this range</span>;
       return (
-        <div className="person-type-mix">
-          <div className="person-type-mix-bar">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={[chartRow]} layout="vertical" margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                <XAxis type="number" hide />
-                <YAxis type="category" dataKey="name" hide />
-                <Tooltip
-                  cursor={{ fill: "transparent" }}
-                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e2e2" }}
-                  labelFormatter={() => ""}
-                  formatter={(value, label) => [`${value.toLocaleString()} (${Math.round((value / total) * 100)}%)`, label]}
-                />
-                {personTypeMix.map((seg) => (
-                  <Bar key={seg.label} dataKey={seg.label} stackId="mix" fill={seg.color} stroke="#fff" strokeWidth={2} />
-                ))}
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="person-type-mix-legend">
-            {personTypeMix.map((seg) => (
-              <div className="person-type-mix-legend-item" key={seg.label}>
-                <span className="person-type-mix-swatch" style={{ backgroundColor: seg.color }} />
-                <span className="person-type-mix-legend-label">{seg.label}</span>
-                <span className="person-type-mix-legend-value">{Math.round((seg.value / total) * 100)}%</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={topEquipment} layout="vertical" margin={{ top: 8, right: 28, left: 8, bottom: 0 }}>
+            <CartesianGrid horizontal={false} stroke="#eee" />
+            <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "#999" }} stroke="#eee" tickLine={false} />
+            <YAxis
+              type="category"
+              dataKey="item"
+              width={110}
+              tick={{ fontSize: 11, fill: "#444" }}
+              stroke="#eee"
+              tickLine={false}
+            />
+            <Tooltip
+              cursor={{ fill: "#f5f5f5" }}
+              contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e2e2" }}
+              labelStyle={{ color: "#666", fontWeight: 600 }}
+            />
+            <Bar dataKey="count" fill="#002F6C" radius={[0, 4, 4, 0]} maxBarSize={20}>
+              <LabelList dataKey="count" position="right" style={{ fontSize: 11, fill: "#666" }} />
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
       );
     }
 
     return "Chart coming soon";
   }
 
-  const IMPLEMENTED_CHARTS = new Set(["Visits Over Time", "Visits by Facility", "Person Type Mix"]);
+  // Shared render for any part-to-whole category mix: a single 100%-stacked
+  // horizontal bar plus a swatch legend with direct percentage labels.
+  function renderCategoryMixChart(segments) {
+    const total = segments.reduce((sum, seg) => sum + seg.value, 0);
+    const chartRow = { name: "Visits" };
+    segments.forEach((seg) => {
+      chartRow[seg.label] = seg.value;
+    });
+
+    return (
+      <div className="category-mix">
+        <div className="category-mix-bar">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={[chartRow]} layout="vertical" margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+              <XAxis type="number" hide />
+              <YAxis type="category" dataKey="name" hide />
+              <Tooltip
+                cursor={{ fill: "transparent" }}
+                contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e2e2" }}
+                labelFormatter={() => ""}
+                formatter={(value, label) => [`${value.toLocaleString()} (${Math.round((value / total) * 100)}%)`, label]}
+              />
+              {segments.map((seg) => (
+                <Bar key={seg.label} dataKey={seg.label} stackId="mix" fill={seg.color} stroke="#fff" strokeWidth={2} />
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="category-mix-legend">
+          {segments.map((seg) => (
+            <div className="category-mix-legend-item" key={seg.label}>
+              <span className="category-mix-swatch" style={{ backgroundColor: seg.color }} />
+              <span className="category-mix-legend-label">{seg.label}</span>
+              <span className="category-mix-legend-value">{Math.round((seg.value / total) * 100)}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const IMPLEMENTED_CHARTS = new Set([
+    "Visits Over Time",
+    "Visits by Facility",
+    "Person Type Mix",
+    "Top 5 Equipment",
+    "Demographic Snapshot",
+  ]);
 
   function handleExportPng(title) {
     const filename = `${title.toLowerCase().replace(/\s+/g, "-")}.png`;
     if (title === "Person Type Mix") {
-      exportPersonTypeMixPng(personTypeMix, filename);
+      exportCategoryMixPng(personTypeMix, filename);
+      return;
+    }
+    if (title === "Demographic Snapshot") {
+      exportCategoryMixPng(demographicMix, filename);
       return;
     }
     exportSvgAsPng(chartBodyRefs.current[title], filename);
+  }
+
+  function categoryMixCsvRows(segments, labelHeader) {
+    const total = segments.reduce((sum, seg) => sum + seg.value, 0);
+    return segments.map((seg) => ({
+      [labelHeader]: seg.label,
+      Count: seg.value,
+      Percentage: total ? `${Math.round((seg.value / total) * 100)}%` : "0%",
+    }));
   }
 
   function handleExportCsv(title) {
@@ -459,15 +538,11 @@ function Analytics({ gym, updateGym }) {
     } else if (title === "Visits by Facility") {
       exportRowsAsCsv(visitsByFacility.map((row) => ({ Facility: row.facility, Visits: row.visits })), filename);
     } else if (title === "Person Type Mix") {
-      const total = personTypeMix.reduce((sum, seg) => sum + seg.value, 0);
-      exportRowsAsCsv(
-        personTypeMix.map((seg) => ({
-          "Person Type": seg.label,
-          Count: seg.value,
-          Percentage: total ? `${Math.round((seg.value / total) * 100)}%` : "0%",
-        })),
-        filename
-      );
+      exportRowsAsCsv(categoryMixCsvRows(personTypeMix, "Person Type"), filename);
+    } else if (title === "Demographic Snapshot") {
+      exportRowsAsCsv(categoryMixCsvRows(demographicMix, "Gender"), filename);
+    } else if (title === "Top 5 Equipment") {
+      exportRowsAsCsv(topEquipment.map((row) => ({ Item: row.item, Checkouts: row.count })), filename);
     }
   }
 
