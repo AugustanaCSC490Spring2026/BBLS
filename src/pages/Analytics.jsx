@@ -7,6 +7,7 @@ import {
   Line,
   BarChart,
   Bar,
+  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -46,10 +47,9 @@ const DAY_LABELS = [
   "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
 ];
 
-// Validated CVD-safe categorical order (see dataviz skill palette) — assigned
-// by rank so the same slots are always used in the same order, never cycled.
-const CATEGORY_HUES = ["#2a78d6", "#008300", "#e87ba4", "#eda100", "#1baf7a"];
-const CATEGORY_OTHER_COLOR = "#898781";
+// Augustana brand navy/gold — every multi-bar/segment chart on this page
+// alternates strictly between these two instead of a categorical hue ramp.
+const BRAND_CHART_COLORS = ["#002F6C", "#FFC72C"];
 
 // Keeps the top 5 most common values in a counts map as their own segment
 // and folds everything past that into a single "Other" segment. Used for
@@ -60,9 +60,17 @@ function buildCategoryMix(counts) {
   const rest = sorted.slice(5);
   const otherTotal = rest.reduce((sum, [, count]) => sum + count, 0);
 
-  const segments = top.map(([label, value], i) => ({ label, value, color: CATEGORY_HUES[i] }));
+  const segments = top.map(([label, value], i) => ({
+    label,
+    value,
+    color: BRAND_CHART_COLORS[i % BRAND_CHART_COLORS.length],
+  }));
   if (otherTotal > 0) {
-    segments.push({ label: "Other", value: otherTotal, color: CATEGORY_OTHER_COLOR });
+    segments.push({
+      label: "Other",
+      value: otherTotal,
+      color: BRAND_CHART_COLORS[top.length % BRAND_CHART_COLORS.length],
+    });
   }
   return segments;
 }
@@ -413,7 +421,11 @@ function Analytics({ gym, updateGym }) {
               contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e2e2" }}
               labelStyle={{ color: "#666", fontWeight: 600 }}
             />
-            <Bar dataKey="visits" fill="#002F6C" radius={[4, 4, 0, 0]} maxBarSize={64} />
+            <Bar dataKey="visits" radius={[4, 4, 0, 0]} maxBarSize={64}>
+              {visitsByFacility.map((entry, i) => (
+                <Cell key={entry.facility} fill={BRAND_CHART_COLORS[i % BRAND_CHART_COLORS.length]} />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       );
@@ -449,8 +461,11 @@ function Analytics({ gym, updateGym }) {
               contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e2e2" }}
               labelStyle={{ color: "#666", fontWeight: 600 }}
             />
-            <Bar dataKey="count" fill="#002F6C" radius={[0, 4, 4, 0]} maxBarSize={20}>
+            <Bar dataKey="count" radius={[0, 4, 4, 0]} maxBarSize={20}>
               <LabelList dataKey="count" position="right" style={{ fontSize: 11, fill: "#666" }} />
+              {topEquipment.map((entry, i) => (
+                <Cell key={entry.item} fill={BRAND_CHART_COLORS[i % BRAND_CHART_COLORS.length]} />
+              ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
