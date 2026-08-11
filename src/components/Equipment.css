@@ -30,6 +30,11 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    /* Padding gives focus-ring box-shadows room inside the scroll container
+       (overflow-y: auto implicitly clips overflow-x too); the negative margin
+       cancels the padding out so the layout doesn't shift. */
+    padding: 4px;
+    margin: -4px;
 }
 .card-header {
     display: flex;
