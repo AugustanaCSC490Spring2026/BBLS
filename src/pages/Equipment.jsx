@@ -24,6 +24,11 @@ import { db } from "../Firebase.js";
 const currentStudentsRef = collection(db, "currentStudents");
 const checkoutHistoryRef = collection(db, "checkoutHistory");
 
+function capitalizeFirst(str) {
+    if (!str) return str;
+    return str.split(" ").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+}
+
 
 export default function Equipment({ gym, updateGym }) {
     const [isProcessing, setIsProcessing] = useState(false);
@@ -368,7 +373,7 @@ export default function Equipment({ gym, updateGym }) {
                                         return (
                                             <div key={item.id}>
                                                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontWeight: "600" }}>
-                                                    <span>{item.name}</span>
+                                                    <span>{capitalizeFirst(item.name)}</span>
                                                     <span style={{ color: "#666", fontSize: "0.9rem" }}>
                                                         {item.available}/{item.total} available
                                                     </span>
