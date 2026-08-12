@@ -78,10 +78,7 @@ function AwayModeOverlay({ isActive, onDismiss, onSwipe }) {
         cursor: "pointer",
         userSelect: "none",
       }}
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onDismiss();
-        else inputRef.current?.focus();
-      }}
+      onClick={onDismiss}
     >
              
       <input
@@ -104,7 +101,7 @@ function AwayModeOverlay({ isActive, onDismiss, onSwipe }) {
         style={{
           color: "#fff",
           textAlign: "center",
-          fontSize: "12rem",
+          fontSize: "9rem",
           letterSpacing: "0.1em",
           margin: 0,
           transition: "opacity 0.2s",
