@@ -7,6 +7,8 @@ import {
   Line,
   BarChart,
   Bar,
+  PieChart,
+  Pie,
   Cell,
   XAxis,
   YAxis,
@@ -74,6 +76,22 @@ function buildCategoryMix(counts) {
   }
   return segments;
 }
+
+// The dropdown options for the Demographics chart, each pointing at the
+// currentStudents roster field it reads and how to turn a raw value into a
+// display label.
+const DEMOGRAPHIC_DIMENSIONS = {
+  "Class": { field: "Class" },
+  "Transfer Status": {
+    field: "Transfer",
+    mapValue: (raw) => (raw.trim() === "Yes" ? "Transfer" : "Not a Transfer"),
+  },
+  "Residence Hall": { field: "Residence" },
+  "International": {
+    field: "International",
+    mapValue: (raw) => (raw.trim() ? "International" : "Domestic"),
+  },
+};
 
 function getRangeStartDate(range) {
   const now = new Date();
@@ -183,9 +201,8 @@ function exportSvgAsPng(containerEl, filename) {
   img.src = url;
 }
 
-// A category mix (Person Type Mix, Demographic Snapshot) has an HTML legend
-// alongside its SVG bar, so it's drawn straight from the underlying data
-// instead of rasterizing the DOM.
+// A category mix (Person Type Mix) has an HTML legend alongside its SVG bar,
+// so it's drawn straight from the underlying data instead of rasterizing the DOM.
 function exportCategoryMixPng(segments, filename) {
   const total = segments.reduce((sum, seg) => sum + seg.value, 0);
   if (!total) return;
@@ -232,6 +249,63 @@ function exportCategoryMixPng(segments, filename) {
   }, "image/png");
 }
 
+// Demographics has an HTML legend beside its SVG pie, so — like the category
+// mix bars — it's drawn straight from the underlying data for export.
+function exportPieChartPng(segments, filename) {
+  const total = segments.reduce((sum, seg) => sum + seg.value, 0);
+  if (!total) return;
+
+  const scale = 2;
+  const width = 640;
+  const padding = 24;
+  const pieSize = 200;
+  const rowHeight = 24;
+  const height = Math.max(pieSize + padding * 2, padding * 2 + segments.length * rowHeight);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width * scale;
+  canvas.height = height * scale;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(scale, scale);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+
+  const cx = padding + pieSize / 2;
+  const cy = height / 2;
+  const radius = pieSize / 2;
+  let startAngle = -Math.PI / 2;
+  segments.forEach((seg) => {
+    const sliceAngle = (seg.value / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, radius, startAngle, startAngle + sliceAngle);
+    ctx.closePath();
+    ctx.fillStyle = seg.color;
+    ctx.fill();
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    startAngle += sliceAngle;
+  });
+
+  ctx.font = "13px system-ui, -apple-system, sans-serif";
+  ctx.textBaseline = "middle";
+  const legendX = padding + pieSize + 32;
+  let legendY = height / 2 - (segments.length * rowHeight) / 2 + rowHeight / 2;
+  segments.forEach((seg) => {
+    ctx.fillStyle = seg.color;
+    ctx.fillRect(legendX, legendY - 5, 10, 10);
+    ctx.fillStyle = "#444444";
+    const pct = Math.round((seg.value / total) * 100);
+    ctx.fillText(`${seg.label} — ${pct}%`, legendX + 18, legendY);
+    legendY += rowHeight;
+  });
+
+  canvas.toBlob((blob) => {
+    if (blob) downloadBlob(blob, filename);
+  }, "image/png");
+}
+
 function Analytics({ gym, updateGym }) {
   // Which facility's data the stat cards (and eventually the charts) reflect.
   const [facility, setFacility] = useState("Both");
@@ -250,7 +324,8 @@ function Analytics({ gym, updateGym }) {
   const [visitsOverTime, setVisitsOverTime] = useState([]);
   const [visitsByFacility, setVisitsByFacility] = useState([]);
   const [personTypeMix, setPersonTypeMix] = useState([]);
-  const [demographicMix, setDemographicMix] = useState([]);
+  const [demographicsData, setDemographicsData] = useState({});
+  const [demographicDimension, setDemographicDimension] = useState("Class");
   const [topEquipment, setTopEquipment] = useState([]);
 
   const chartBodyRefs = useRef({});
@@ -265,18 +340,28 @@ function Analytics({ gym, updateGym }) {
       const visitBuckets = new Map();
       const visitsByFacilityData = [];
       const personTypeCounts = new Map();
-      const genderCounts = new Map();
+      const demographicCounts = {};
+      Object.keys(DEMOGRAPHIC_DIMENSIONS).forEach((dim) => {
+        demographicCounts[dim] = new Map();
+      });
 
       try {
         const studentsSnap = await getDocs(collection(db, "currentStudents"));
         const personTypeById = new Map();
-        const genderById = new Map();
+        const demographicById = {};
+        Object.keys(DEMOGRAPHIC_DIMENSIONS).forEach((dim) => {
+          demographicById[dim] = new Map();
+        });
         studentsSnap.forEach((doc) => {
           const data = doc.data();
           const type = (data.PersonType || "").trim();
           personTypeById.set(doc.id, type || "Unknown");
-          const gender = (data.Gender || "").trim();
-          genderById.set(doc.id, gender || "Unknown");
+
+          Object.entries(DEMOGRAPHIC_DIMENSIONS).forEach(([dim, config]) => {
+            const raw = (data[config.field] || "").toString();
+            const value = config.mapValue ? config.mapValue(raw) : raw.trim() || "Unknown";
+            demographicById[dim].set(doc.id, value);
+          });
         });
 
         for (const name of FACILITY_COLLECTIONS[facility]) {
@@ -304,8 +389,11 @@ function Analytics({ gym, updateGym }) {
             const personType = personTypeById.get(d.ID) || "Unknown";
             personTypeCounts.set(personType, (personTypeCounts.get(personType) || 0) + 1);
 
-            const gender = genderById.get(d.ID) || "Unknown";
-            genderCounts.set(gender, (genderCounts.get(gender) || 0) + 1);
+            Object.keys(DEMOGRAPHIC_DIMENSIONS).forEach((dim) => {
+              const value = demographicById[dim].get(d.ID) || "Unknown";
+              const counts = demographicCounts[dim];
+              counts.set(value, (counts.get(value) || 0) + 1);
+            });
           });
           visitsByFacilityData.push({ facility: FACILITY_COLLECTION_LABELS[name], visits: facilityVisitCount });
         }
@@ -318,7 +406,10 @@ function Analytics({ gym, updateGym }) {
         .map(([, bucket]) => bucket);
 
       const personTypeMixData = buildCategoryMix(personTypeCounts);
-      const demographicMixData = buildCategoryMix(genderCounts);
+      const demographicsMixData = {};
+      Object.keys(DEMOGRAPHIC_DIMENSIONS).forEach((dim) => {
+        demographicsMixData[dim] = buildCategoryMix(demographicCounts[dim]);
+      });
 
       const itemCounts = {};
       try {
@@ -366,7 +457,7 @@ function Analytics({ gym, updateGym }) {
       setVisitsOverTime(visitsOverTimeData);
       setVisitsByFacility(visitsByFacilityData);
       setPersonTypeMix(personTypeMixData);
-      setDemographicMix(demographicMixData);
+      setDemographicsData(demographicsMixData);
       setTopEquipment(topEquipmentData);
     }
 
@@ -378,7 +469,7 @@ function Analytics({ gym, updateGym }) {
     "Visits by Facility",
     "Person Type Mix",
     "Top 5 Equipment",
-    "Demographic Snapshot",
+    "Demographics",
   ];
 
   function renderChartBody(title) {
@@ -436,9 +527,50 @@ function Analytics({ gym, updateGym }) {
       return renderCategoryMixChart(personTypeMix);
     }
 
-    if (title === "Demographic Snapshot") {
-      if (!demographicMix.length) return <span>No visit data for this range</span>;
-      return renderCategoryMixChart(demographicMix);
+    if (title === "Demographics") {
+      const segments = demographicsData[demographicDimension] || [];
+      if (!segments.length) return <span>No roster data for this range</span>;
+      const total = segments.reduce((sum, seg) => sum + seg.value, 0);
+
+      return (
+        <div className="demographics-chart">
+          <div className="demographics-pie">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={segments}
+                  dataKey="value"
+                  nameKey="label"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius="45%"
+                  outerRadius="85%"
+                  paddingAngle={2}
+                  stroke="#fff"
+                  strokeWidth={2}
+                >
+                  {segments.map((seg) => (
+                    <Cell key={seg.label} fill={seg.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e2e2" }}
+                  formatter={(value, name) => [`${value.toLocaleString()} (${Math.round((value / total) * 100)}%)`, name]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="demographics-legend">
+            {segments.map((seg) => (
+              <div className="category-mix-legend-item" key={seg.label}>
+                <span className="category-mix-swatch" style={{ backgroundColor: seg.color }} />
+                <span className="category-mix-legend-label">{seg.label}</span>
+                <span className="category-mix-legend-value">{Math.round((seg.value / total) * 100)}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
     }
 
     if (title === "Top 5 Equipment") {
@@ -521,7 +653,7 @@ function Analytics({ gym, updateGym }) {
     "Visits by Facility",
     "Person Type Mix",
     "Top 5 Equipment",
-    "Demographic Snapshot",
+    "Demographics",
   ]);
 
   function handleExportPng(title) {
@@ -530,8 +662,9 @@ function Analytics({ gym, updateGym }) {
       exportCategoryMixPng(personTypeMix, filename);
       return;
     }
-    if (title === "Demographic Snapshot") {
-      exportCategoryMixPng(demographicMix, filename);
+    if (title === "Demographics") {
+      const dimensionSlug = demographicDimension.toLowerCase().replace(/\s+/g, "-");
+      exportPieChartPng(demographicsData[demographicDimension] || [], `demographics-${dimensionSlug}.png`);
       return;
     }
     exportSvgAsPng(chartBodyRefs.current[title], filename);
@@ -554,8 +687,12 @@ function Analytics({ gym, updateGym }) {
       exportRowsAsCsv(visitsByFacility.map((row) => ({ Facility: row.facility, Visits: row.visits })), filename);
     } else if (title === "Person Type Mix") {
       exportRowsAsCsv(categoryMixCsvRows(personTypeMix, "Person Type"), filename);
-    } else if (title === "Demographic Snapshot") {
-      exportRowsAsCsv(categoryMixCsvRows(demographicMix, "Gender"), filename);
+    } else if (title === "Demographics") {
+      const dimensionSlug = demographicDimension.toLowerCase().replace(/\s+/g, "-");
+      exportRowsAsCsv(
+        categoryMixCsvRows(demographicsData[demographicDimension] || [], demographicDimension),
+        `demographics-${dimensionSlug}.csv`
+      );
     } else if (title === "Top 5 Equipment") {
       exportRowsAsCsv(topEquipment.map((row) => ({ Item: row.item, Checkouts: row.count })), filename);
     }
@@ -607,7 +744,20 @@ function Analytics({ gym, updateGym }) {
             return (
               <div className={`chart-card ${implemented ? "" : "chart-card-placeholder"}`} key={title}>
                 <div className="chart-card-header">
-                  <p className="chart-card-title">{title}</p>
+                  <div className="chart-card-header-left">
+                    <p className="chart-card-title">{title}</p>
+                    {title === "Demographics" && (
+                      <select
+                        className="chart-card-select"
+                        value={demographicDimension}
+                        onChange={(e) => setDemographicDimension(e.target.value)}
+                      >
+                        {Object.keys(DEMOGRAPHIC_DIMENSIONS).map((dim) => (
+                          <option key={dim} value={dim}>{dim}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
                   <ChartExportMenu
                     disabled={!implemented}
                     onExportPng={() => handleExportPng(title)}
