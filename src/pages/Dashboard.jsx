@@ -13,7 +13,6 @@ import "../components/Dashboard.css";
 import GuestPopup from "../components/GuestTab.jsx";
 import ValidateSwipe from "../components/ValidateSwipe.js";
 import AwayModeOverlay from "../components/AwayModeOverlay.jsx";
-import BannedStudentOverlay from "../components/BannedStudentOverlay.jsx";
 
 // IMPORT HASH UTILITY: Reusing the hashing function from your settings configuration
 import { hashId } from "../components/HashId.js";
@@ -34,7 +33,6 @@ function Dashboard({ gym, updateGym }) {
   const overlaySwipeRef = useRef(null);
   const [awayMode, setAwayMode] = useState(false);
   const awayModeRef = useRef(false);
-  const [bannedOverlay, setBannedOverlay] = useState({ visible: false, message: "" });
   const [toasts, setToasts] = useState([]);
   const toastIdRef = useRef(0);
 
@@ -199,7 +197,7 @@ function Dashboard({ gym, updateGym }) {
       }
 
     } else if (!swipeValid && reasonSwipeDenied.includes("banned") && !awayModeRef.current){
-      setBannedOverlay({ visible: true, message: reasonSwipeDenied });
+      addToast("banned", "STUDENT BANNED", reasonSwipeDenied);
       await addDoc(invalidSwipeInRef, { gym: gym, ID: hashedId, swipeInTime: timeStamp });
 
     } else if (!swipeValid) {
@@ -232,12 +230,6 @@ function Dashboard({ gym, updateGym }) {
           isActive={awayMode}
           onDismiss={() => setAwayMode(false)}
           onSwipe={(id) => overlaySwipeRef.current?.(id)}
-        />
-
-        <BannedStudentOverlay
-          isVisible={bannedOverlay.visible}
-          message={bannedOverlay.message}
-          onDismiss={() => setBannedOverlay({ visible: false, message: "" })}
         />
 
         <div className="swipe-card">
