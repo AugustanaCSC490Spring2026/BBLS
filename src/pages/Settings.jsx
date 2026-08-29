@@ -125,86 +125,86 @@ const Settings = () => {
     setEditRole(false);
   };
 
-  const handleStaffFileChange = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+  // const handleStaffFileChange = (event) => {
+  //   const file = event.target.files[0];
+  //   if (!file) return;
 
-    if (file.type !== "text/csv" && !file.name.toLowerCase().endsWith(".csv")) {
-      addToast("error", "Invalid File", "Please upload a valid .csv file.");
-      event.target.value = null;
-      return;
-    }
+  //   if (file.type !== "text/csv" && !file.name.toLowerCase().endsWith(".csv")) {
+  //     addToast("error", "Invalid File", "Please upload a valid .csv file.");
+  //     event.target.value = null;
+  //     return;
+  //   }
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: async (results) => {
-        const data = results.data;
+  //   Papa.parse(file, {
+  //     header: true,
+  //     skipEmptyLines: true,
+  //     complete: async (results) => {
+  //       const data = results.data;
 
-        const confirmUpload = window.confirm(
-          "This will DELETE all existing staff and replace them with the uploaded CSV.\n\nAre you sure?"
-        );
+  //       const confirmUpload = window.confirm(
+  //         "This will DELETE all existing staff and replace them with the uploaded CSV.\n\nAre you sure?"
+  //       );
 
-        if (!confirmUpload) {
-          addToast("error", "Upload Cancelled", "Staff upload cancelled.");
-          event.target.value = null;
-          return;
-        }
+  //       if (!confirmUpload) {
+  //         addToast("error", "Upload Cancelled", "Staff upload cancelled.");
+  //         event.target.value = null;
+  //         return;
+  //       }
 
-        // Clear existing staff collection
-        await clearCollection("currentStaff");
+  //       // Clear existing staff collection
+  //       await clearCollection("currentStaff");
 
-        let successCount = 0;
-        let failCount = 0;
-        let batch = writeBatch(db);
-        let operationCount = 0;
+  //       let successCount = 0;
+  //       let failCount = 0;
+  //       let batch = writeBatch(db);
+  //       let operationCount = 0;
 
-        for (const row of data) {
-          try {
-            let staffId = row.ID?.trim();
+  //       for (const row of data) {
+  //         try {
+  //           let staffId = row.ID?.trim();
 
-            if (!staffId || staffId.length !== 9) {
-              failCount++;
-              continue;
-            }
+  //           if (!staffId || staffId.length !== 9) {
+  //             failCount++;
+  //             continue;
+  //           }
 
-            const hashedId = await hashId(staffId);
+  //           const hashedId = await hashId(staffId);
 
-            const staffData = {
-              ID: hashedId,
-              LastName: row.LastName || "",
-              FirstName: row.Pref_FirstName || "",
-            };
+  //           const staffData = {
+  //             ID: hashedId,
+  //             LastName: row.LastName || "",
+  //             FirstName: row.Pref_FirstName || "",
+  //           };
 
-            const docRef = doc(db, "currentStaff", hashedId);
-            batch.set(docRef, staffData);
+  //           const docRef = doc(db, "currentStaff", hashedId);
+  //           batch.set(docRef, staffData);
 
-            operationCount++;
-            successCount++;
+  //           operationCount++;
+  //           successCount++;
 
-            if (operationCount === 500) {
-              await batch.commit();
-              batch = writeBatch(db);
-              operationCount = 0;
-            }
-          } catch (err) {
-            console.error("Error processing row:", err);
-            failCount++;
-          }
-        }
+  //           if (operationCount === 500) {
+  //             await batch.commit();
+  //             batch = writeBatch(db);
+  //             operationCount = 0;
+  //           }
+  //         } catch (err) {
+  //           console.error("Error processing row:", err);
+  //           failCount++;
+  //         }
+  //       }
 
-        if (operationCount > 0) {
-          await batch.commit();
-        }
+  //       if (operationCount > 0) {
+  //         await batch.commit();
+  //       }
 
-        addToast("success", "Upload Complete", `Staff Success: ${successCount}, Failed: ${failCount}`);
-        event.target.value = null;
-      },
-      error: (err) => {
-        addToast("error", "CSV Error", "Error parsing staff CSV.");
-      }
-    });
-  };
+  //       addToast("success", "Upload Complete", `Staff Success: ${successCount}, Failed: ${failCount}`);
+  //       event.target.value = null;
+  //     },
+  //     error: (err) => {
+  //       addToast("error", "CSV Error", "Error parsing staff CSV.");
+  //     }
+  //   });
+  // };
 
   // the next 50 lines were helped code with claude
   const handleSaveAdmin = async () => {
