@@ -86,7 +86,7 @@ function GuestPopup({ isOpen, onClose, onSubmitGuest }) {
             <option value="" disabled>Select category</option>
             <option value="Alumni">Alumni</option>
             <option value="Physical Therapy">Physical Therapy</option>
-            <option value="Staff">Staff / Faculty</option>
+            {/* <option value="Staff">Staff / Faculty</option> */}
             <option value="Other">Other</option>
           </select>
         </div>
