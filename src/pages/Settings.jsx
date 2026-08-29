@@ -846,10 +846,10 @@ const Settings = () => {
             </div>
 
             <div className="settings-section">
-              <h3 className="settings-section-title">Import Student Body</h3>
+              <h3 className="settings-section-title">Import Students/Staff</h3>
               <p className="settings-section-desc">Replace the current student list with a new CSV file.</p>
               <button onClick={() => document.getElementById("studentFileInput").click()}>
-                Import Student CSV
+                Import School Body CSV
               </button>
               <input
                 id="studentFileInput"
@@ -859,7 +859,7 @@ const Settings = () => {
                 onChange={handleFileChange}
               />
             </div>
-            <div className="settings-section">
+            {/* <div className="settings-section">
               <h3 className="settings-section-title">Import Staff Body</h3>
               <p className="settings-section-desc">Replace the current staff list with a new CSV file.</p>
               <button onClick={() => document.getElementById("staffFileInput").click()}>
@@ -872,7 +872,7 @@ const Settings = () => {
                 style={{ display: "none" }}
                 onChange={handleStaffFileChange}
               />
-            </div>
+            </div> */}
 
             <div className="settings-section">
               <h3 className="settings-section-title">Ban / Unban Students</h3>
