@@ -29,9 +29,9 @@ import AdminPopup from "../components/AdminPopup.jsx";
 import BanStudentPopup from "../components/BanStudentPopup.jsx";
 import BannedStudentsPopup from "../components/BannedStudentsPopup.jsx";
 
-const currentStaffRef = collection(db, "currentStaff"); // New reference
+// const currentStaffRef = collection(db, "currentStaff"); // New reference
 const bannedStudentsRef = collection(db, "bannedStudents");
-const currentStudentsRef = collection(db, "currentStudents");
+const currentStudentsRef = collection(db, "currentSchoolBody"); // Updated collection name
 const adminListRef = collection(db, "authorized_users");
 
 import { add } from "firebase/firestore/pipelines";
@@ -443,17 +443,17 @@ const Settings = () => {
 
         //  Confirmation before wiping database
         const confirmUpload = window.confirm(
-          "This will DELETE all existing students and replace them with the uploaded CSV.\n\nAre you sure you want to continue?"
+          "This will DELETE all existing students and staff and replace them with the uploaded CSV.\n\nAre you sure you want to continue?"
         );
 
         if (!confirmUpload) {
-          addToast("error", "Upload Cancelled", "The student body upload has been cancelled.");
+          addToast("error", "Upload Cancelled", "The school body upload has been canceled.");
           event.target.value = null; // Removes selected file if cancelled
           return;
         }
 
         // Clear existing collection
-        await clearCollection("currentStudents");
+        await clearCollection("currentSchoolBody");
 
         console.log("Parsed CSV:", data);
 
@@ -475,10 +475,10 @@ const Settings = () => {
             let studentId = row.ID?.trim();
 
             // Skip invalid IDs (must be 7 characters)
-            if (!studentId || studentId.length !== 7) {
-              failCount++;
-              continue;
-            }
+            // if (!studentId || studentId.length !== 7) {
+            //   failCount++;
+            //   continue;
+            // } commented out ID length due to staff being different lengths.
 
             const hashedId = await hashId(studentId);
 
