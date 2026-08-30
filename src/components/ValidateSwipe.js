@@ -29,8 +29,8 @@ async function ValidateSwipe(swipe) {
   // trimming anything extra from the input
   swipe = swipe.trim();
 
-  // if its not 7 and not 16 characters long, its invalid.
-  if (swipe.length !== 7 && swipe.length !== 16) {
+  // if its not 7 and not 9 and not 16 characters long, its invalid.
+  if (swipe.length !== 7 && swipe.length !== 9 && swipe.length !== 16) {
     return {
       isValid: false,
       studentId: swipe,
@@ -42,6 +42,10 @@ async function ValidateSwipe(swipe) {
   // if its 16 we need to trim the extra characters off.
   else if (swipe.length == 16) {
     swipe = swipe.slice(3, 10);
+  }
+
+  else if (swipe.length == 9) {
+    swipe = swipe.slice(2, 9); // strips off the leading 2 characters, when a staff member reads 000775530 it would become 0775530.
   }
 
   // backend validation now that we know the ID number.

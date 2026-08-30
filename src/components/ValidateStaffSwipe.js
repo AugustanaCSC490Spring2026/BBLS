@@ -1,125 +1,125 @@
-import  { doc, getDoc } from "firebase/firestore";
-import { db } from "../Firebase.js";
-import { hashId } from "./HashId.js";
+// import  { doc, getDoc } from "firebase/firestore";
+// import { db } from "../Firebase.js";
+// import { hashId } from "./HashId.js";
 
-async function ValidateStaffSwipe(swipe) {
+// async function ValidateStaffSwipe(swipe) {
 
-  // defining vars for the return object.
+//   // defining vars for the return object.
 
-  let swipeValid = null;
+//   let swipeValid = null;
 
-  let reasonSwipeDenied = "No reason given";
+//   let reasonSwipeDenied = "No reason given";
 
-  let name = "No staff name";
+//   let name = "No staff name";
 
 
 
-  // trimming anything extra from the input
+//   // trimming anything extra from the input
 
-  swipe = swipe.trim();
+//   swipe = swipe.trim();
 
 
 
-  if (swipe.length !== 9 && swipe.length !== 16) {
+//   if (swipe.length !== 9 && swipe.length !== 16) {
 
-    return {
+//     return {
 
-      isValid: false,
+//       isValid: false,
 
-      staffId: swipe,
+//       staffId: swipe,
 
-      name: name,
+//       name: name,
 
-      reasonDenied: "Invalid ID format"
+//       reasonDenied: "Invalid ID format"
 
-    };
+//     };
 
-  }
+//   }
 
-  // if it's 9 we dont need to do anything
+//   // if it's 9 we dont need to do anything
 
-  // if its 16 we need to trim the extra characters off.
+//   // if its 16 we need to trim the extra characters off.
 
-  else if (swipe.length == 16) { //;000775530=0087? staff id includes leading 0's unlike student ids, so we trim differently
+//   else if (swipe.length == 16) { //;000775530=0087? staff id includes leading 0's unlike student ids, so we trim differently
 
 
-    swipe = swipe.slice(1, 10);
+//     swipe = swipe.slice(1, 10);
 
-  }
+//   }
 
 
 
-  // backend validation now that we know the ID number.
+//   // backend validation now that we know the ID number.
 
-  try {
+//   try {
 
-    const hashedId = await hashId(swipe);
-    const staffSnap = await getDoc(doc(db, "currentStaff", hashedId));
+//     const hashedId = await hashId(swipe);
+//     const staffSnap = await getDoc(doc(db, "currentStaff", hashedId));
 
-    if (staffSnap.exists()) {
+//     if (staffSnap.exists()) {
 
-      name = staffSnap.data().FirstName + " " + staffSnap.data().LastName;
+//       name = staffSnap.data().FirstName + " " + staffSnap.data().LastName;
 
-      swipeValid = true;
+//       swipeValid = true;
 
-    }
+//     }
 
-    else {
+//     else {
 
-      return {
+//       return {
 
-        isValid: false,
+//         isValid: false,
 
-        staffId: swipe,
+//         staffId: swipe,
 
-        name: name,
+//         name: name,
 
-        reasonDenied: "ID entered does not exist"
+//         reasonDenied: "ID entered does not exist"
 
-      };
+//       };
 
-    }
+//     }
 
-  }
+//   }
 
-  catch (error) {
+//   catch (error) {
 
-    console.log("Error fetching staff data:", error);
+//     console.log("Error fetching staff data:", error);
 
-    return {
+//     return {
 
-      isValid: false,
+//       isValid: false,
 
-      staffId: swipe,
+//       staffId: swipe,
 
-      name: name,
+//       name: name,
 
-      reasonDenied: "Error fetching staff data"
+//       reasonDenied: "Error fetching staff data"
 
-    };
+//     };
 
-  }
+//   }
 
 
 
-  // staff exists, checking if they are banned.
+//   // staff exists, checking if they are banned.
 
 
 
-  return {
+//   return {
 
-    isValid: swipeValid,
+//     isValid: swipeValid,
 
-    staffId: swipe,
+//     staffId: swipe,
 
-    name: name,
+//     name: name,
 
-    reasonDenied: reasonSwipeDenied
+//     reasonDenied: reasonSwipeDenied
 
-  };
+//   };
 
-}
+// }
 
 
 
-export default ValidateStaffSwipe;
+// export default ValidateStaffSwipe;
