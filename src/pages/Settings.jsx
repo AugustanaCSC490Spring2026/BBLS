@@ -833,6 +833,13 @@ const Settings = () => {
     updateStudentIdentifier("");
   }
 
+  function DownloadButton() {
+    return (
+      <a href="/report.pdf" download="import_template_with_dummy_data.csv">
+        <button>Download Document</button>
+      </a>
+    );
+  }
 
 
   return (
@@ -852,6 +859,9 @@ const Settings = () => {
               <button onClick={() => document.getElementById("studentFileInput").click()}>
                 Import School Body CSV
               </button>
+              <a href="/import_template_with_dummy_data.csv" download="import_template_with_dummy_data.csv">
+                <button>Download Template Document</button>
+              </a>
               <input
                 id="studentFileInput"
                 type="file"
