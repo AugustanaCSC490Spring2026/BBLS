@@ -768,7 +768,7 @@ const Settings = () => {
     if (!reasonStudentBanned) {
       reasonStudentBanned = "no reason given";
     }
-    docRef = await doc(db, "currentStudents", banPopupStudent?.studentId);
+    docRef = await doc(db, "currentSchoolBody", banPopupStudent?.studentId);
     await getDoc(docRef).then(async (docSnap) => {
       if (docSnap.exists()) {
         setDoc(doc(db, "bannedStudents", docSnap.data().ID), {

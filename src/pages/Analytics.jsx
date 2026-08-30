@@ -346,7 +346,7 @@ function Analytics({ gym, updateGym }) {
       });
 
       try {
-        const studentsSnap = await getDocs(collection(db, "currentStudents"));
+        const studentsSnap = await getDocs(collection(db, "currentSchoolBody"));
         const personTypeById = new Map();
         const demographicById = {};
         Object.keys(DEMOGRAPHIC_DIMENSIONS).forEach((dim) => {

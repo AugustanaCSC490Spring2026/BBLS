@@ -20,7 +20,7 @@ import { hashId } from "../components/HashId.js";
 const pepsicoCenterRef = collection(db, 'pepsicoCenter')
 const westerlinGymRef = collection(db, 'westerlinGym')
 const invalidSwipeInRef = collection(db, 'invalidSwipeIns');
-const currentStudentsRef = collection(db, "currentStudents");
+const currentStudentsRef = collection(db, "currentSchoolBody");
 const bannedStudentsRef = collection(db, "bannedStudents");
 const guestEntranceRef = collection(db, "guestEntrance");
 

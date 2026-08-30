@@ -52,7 +52,7 @@ async function ValidateSwipe(swipe) {
   try {
     const hashedId = await hashId(swipe);
 
-    const studentSnapPromise = getDoc(doc(db, "currentStudents", hashedId));
+    const studentSnapPromise = getDoc(doc(db, "currentSchoolBody", hashedId));
     const bannedSnapPromise = getDoc(doc(db, "bannedStudents", hashedId));
     const functions = getFunctions();
     const sendEmail = httpsCallable(functions, "sendEmail");

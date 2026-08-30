@@ -21,7 +21,7 @@ import {
     serverTimestamp
 } from "firebase/firestore";
 import { db } from "../Firebase.js";
-const currentStudentsRef = collection(db, "currentStudents");
+const currentStudentsRef = collection(db, "currentSchoolBody");
 const checkoutHistoryRef = collection(db, "checkoutHistory");
 
 function capitalizeFirst(str) {
