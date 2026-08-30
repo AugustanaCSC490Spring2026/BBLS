@@ -856,12 +856,17 @@ const Settings = () => {
             <div className="settings-section">
               <h3 className="settings-section-title">Import Students/Staff</h3>
               <p className="settings-section-desc">Replace the current student list with a new CSV file.</p>
-              <button onClick={() => document.getElementById("studentFileInput").click()}>
-                Import School Body CSV
-              </button>
-              <a href="/import_template_with_dummy_data.csv" download="import_template_with_dummy_data.csv">
-                <button>Download Template Document</button>
-              </a>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <button onClick={() => document.getElementById("studentFileInput").click()}>
+                  Import School Body CSV
+                </button>
+                
+                <a href="/import_template_with_dummy_data.csv" download="import_template_with_dummy_data.csv">
+                  <button style={{ padding: "6px 12px", fontSize: "0.7rem" }}>
+                    Download Template
+                  </button>
+                </a>
+              </div>
               <input
                 id="studentFileInput"
                 type="file"
