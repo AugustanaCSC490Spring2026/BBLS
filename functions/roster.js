@@ -145,7 +145,7 @@ export const importRoster = onCall(
       throw new HttpsError("invalid-argument", "File is too large.");
     }
 
-    const { people, errors } = parseRoster(csv.replace(/^﻿/, ""));
+    const { people, errors } = parseRoster(csv.replace(/^\uFEFF/, ""));
     if (errors.length) {
       return { ok: false, errors };
     }

@@ -2,7 +2,7 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
-import { createTransporter, gmailUser, gmailPass } from "./Email.js";
+import { gmailUser, gmailPass } from "./Email.js";
 
 
 // Initialize the Admin SDK natively
@@ -29,7 +29,6 @@ export const dailyUnbanTask = onSchedule({
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = tomorrow.toLocaleDateString('en-CA');
-    const transporter = createTransporter();
 
 
     // Use a regular for...of loop for reliable async/await execution inside the function
