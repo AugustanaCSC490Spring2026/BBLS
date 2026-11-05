@@ -76,6 +76,13 @@
   margin-bottom: 12px;
 }
 
+.settings-import-errors {
+  margin-top: 12px;
+  padding-left: 20px;
+  font-size: 0.8rem;
+  color: #C53030;
+}
+
 
 .studentInputForm {
   flex: 1;

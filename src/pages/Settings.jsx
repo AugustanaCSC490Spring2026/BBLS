@@ -12,7 +12,6 @@ import { db } from "../Firebase.js";
 
 // Firestore tools
 import { doc, writeBatch, collection, serverTimestamp, getDoc, deleteDoc, setDoc, getDocs, addDoc, updateDoc } from "firebase/firestore";
-import { hashId } from "../components/HashId.js";
 
 import { getFunctions, httpsCallable } from "firebase/functions";
 
@@ -80,9 +79,11 @@ const Settings = () => {
   const [isAddInventoryOpen, setIsAddInventoryOpen] = useState(false);
   const [isRemoveInventoryOpen, setIsRemoveInventoryOpen] = useState(false);
   const [availableEquipment, setAvailableEquipment] = useState([]);
+  const [importErrors, setImportErrors] = useState([]);
 
   const functions = getFunctions();
   const sendEmail = httpsCallable(functions, "sendEmail");
+  const importRoster = httpsCallable(functions, "importRoster", { timeout: 300000 });
 
   const pepsicoInventoryRef = collection(db, "pepsicoEquipmentInventory");
   const westerlinInventoryRef = collection(db, "westerlinEquipmentInventory");
@@ -124,87 +125,6 @@ const Settings = () => {
     setEditEmail("");
     setEditRole(false);
   };
-
-  // const handleStaffFileChange = (event) => {
-  //   const file = event.target.files[0];
-  //   if (!file) return;
-
-  //   if (file.type !== "text/csv" && !file.name.toLowerCase().endsWith(".csv")) {
-  //     addToast("error", "Invalid File", "Please upload a valid .csv file.");
-  //     event.target.value = null;
-  //     return;
-  //   }
-
-  //   Papa.parse(file, {
-  //     header: true,
-  //     skipEmptyLines: true,
-  //     complete: async (results) => {
-  //       const data = results.data;
-
-  //       const confirmUpload = window.confirm(
-  //         "This will DELETE all existing staff and replace them with the uploaded CSV.\n\nAre you sure?"
-  //       );
-
-  //       if (!confirmUpload) {
-  //         addToast("error", "Upload Cancelled", "Staff upload cancelled.");
-  //         event.target.value = null;
-  //         return;
-  //       }
-
-  //       // Clear existing staff collection
-  //       await clearCollection("currentStaff");
-
-  //       let successCount = 0;
-  //       let failCount = 0;
-  //       let batch = writeBatch(db);
-  //       let operationCount = 0;
-
-  //       for (const row of data) {
-  //         try {
-  //           let staffId = row.ID?.trim();
-
-  //           if (!staffId || staffId.length !== 9) {
-  //             failCount++;
-  //             continue;
-  //           }
-
-  //           const hashedId = await hashId(staffId);
-
-  //           const staffData = {
-  //             ID: hashedId,
-  //             LastName: row.LastName || "",
-  //             FirstName: row.Pref_FirstName || "",
-  //           };
-
-  //           const docRef = doc(db, "currentStaff", hashedId);
-  //           batch.set(docRef, staffData);
-
-  //           operationCount++;
-  //           successCount++;
-
-  //           if (operationCount === 500) {
-  //             await batch.commit();
-  //             batch = writeBatch(db);
-  //             operationCount = 0;
-  //           }
-  //         } catch (err) {
-  //           console.error("Error processing row:", err);
-  //           failCount++;
-  //         }
-  //       }
-
-  //       if (operationCount > 0) {
-  //         await batch.commit();
-  //       }
-
-  //       addToast("success", "Upload Complete", `Staff Success: ${successCount}, Failed: ${failCount}`);
-  //       event.target.value = null;
-  //     },
-  //     error: (err) => {
-  //       addToast("error", "CSV Error", "Error parsing staff CSV.");
-  //     }
-  //   });
-  // };
 
   // the next 50 lines were helped code with claude
   const handleSaveAdmin = async () => {
@@ -391,158 +311,38 @@ const Settings = () => {
     }
   };
 
-  // Helper function to clear the currentStudents collection within firestore when a CSV is uploaded
-  const clearCollection = async (collectionName) => {
-    const colRef = collection(db, collectionName);
-    const snapshot = await getDocs(colRef);
-
-    let batch = writeBatch(db);
-    let count = 0;
-
-    for (const docSnap of snapshot.docs) {
-      batch.delete(docSnap.ref);
-      count++;
-
-      // Firestore batch limit
-      if (count === 500) {
-        await batch.commit();
-        batch = writeBatch(db);
-        count = 0;
-      }
-    }
-
-    if (count > 0) {
-      await batch.commit();
-    }
-  };
-
-  // Handles when a user selects a file for updating current students
-  const handleFileChange = (event) => {
-
-    // Get the selected file
-    const file = event.target.files[0];
-
-    // If no file is selected, exit early
+  const handleFileChange = async (event) => {
+    const input = event.target;
+    const file = input.files[0];
+    input.value = null;
     if (!file) return;
 
-    // Validate file type (must be CSV)
-    if (file.type !== "text/csv" && !file.name.toLowerCase().endsWith(".csv")) {
+    if (!file.name.toLowerCase().endsWith(".csv")) {
       addToast("error", "Invalid File", "Please upload a valid .csv file.");
-      event.target.value = null; // Reset file input
       return;
     }
 
-    // Parse the CSV file into usable data
-    Papa.parse(file, {
-      header: true,           // First row becomes column headers (keys)
-      skipEmptyLines: true,   // Ignore empty rows
+    const confirmUpload = window.confirm(
+      "This will replace the school body with the uploaded CSV. People not in the file will be removed.\n\nContinue?"
+    );
+    if (!confirmUpload) {
+      addToast("error", "Upload Cancelled", "The school body upload has been canceled.");
+      return;
+    }
 
-      // Runs when parsing is complete
-      complete: async (results) => {
-        const data = results.data;
-
-        //  Confirmation before wiping database
-        const confirmUpload = window.confirm(
-          "This will DELETE all existing students and staff and replace them with the uploaded CSV.\n\nAre you sure you want to continue?"
-        );
-
-        if (!confirmUpload) {
-          addToast("error", "Upload Cancelled", "The school body upload has been canceled.");
-          event.target.value = null; // Removes selected file if cancelled
-          return;
-        }
-
-        // Clear existing collection
-        await clearCollection("currentSchoolBody");
-
-        console.log("Parsed CSV:", data);
-
-        // Counters for reporting results
-        let successCount = 0;
-        let failCount = 0;
-
-        // Create a Firestore batch (groups multiple writes together)
-        let batch = writeBatch(db);
-
-        // Tracks how many operations are in the current batch
-        let operationCount = 0;
-
-        // Loop through each row in the CSV
-        for (const row of data) {
-          try {
-
-            // Extract and clean student ID
-            let studentId = row.ID?.trim();
-
-            // Skip invalid IDs (must be 7 characters)
-            // if (!studentId || studentId.length !== 7) {
-            //   failCount++;
-            //   continue;
-            // } commented out ID length due to staff being different lengths.
-
-            const hashedId = await hashId(studentId);
-
-            // Build the student object to store in Firestore
-            const schoolData = {
-              ID: hashedId,
-              Email: row.AUGIE_EMAIL || "",
-              LastName: row.LastName || "",
-              FirstName: row.Pref_FirstName || "",
-              PersonType: row.PersonType || "",
-              Class: row.Class || "",
-              Transfer: row.Transfer || "",
-              Residence: row["Residence Hall"] || "",
-              International: row.International || "",
-              // Gender: row.Gender || "",
-              // Race: row.Race || "",
-              // RaceDesc: row.Race_Desc || "",
-              
-            };
-
-            // Create a document reference using student ID as the document ID
-            const docRef = doc(db, "currentSchoolBody", hashedId);
-
-            // Add this write operation to the batch
-            batch.set(docRef, schoolData);
-
-            // Update counters
-            operationCount++;
-            successCount++;
-
-            // Firestore allows a maximum of 500 operations per batch
-            if (operationCount === 500) {
-              await batch.commit();
-              batch = writeBatch(db);
-              operationCount = 0;
-            }
-
-          } catch (err) {
-            console.error("Error processing row:", err);
-            failCount++;
-          }
-        }
-
-        // Commit any remaining operations after the loop
-        if (operationCount > 0) {
-          await batch.commit();
-        }
-
-        // Notify user of upload results
-        addToast("success", "Upload Complete", `Success: ${successCount}, Failed: ${failCount}`);
-
-        // Removes the upload file after upload
-        event.target.value = null;
-      },
-
-      // Runs if CSV parsing fails
-      error: (err) => {
-        console.error("CSV Parse Error:", err);
-        addToast("error", "CSV Parse Error", "There was an error parsing the CSV file. Please check the file format and try again.");
+    addToast("info", "Importing", "Uploading the school body. This can take a minute.");
+    try {
+      const { data } = await importRoster({ csv: await file.text() });
+      if (data.ok) {
+        addToast("success", "Upload Complete", `Imported ${data.written} people, removed ${data.removed}.`);
+      } else {
+        setImportErrors(data.errors);
+        addToast("error", "Upload Rejected", "Nothing was changed. See the errors below the import button.");
       }
-    });
+    } catch (err) {
+      addToast("error", "Upload Failed", err.message || "The import failed. Please try again.");
+    }
   };
-
-
 
   const handleEquipmentImport = (event) => {
 
@@ -872,23 +672,14 @@ const Settings = () => {
                 type="file"
                 accept=".csv"
                 style={{ display: "none" }}
-                onChange={handleFileChange}
+                onChange={(e) => { setImportErrors([]); handleFileChange(e); }}
               />
+              {importErrors.length > 0 && (
+                <ul className="settings-import-errors">
+                  {importErrors.map((msg) => <li key={msg}>{msg}</li>)}
+                </ul>
+              )}
             </div>
-            {/* <div className="settings-section">
-              <h3 className="settings-section-title">Import Staff Body</h3>
-              <p className="settings-section-desc">Replace the current staff list with a new CSV file.</p>
-              <button onClick={() => document.getElementById("staffFileInput").click()}>
-                Import Staff CSV
-              </button>
-              <input
-                id="staffFileInput"
-                type="file"
-                accept=".csv"
-                style={{ display: "none" }}
-                onChange={handleStaffFileChange}
-              />
-            </div> */}
 
             <div className="settings-section">
               <h3 className="settings-section-title">Ban / Unban Students</h3>
