@@ -107,7 +107,7 @@ async function ValidateSwipe(swipe) {
       unavailable: true,
       hashedId,
       name: studentName,
-      reasonDenied: "ID not checked. Check the connection and swipe again."
+      reasonDenied: "Check the connection and swipe again."
     };
   }
 
