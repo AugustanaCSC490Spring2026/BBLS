@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { normalizeRosterId, normalizeSwipeId, hashNormalizedId } from "../ids.js";
-import { parseRoster } from "../roster.js";
+import { parseRoster, writeRoster } from "../roster.js";
 
 const HEADER = "ID,AUGIE_EMAIL,LastName,Pref_FirstName,PersonType,Class,Transfer,Residence Hall,International,Gender,Race,Race_Desc";
 const KEY = "k".repeat(32);
@@ -49,4 +49,27 @@ test("any bad row rejects the whole file without leaking names", () => {
 test("missing or unknown columns are rejected", () => {
   assert.match(parseRoster("ID,Email\n1,a").errors.join(" "), /Missing columns/);
   assert.match(parseRoster(`${HEADER},SSN\n0111111,a,b,c,,,,,,,,,1`).errors.join(" "), /Unexpected columns: SSN/);
+});
+
+test("a failed roster write stops the import before anyone is removed", async () => {
+  const deleted = [];
+  const log = {};
+  const db = {
+    collection: (name) => ({
+      doc: (id) => (name === "rosterImports"
+        ? { id: "log1", set: async (d) => Object.assign(log, d), update: async (d) => Object.assign(log, d) }
+        : { id }),
+      select: () => ({ get: async () => ({ docs: [{ id: "someone-old", ref: "someone-old" }] }) }),
+    }),
+    bulkWriter: () => ({
+      set: () => Promise.reject(new Error("write failed")),
+      delete: (ref) => { deleted.push(ref); return Promise.resolve(); },
+      close: async () => {},
+    }),
+  };
+  const people = [{ id: "0111111", record: { FirstName: "A" } }];
+
+  await assert.rejects(writeRoster(db, people, KEY, { importedBy: "a@augustana.edu" }), /1 of 1 roster writes failed/);
+  assert.deepEqual(deleted, []);
+  assert.equal(log.status, "failed");
 });
