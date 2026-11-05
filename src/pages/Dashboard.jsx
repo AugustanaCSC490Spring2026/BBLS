@@ -24,29 +24,22 @@ function Dashboard({ gym, updateGym }) {
   const [isGuestPopupOpen, setIsGuestPopupOpen] = useState(false);
   const [studentId, setStudentId] = useState("");
   const inputRef = useRef(null);
-  const overlaySwipeRef = useRef(null);
   const [awayMode, setAwayMode] = useState(false);
   const awayModeRef = useRef(false);
   const [toasts, setToasts] = useState([]);
   const toastIdRef = useRef(0);
 
-  // Auto-focus on load
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  useEffect(() => {
-    overlaySwipeRef.current = handleOverlaySwipe;
-  }, [gym]);
-
   useEffect(() => {
     awayModeRef.current = awayMode;
   }, [awayMode]);
 
-  // Keeps input focused every 5 seconds
+  // Focuses the input on load and on return from the guest popup or away mode,
+  // then keeps it focused every 5 seconds
   useEffect(() => {
-    // If the guest popup is open, don't start the interval
-    if (isGuestPopupOpen) return;
+    // Away mode must not lose keystrokes to this input behind the overlay
+    if (isGuestPopupOpen || awayMode) return;
+
+    inputRef.current?.focus();
 
     const focusInterval = setInterval(() => {
       if (document.activeElement !== inputRef.current) {
@@ -55,24 +48,17 @@ function Dashboard({ gym, updateGym }) {
     }, 5000);
 
     return () => clearInterval(focusInterval);
-  }, [isGuestPopupOpen]);
+  }, [isGuestPopupOpen, awayMode]);
 
   const handleOverlaySwipe = async (rawId) => {
-    const validationResult = await ValidateSwipe(rawId);
-    const { isValid, hashedId, name, reasonDenied } = validationResult;
-
     try {
-      // MODIFIED: Awaiting storeSwipeIn since it is now asynchronous
+      const { isValid, hashedId, name, reasonDenied } = await ValidateSwipe(rawId);
       await storeSwipeIn(gym, isValid, hashedId, serverTimestamp(), reasonDenied, name);
+      return { success: isValid, name, reason: reasonDenied };
     } catch (err) {
       console.error("Error saving swipe:", err);
+      return { success: false, reason: "Swipe not saved. Please swipe again." };
     }
-
-    return {
-      success: isValid,
-      name: name,
-      reason: reasonDenied,
-    };
   };
 
   const handleKeyDown = (input) => {
@@ -83,6 +69,9 @@ function Dashboard({ gym, updateGym }) {
   };
 
   const addToast = (type, title, message) => {
+    // The overlay shows its own result; toasts would pile up behind it
+    if (awayModeRef.current) return;
+
     const newToast = {
       id: toastIdRef.current++,
       type,
@@ -165,7 +154,7 @@ function Dashboard({ gym, updateGym }) {
         await addDoc(westerlinGymRef, { ID: hashedId, swipeInTime: timeStamp });
       }
 
-    } else if (!swipeValid && reasonSwipeDenied.includes("banned") && !awayModeRef.current){
+    } else if (!swipeValid && reasonSwipeDenied.includes("banned")) {
       addToast("banned", "STUDENT BANNED", reasonSwipeDenied);
       await addDoc(invalidSwipeInRef, { gym: gym, ID: hashedId, swipeInTime: timeStamp });
 
@@ -196,8 +185,9 @@ function Dashboard({ gym, updateGym }) {
 
         <AwayModeOverlay
           isActive={awayMode}
+          gym={gym}
           onDismiss={() => setAwayMode(false)}
-          onSwipe={(id) => overlaySwipeRef.current?.(id)}
+          onSwipe={handleOverlaySwipe}
         />
 
         <div className="swipe-card">
