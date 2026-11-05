@@ -11,5 +11,5 @@ export function rejectOutsideAccount(event) {
   }
 }
 
-export const blockOutsideSignUp = beforeUserCreated(rejectOutsideAccount);
-export const blockOutsideSignIn = beforeUserSignedIn(rejectOutsideAccount);
+export const blockOutsideSignUp = beforeUserCreated({ region: "us-central1" }, rejectOutsideAccount);
+export const blockOutsideSignIn = beforeUserSignedIn({ region: "us-central1" }, rejectOutsideAccount);
