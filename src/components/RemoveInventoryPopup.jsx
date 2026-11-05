@@ -1,17 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
-function RemoveInventoryPopup({ isOpen, onClose, onSubmit, availableEquipment }) {
+function RemoveInventoryForm({ onClose, onSubmit, availableEquipment }) {
   const [selectedItem, setSelectedItem] = useState("");
   const [quantity, setQuantity] = useState(1);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setSelectedItem("");
-      setQuantity(1);
-    }
-  }, [isOpen]);
-
-  if (!isOpen) return null;
 
   const selectedEquipment = availableEquipment.find((item) => item.name === selectedItem);
   const maxRemovable = selectedEquipment?.available ?? 0;
@@ -104,6 +95,10 @@ function RemoveInventoryPopup({ isOpen, onClose, onSubmit, availableEquipment })
       </form>
     </div>
   );
+}
+
+function RemoveInventoryPopup({ isOpen, ...formProps }) {
+  return isOpen ? <RemoveInventoryForm {...formProps} /> : null;
 }
 
 export default RemoveInventoryPopup;

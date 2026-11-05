@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { NavLink } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import "../components/Navbar.css";
@@ -9,7 +9,7 @@ import { getAuth, signOut } from "firebase/auth";
 
 import signOutIcon from "../assets/signout.png";
 
-function Navbar({}) {
+function Navbar() {
     const auth = getAuth();
     // handleSignOut will sign the user out and navigate them back to the login page
     const handleSignOut = () => {
@@ -24,7 +24,6 @@ function Navbar({}) {
     }
     // isAdmin is a boolean that indicates whether the current user is an admin or not
     const { isAdmin } = useAuth();
-    const [role, setRole] = useState("");
     const [menuOpen, setMenuOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
@@ -33,15 +32,12 @@ function Navbar({}) {
     const shouldShowNavbar = !hideNavbar.includes(location.pathname);
     const shouldShowNavbarRoutes = !hideNavbarRoutes.includes(location.pathname);
 
-    useEffect(() => {
-        const storedRole = localStorage.getItem("role");
-        setRole(storedRole);
-    }, []);
-
     // Close the mobile menu whenever the route changes
-    useEffect(() => {
+    const [prevPath, setPrevPath] = useState(location.pathname);
+    if (location.pathname !== prevPath) {
+        setPrevPath(location.pathname);
         setMenuOpen(false);
-    }, [location.pathname]);
+    }
 
     return (
         <>

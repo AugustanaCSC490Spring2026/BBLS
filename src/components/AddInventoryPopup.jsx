@@ -1,20 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
-function AddInventoryPopup({ isOpen, onClose, onSubmit, availableEquipment }) {
+function AddInventoryForm({ onClose, onSubmit, availableEquipment }) {
   const [selectedItem, setSelectedItem] = useState("");
   const [customItem, setCustomItem] = useState("");
   const [quantity, setQuantity] = useState(1);
-
-  // Reset form whenever popup closes
-  useEffect(() => {
-    if (!isOpen) {
-      setSelectedItem("");
-      setCustomItem("");
-      setQuantity(1);
-    }
-  }, [isOpen]);
-
-  if (!isOpen) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -112,6 +101,10 @@ function AddInventoryPopup({ isOpen, onClose, onSubmit, availableEquipment }) {
       </form>
     </div>
   );
+}
+
+function AddInventoryPopup({ isOpen, ...formProps }) {
+  return isOpen ? <AddInventoryForm {...formProps} /> : null;
 }
 
 export default AddInventoryPopup;

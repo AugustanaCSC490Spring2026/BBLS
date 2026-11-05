@@ -1,23 +1,15 @@
 import React, { useState, useEffect } from "react";
 
-// student: { name, isBanned, unbanDate, reasonBanned }
-function BanStudentPopup({ isOpen, student, onBan, onUnban, onCancel, onReasonChange, onDateChange }) {
-  const [reason, setReason] = useState("");
-  const [unbanDate, setUnbanDate] = useState("");
+// student: { name, isBanned, unbanDate, reasonBanned, studentId }
+function BanStudentForm({ student, onBan, onUnban, onCancel, onReasonChange, onDateChange }) {
+  const [reason, setReason] = useState(student.reasonBanned || "");
+  const [unbanDate, setUnbanDate] = useState(student.unbanDate || "");
 
-  // Sync controlled inputs and notify Settings whenever a new student is loaded
+  // Settings submits these values, so it needs the loaded student's starting values too
   useEffect(() => {
-    if (isOpen && student) {
-      const r = student.reasonBanned || "";
-      const d = student.unbanDate || "";
-      setReason(r);
-      setUnbanDate(d);
-      onReasonChange(r);
-      onDateChange(d);
-    }
-  }, [isOpen, student]);
-
-  if (!isOpen || !student) return null;
+    onReasonChange(student.reasonBanned || "");
+    onDateChange(student.unbanDate || "");
+  }, [student]);
 
   const handleReasonChange = (e) => {
     setReason(e.target.value);
@@ -72,6 +64,11 @@ function BanStudentPopup({ isOpen, student, onBan, onUnban, onCancel, onReasonCh
       </div>
     </div>
   );
+}
+
+function BanStudentPopup({ isOpen, student, ...formProps }) {
+  if (!isOpen || !student) return null;
+  return <BanStudentForm key={student.studentId} student={student} {...formProps} />;
 }
 
 export default BanStudentPopup;

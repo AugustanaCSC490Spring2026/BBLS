@@ -1,8 +1,8 @@
 // gemini helped create this code.
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import "./Dashboard.css";
 
-function GuestPopup({ isOpen, onClose, onSubmitGuest }) {
+function GuestForm({ onClose, onSubmitGuest }) {
   const currentYear = new Date().getFullYear();
 
   // 1. Initial State Definitions
@@ -11,19 +11,7 @@ function GuestPopup({ isOpen, onClose, onSubmitGuest }) {
   const [otherReason, setOtherReason] = useState("");
   const [gradYear, setGradYear] = useState(currentYear);
 
-  // 2. THE RESET LOGIC: Clears the form every time the popup is closed
-  useEffect(() => {
-    if (!isOpen) {
-      setGuestCategory("");
-      setGuestName("");
-      setOtherReason("");
-      setGradYear(currentYear);
-    }
-  }, [isOpen, currentYear]);
-
-  if (!isOpen) return null;
-
-  // 3. Handling the Data Payload
+  // 2. Handling the Data Payload
   // src/components/GuestTab.jsx
 
   const handleSubmit = (e) => {
@@ -156,6 +144,10 @@ function GuestPopup({ isOpen, onClose, onSubmitGuest }) {
       </form>
     </div>
   );
+}
+
+function GuestPopup({ isOpen, ...formProps }) {
+  return isOpen ? <GuestForm {...formProps} /> : null;
 }
 
 export default GuestPopup;

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from "react";
 import '../components/Login.css'
 import logo from '../assets/logo.png';
 import { auth, provider } from '../Firebase.js'
@@ -12,9 +12,10 @@ import ToastContainer from "../components/ToastContainer.jsx";
 
 function Login() {
   const [toasts, setToasts] = useState([]);
+  const toastIdRef = useRef(0);
 
   const addToast = (type, title, message) => {
-    const id = Date.now(); // Unique ID for filtering
+    const id = toastIdRef.current++;
     const newToast = { id, type, title, message };
 
     setToasts((prev) => [...prev, newToast]);
@@ -29,7 +30,6 @@ function Login() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
   const navigate = useNavigate();
-  const [error, setError] = useState("")
   // handleGoogleLogin will sign the user in with Google and check if their email is authorized
   const handleGoogleLogin = async () => {
     try {
@@ -48,7 +48,6 @@ function Login() {
       }
     } catch (error) {
       addToast("error", "Login Failed", "Please use an authorized email address to sign in.");
-      // setError("Login failed. Please try again.");
       console.error("Error during login:", error);
     }
   };
