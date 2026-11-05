@@ -8,7 +8,6 @@ function GuestPopup({ isOpen, onClose, onSubmitGuest }) {
   // 1. Initial State Definitions
   const [guestCategory, setGuestCategory] = useState("");
   const [guestName, setGuestName] = useState("");
-  const [staffId, setStaffId] = useState("");
   const [otherReason, setOtherReason] = useState("");
   const [gradYear, setGradYear] = useState(currentYear);
 
@@ -17,7 +16,6 @@ function GuestPopup({ isOpen, onClose, onSubmitGuest }) {
     if (!isOpen) {
       setGuestCategory("");
       setGuestName("");
-      setStaffId("");
       setOtherReason("");
       setGradYear(currentYear);
     }
@@ -36,15 +34,13 @@ function GuestPopup({ isOpen, onClose, onSubmitGuest }) {
       name: guestName.trim(),
     };
     
-    if (guestCategory === "Staff") {
-      guestData.staffId = staffId;
-    } else if (guestCategory === "Alumni") {
+    if (guestCategory === "Alumni") {
       guestData.gradYear = Number(gradYear);
     } else if (guestCategory === "Other") {
       guestData.otherReason = otherReason;
     }
 
-    const isNameValid = guestCategory === "Staff" || guestName.trim();
+    const isNameValid = guestName.trim();
     
     if (guestCategory && isNameValid) {
       onSubmitGuest(guestData);
@@ -86,7 +82,6 @@ function GuestPopup({ isOpen, onClose, onSubmitGuest }) {
             <option value="" disabled>Select category</option>
             <option value="Alumni">Alumni</option>
             <option value="Physical Therapy">Physical Therapy</option>
-            {/* <option value="Staff">Staff / Faculty</option> */}
             <option value="Other">Other</option>
           </select>
         </div>
@@ -112,19 +107,6 @@ function GuestPopup({ isOpen, onClose, onSubmitGuest }) {
                   onChange={(e) => setGradYear(e.target.value)}
                   min="1900"
                   max={currentYear + 5}
-                  required
-                />
-              </div>
-            )}
-
-            {guestCategory === "Staff" && (
-              <div className="input-group">
-                <label>Staff ID Number</label>
-                <input
-                  type="text"
-                  value={staffId}
-                  onChange={(e) => setStaffId(e.target.value)}
-                  placeholder="Enter ID #"
                   required
                 />
               </div>

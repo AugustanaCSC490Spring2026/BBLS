@@ -1,12 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { db } from "../Firebase.js";
 import ToastContainer from "../components/ToastContainer";
-import ValidateStaffSwipe from "../components/ValidateStaffSwipe.js";
 import NavDropdown from "../components/NavDropdown.jsx";
 
 // NEW: added serverTimestamp for accurate backend time
-import { addDoc, collection, serverTimestamp, getDoc, doc } from "firebase/firestore";
-import awayModeIcon from "../assets/moon.png";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 
 import "../components/Dashboard.css";
 
@@ -20,8 +18,6 @@ import { hashId } from "../components/HashId.js";
 const pepsicoCenterRef = collection(db, 'pepsicoCenter')
 const westerlinGymRef = collection(db, 'westerlinGym')
 const invalidSwipeInRef = collection(db, 'invalidSwipeIns');
-const currentStudentsRef = collection(db, "currentSchoolBody");
-const bannedStudentsRef = collection(db, "bannedStudents");
 const guestEntranceRef = collection(db, "guestEntrance");
 
 
@@ -146,39 +142,18 @@ function Dashboard({ gym, updateGym }) {
   };
 
   async function processGuestEntry(guestData) {
-    const timeStamp = serverTimestamp();
-    let validBool = true;
-    let reasonDenied = "No reason given";
-    let overallName = "No staff name";
-
-    if (guestData.category === "Staff") {
-      const isValidData = await ValidateStaffSwipe(guestData.staffId, getDoc, doc, db);
-      validBool = isValidData.isValid;
-      reasonDenied = isValidData.reasonDenied;
-      overallName = isValidData.name;
-
-      if (validBool) {
-        addDoc(guestEntranceRef, {
-          location: gym,
-          timestamp: timeStamp,
-          ...guestData // This "spreads" the object into separate Firestore fields
-        });
-      }
-    } else {
-      overallName = guestData.name;
-      validBool = true;
-      addDoc(guestEntranceRef, {
+    try {
+      await addDoc(guestEntranceRef, {
         location: gym,
-        timestamp: timeStamp,
-        ...guestData // This "spreads" the object into separate Firestore fields
+        timestamp: serverTimestamp(),
+        ...guestData
       });
+      addToast("success", "Guest Signed In", `Welcome, ${guestData.name}!`);
+    } catch (err) {
+      console.error("Error saving guest entry:", err);
+      addToast("error", "System Error", "Failed to save guest sign-in. Please try again.");
     }
-    if (validBool) {
-      addToast("success", "ID Accepted", `Welcome, ${overallName}!`);
-    } else {
-      addToast("error", "ID Denied", reasonDenied);
-    }
-  };
+  }
 
   // MODIFIED: Turned into an async function to allow hashing execution
   async function storeSwipeIn(gym, swipeValid, verified_data, timeStamp, reasonSwipeDenied, studentName) {
