@@ -23,7 +23,7 @@ export const DEMOGRAPHICS = {
   "Class": { field: "Class" },
   "Transfer Status": { field: "Transfer", map: (raw) => (raw === "Yes" ? "Transfer" : "Not a Transfer") },
   "Residence Hall": { field: "Residence" },
-  "International": { field: "International", map: (raw) => (raw ? "International" : "Domestic") },
+  "International": { field: "International", map: (raw) => (raw && raw.toLowerCase() !== "domestic" ? "International" : "Domestic") },
 };
 const ROSTER_FIELDS = ["PersonType", ...Object.values(DEMOGRAPHICS).map((d) => d.field)];
 
