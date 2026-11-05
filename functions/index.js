@@ -16,6 +16,12 @@ export const hashStudentId = onCall(
   async (request) => {
     await requireAuthorized(request);
 
+    // SAFETY: keep below the auth check, and hash nothing here, so a warm-up
+    // reveals nothing about any ID.
+    if (request.data?.warmup === true) {
+      return { warm: true };
+    }
+
     const id = normalizeSwipeId(request.data?.rawId);
     if (!id) {
       throw new HttpsError("invalid-argument", "Invalid ID format");
