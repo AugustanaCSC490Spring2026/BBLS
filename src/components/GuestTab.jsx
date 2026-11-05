@@ -103,7 +103,7 @@ function GuestPopup({ isOpen, onClose, onSubmitGuest }) {
                 <label>Graduation Year</label>
                 <input
                   type="number"
-                  value={gradYear - 1}
+                  value={gradYear}
                   onChange={(e) => setGradYear(e.target.value)}
                   min="1900"
                   max={currentYear + 5}
