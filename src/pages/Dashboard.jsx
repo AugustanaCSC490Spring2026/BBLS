@@ -185,6 +185,7 @@ function Dashboard({ gym, updateGym }) {
 
         <AwayModeOverlay
           isActive={awayMode}
+          gym={gym}
           onDismiss={() => setAwayMode(false)}
           onSwipe={handleOverlaySwipe}
         />
