@@ -79,6 +79,9 @@ const Settings = () => {
   const [isRemoveInventoryOpen, setIsRemoveInventoryOpen] = useState(false);
   const [availableEquipment, setAvailableEquipment] = useState([]);
   const [importErrors, setImportErrors] = useState([]);
+  const [banSearch, setBanSearch] = useState("");
+  const [banReason, setBanReason] = useState("");
+  const [banUnbanDate, setBanUnbanDate] = useState("");
 
   const functions = getFunctions();
   const sendEmail = httpsCallable(functions, "sendEmail");
@@ -416,126 +419,39 @@ const Settings = () => {
     });
   };
 
-  let studentEmail;
-  let studentName;
-  let verified_data;
-  let studentEntered;
-  let studentEnteredID;
-  let swipeOutput;
-  let docRef;
-  let differentReasonBanned;
-
-  const handleKeyDown = (input) => {
-    if (input.key === "enter") {
-      input.preventDefault();
-      handleSubmission();
-    }
-  }
-  function updateStudentIdentifier(input) {
-    studentEmail = input;
-  }
   const handleSubmission = async (event) => {
     event.preventDefault();
+    const username = banSearch.trim().toLowerCase().replace(/@augustana.edu$/, "");
+    try {
+      const matches = username
+        ? await getDocs(query(currentStudentsRef, where("Email", "==", username), limit(1)))
+        : null;
+      const student = matches?.docs[0];
+      if (!student) {
+        addToast("error", "ID Not Found", "No student has the entered id or username.");
+        setBanSearch("");
+        return;
+      }
 
-    updateStudentIdentifier(studentEmail);
-
-    let isbanned;
-    verified_data = studentEmail;
-    const username = String(studentEmail ?? "").trim().toLowerCase().replace(/@augustana.edu$/, "");
-    const matches = username
-      ? await getDocs(query(currentStudentsRef, where("Email", "==", username), limit(1)))
-      : null;
-    studentEntered = matches?.docs[0] ?? null;
-    //displays error if student is not found
-    if (studentEntered == null) {
-      addToast("error", "ID Not Found", "No student has the entered id or username.");
-      // displayIdEntryError("No student has the entered id or username");
-      document.getElementById("studentInputForm").value = "";
-      updateStudentIdentifier("");
-      return;
+      const { ID, FirstName, LastName } = student.data();
+      const banSnap = await getDoc(doc(db, "bannedStudents", ID));
+      const isBanned = banSnap.exists();
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      setBanPopupStudent({
+        name: FirstName + " " + LastName,
+        isBanned,
+        unbanDate: isBanned ? banSnap.data().dateToBeUnbanned : tomorrow.toLocaleDateString('en-CA'),
+        reasonBanned: isBanned ? banSnap.data().reasonBanned || "" : "",
+        studentId: ID,
+      });
+      setIsBanPopupOpen(true);
+      setBanSearch("");
+    } catch (err) {
+      console.error(err);
+      addToast("error", "Search Failed", "Could not look up that student. Please try again.");
     }
-    else {
-      //collects student name and ID to use later
-      studentName = studentEntered.data().FirstName + " " + studentEntered.data().LastName;
-      studentEnteredID = studentEntered.data().ID;
-      //checks to see if the student is banned
-      docRef = doc(db, "bannedStudents", studentEnteredID);
-      getDoc(docRef).then((docSnap) => {
-        //if student is banned gives only option to unban
-        //if student is not banned only gives option to ban
-        if (!docSnap.exists()) {
-          isbanned = false;
-          displayPopup(isbanned, docSnap);
-        }
-        else {
-          isbanned = true;
-          differentReasonBanned = docSnap.data().reasonBanned;
-          displayPopup(isbanned, docSnap);
-        }
-      })
-    }
-    updateStudentIdentifier("");
-    setStudentId(studentEnteredID);
-
-  }
-
-  let dateStudentIsUnbanned;
-  // function setUnbanDate(input) {
-  //   dateStudentIsUnbanned = input;
-  // }
-
-  // function displayIdEntryError(swipeOutput) {
-  //   const customAlert = document.getElementById("customAlert");
-  //   const alertText = document.getElementById("alertText");
-  //   alertText.textContent = swipeOutput;
-  //   customAlert.style.display = "flex";
-  //   setTimeout(() => { customAlert.style.display = "none"; }, 1000);
-
-  // }
-
-  function displayPopup(isbanned, enteredStudent) {
-
-    /*if the student is banned displays only the unban and cancel buttons
-      if the student is not banned displays only the ban and cancel buttons as well
-      as why the student is being banned and the date the student is to be unbanned
-      */
-    let date;
-    let reasonBanned;
-
-    if (isbanned) {
-      date = enteredStudent.data().dateToBeUnbanned;
-      console.log(date);
-      reasonBanned = enteredStudent.data().reasonBanned || "";
-    } else {
-      date = new Date();
-      date.setDate(date.getDate() + 1);
-      date = date.toLocaleDateString('en-CA');
-      reasonBanned = "";
-    }
-    setUnbanDate(date);
-    setBanPopupStudent({ name: studentName, isBanned: isbanned, unbanDate: date, reasonBanned, studentId, studentEnteredID });
-    setIsBanPopupOpen(true);
-  }
-
-  //sets a second studentID variable that is in scope
-
-  let studentId
-
-  function setStudentId(input) {
-    studentId = input;
-  }
-
-  //functions to store the reason why the student was banned and when they are to be unbanned
-  let reasonStudentBanned;
-  function updateReasonBanned(input) {
-    reasonStudentBanned = input;
-  }
-
-  function setUnbanDate(input) {
-
-    dateStudentIsUnbanned = input;
-    console.log(input);
-  }
+  };
 
   const fetchAdminList = async () => {
     const snapshot = await getDocs(adminListRef);
@@ -552,82 +468,49 @@ const Settings = () => {
 
   const banStudent = async (event) => {
     event.preventDefault();
-    if (!reasonStudentBanned) {
-      reasonStudentBanned = "no reason given";
-    }
-    docRef = await doc(db, "currentSchoolBody", banPopupStudent?.studentId);
-    await getDoc(docRef).then(async (docSnap) => {
-      if (docSnap.exists()) {
-        setDoc(doc(db, "bannedStudents", docSnap.data().ID), {
-          ID: docSnap.data().ID,
-          Email: docSnap.data().Email,
-          FirstName: docSnap.data().FirstName,
-          LastName: docSnap.data().LastName,
-          reasonBanned: reasonStudentBanned,
-          dateBanned: new Date().toLocaleDateString('en-CA'),
-          dateToBeUnbanned: dateStudentIsUnbanned
-        })
-
-        // sendEmail({
-        //   to: docSnap.data().Email + "@augustana.edu",
-        //   subject: "Augustana Recreation Ban Notice",
-        //   html: "<h1>Due to this reason '" + reasonStudentBanned + "', you have been banned from recreation facilities including Pepsico and the Westerlin Activity Center. You will be unbanned on " + dateStudentIsUnbanned + ".</h1>"
-        // }).catch((err) => {
-        // console.error("Failed to send ban alert email:", err);
-        // });
-        addToast("success", "Student Banned", banPopupStudent?.name + " has been banned.");
-      } else {
+    try {
+      const snap = await getDoc(doc(db, "currentSchoolBody", banPopupStudent.studentId));
+      if (!snap.exists()) {
         addToast("error", "Database Error", "Error retrieving data from database. Please try again or contact support if error persists.");
-        // displayIdEntryError("error retrieving data from database. Please try again or contact support if error persists");
+        return;
       }
-      cancelOperation(event);
-    })
-    cancelOperation(event);
-  }
+      const { ID, Email, FirstName, LastName } = snap.data();
+      await setDoc(doc(db, "bannedStudents", ID), {
+        ID,
+        Email,
+        FirstName,
+        LastName,
+        reasonBanned: banReason || "no reason given",
+        dateBanned: new Date().toLocaleDateString('en-CA'),
+        dateToBeUnbanned: banUnbanDate,
+      });
+      addToast("success", "Student Banned", banPopupStudent.name + " has been banned.");
+      cancelOperation();
+    } catch (err) {
+      console.error(err);
+      addToast("error", "Ban Failed", "The ban was not saved. Please try again.");
+    }
+  };
 
   const unbanStudent = async (event) => {
     event.preventDefault();
-    docRef = await doc(db, "bannedStudents", banPopupStudent?.studentEnteredID);
-    if (docRef) {
-      const snap = await getDoc(docRef);
-      const email = snap.data()?.Email;
-
-      await deleteDoc(docRef);
-
-      // added comment to test discord pushes
-      // sendEmail({
-      //   to: email + "@augustana.edu",
-      //   subject: "Augustana Recreation Unban Notice",
-      //   html: "<h1>You have been unbanned from campus recreation facilities. Please be responsible moving forward.</h1>"
-      // }).catch((err) => {
-      //   console.error("Failed to send ban alert email:", err);
-      // });
-
-      addToast("success", "Student Unbanned", banPopupStudent?.name + " has been unbanned.");
-    } else {
-      displayIdEntryError("error retrieving data from database. Please try again or contact support if error persists");
+    try {
+      await deleteDoc(doc(db, "bannedStudents", banPopupStudent.studentId));
+      addToast("success", "Student Unbanned", banPopupStudent.name + " has been unbanned.");
+      cancelOperation();
+    } catch (err) {
+      console.error(err);
+      addToast("error", "Unban Failed", "The unban was not saved. Please try again.");
     }
-    cancelOperation(event);
-  }
-  const cancelOperation = async (event) => {
+  };
+
+  const cancelOperation = (event) => {
     if (event) event.preventDefault();
     setIsBanPopupOpen(false);
     setBanPopupStudent(null);
+    setBanSearch("");
     updateBannedStudentsList();
-    const studentInput = document.getElementById("studentInputForm");
-    if (studentInput) studentInput.value = "";
-    updateReasonBanned("no reason given");
-    updateStudentIdentifier("");
-  }
-
-  function DownloadButton() {
-    return (
-      <a href="/report.pdf" download="import_template_with_dummy_data.csv">
-        <button>Download Document</button>
-      </a>
-    );
-  }
-
+  };
 
   return (
     <>
@@ -676,11 +559,9 @@ const Settings = () => {
                   id="studentInputForm"
                   className="studentInputForm"
                   type="text"
-                  ref={null}
-                  value={studentEmail}
+                  value={banSearch}
                   placeholder="Enter Student username"
-                  onChange={(e) => updateStudentIdentifier(e.target.value)}
-                  onKeyDown={handleKeyDown}
+                  onChange={(e) => setBanSearch(e.target.value)}
                 />
                 <button className="selectStudentButton">Search username</button>
               </form>
@@ -764,14 +645,6 @@ const Settings = () => {
           onChange={handleEquipmentImport}
         />
 
-        {/* ID entry error alert */}
-        <div className="customAlert" id="customAlert">
-          <div className="alertContent" id="alertContent">
-            <h2 className="alertHeading">ID entry error</h2>
-            <p id="alertText"></p>
-          </div>
-        </div>
-
         {/* Ban/Unban popup (search flow) */}
         <BanStudentPopup
           isOpen={isBanPopupOpen}
@@ -779,8 +652,8 @@ const Settings = () => {
           onBan={banStudent}
           onUnban={unbanStudent}
           onCancel={cancelOperation}
-          onReasonChange={updateReasonBanned}
-          onDateChange={setUnbanDate}
+          onReasonChange={setBanReason}
+          onDateChange={setBanUnbanDate}
         />
 
         {/* Banned Students list popup */}
