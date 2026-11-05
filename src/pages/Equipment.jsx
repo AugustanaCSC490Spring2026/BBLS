@@ -14,10 +14,19 @@ import {
     doc,
     getDocs,
     runTransaction,
-    serverTimestamp
+    serverTimestamp,
+    updateDoc
 } from "firebase/firestore";
 import { db } from "../Firebase.js";
 const checkoutHistoryRef = collection(db, "checkoutHistory");
+
+const NOTE_MAX_LENGTH = 200;
+
+// SAFETY: a card scanned while a note field has focus types the raw student ID
+// into it and presses Enter. IDs must never be stored in plaintext.
+function noteContainsId(note) {
+    return /\d{7}/.test(note);
+}
 
 function capitalizeFirst(str) {
     if (!str) return str;
@@ -33,6 +42,9 @@ export default function Equipment({ gym, updateGym }) {
     const [studentId, setStudentId] = useState("");
     const [selectedEquipment, setSelectedEquipment] = useState("");
     const [quantity, setQuantity] = useState(1);
+    const [note, setNote] = useState("");
+    const [editingNote, setEditingNote] = useState(null);
+    const [isSavingNote, setIsSavingNote] = useState(false);
     const [availableEquipment, setAvailableEquipment] = useState([]);
     const [activeCheckouts, setActiveCheckouts] = useState([]);
 
@@ -136,6 +148,12 @@ export default function Equipment({ gym, updateGym }) {
             addToast("error", "Form Error", "Please fill in all fields");
             return;
         }
+        if (noteContainsId(note)) {
+            setNote("");
+            addToast("error", "Note Not Saved", "Notes cannot contain a student ID. Scan IDs into the Student ID field.");
+            idInputRef.current?.focus();
+            return;
+        }
         
         setIsProcessing(true);
 
@@ -180,6 +198,7 @@ export default function Equipment({ gym, updateGym }) {
                     studentName,
                     equipment: equipmentData.name, // Save human-readable name for logging lists
                     quantity,
+                    note: note.trim(),
                     checkoutTime: serverTimestamp(),
                     returned: false
                 });
@@ -207,6 +226,7 @@ export default function Equipment({ gym, updateGym }) {
             setStudentId("");
             setSelectedEquipment("");
             setQuantity(1);
+            setNote("");
 
             idInputRef.current?.focus();
 
@@ -272,6 +292,32 @@ export default function Equipment({ gym, updateGym }) {
         }
     };
 
+    const saveNote = async () => {
+        if (isSavingNote || !editingNote) return;
+        if (noteContainsId(editingNote.text)) {
+            setEditingNote({ ...editingNote, text: "" });
+            addToast("error", "Note Not Saved", "Notes cannot contain a student ID.");
+            return;
+        }
+
+        setIsSavingNote(true);
+        try {
+            await updateDoc(doc(getCheckoutCollection(), editingNote.id), { note: editingNote.text.trim() });
+            setEditingNote(null);
+            await fetchCheckouts();
+        } catch (error) {
+            console.error(error);
+            addToast("error", "Note Not Saved", "An error occurred while saving this note.");
+        } finally {
+            setIsSavingNote(false);
+        }
+    };
+
+    const handleNoteKeyDown = (event) => {
+        if (event.key === "Enter") saveNote();
+        if (event.key === "Escape") setEditingNote(null);
+    };
+
     const labelStyle = { display: "block", marginBottom: "6px", fontWeight: "600", fontSize: "0.875rem", color: "#444" };
     const inputStyle = { borderRadius: "10px", width: "100%", padding: "12px 16px", border: "1px solid #e2e8f0", boxSizing: "border-box", fontSize: "0.95rem", outline: "none", background: "white" };
 
@@ -330,6 +376,18 @@ export default function Equipment({ gym, updateGym }) {
                                         style={inputStyle}
                                         value={quantity}
                                         onChange={(e) => setQuantity(Number(e.target.value))}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={labelStyle}>Note (optional)</label>
+                                    <input
+                                        type="text"
+                                        maxLength={NOTE_MAX_LENGTH}
+                                        placeholder="e.g. Taken with paddles, keeping it all day"
+                                        style={inputStyle}
+                                        value={note}
+                                        onChange={(e) => setNote(e.target.value)}
                                     />
                                 </div>
 
@@ -410,9 +468,38 @@ export default function Equipment({ gym, updateGym }) {
                                 <div className="checkout-grid">
                                     {activeCheckouts.map(item => (
                                         <div key={item.id} className="checkout">
-                                            <div>
+                                            <div className="checkout-info">
                                                 <strong>{item.studentName}</strong>
                                                 <p>{item.equipment} {" x"}{item.quantity}</p>
+                                                {editingNote?.id === item.id ? (
+                                                    <div className="checkout-note-edit">
+                                                        <input
+                                                            autoFocus
+                                                            type="text"
+                                                            aria-label={`Note for ${item.studentName}`}
+                                                            maxLength={NOTE_MAX_LENGTH}
+                                                            value={editingNote.text}
+                                                            onChange={(e) => setEditingNote({ ...editingNote, text: e.target.value })}
+                                                            onKeyDown={handleNoteKeyDown}
+                                                        />
+                                                        <button className="checkout-note-button" onClick={saveNote} disabled={isSavingNote}>
+                                                            {isSavingNote ? "Saving..." : "Save"}
+                                                        </button>
+                                                        <button className="checkout-note-button" onClick={() => setEditingNote(null)} disabled={isSavingNote}>
+                                                            Cancel
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        {item.note && <p className="checkout-note">{item.note}</p>}
+                                                        <button
+                                                            className="checkout-note-button"
+                                                            onClick={() => setEditingNote({ id: item.id, text: item.note || "" })}
+                                                        >
+                                                            {item.note ? "Edit note" : "Add note"}
+                                                        </button>
+                                                    </>
+                                                )}
                                             </div>
                                             <button
                                                 onClick={() => handleReturn(item.id)}
