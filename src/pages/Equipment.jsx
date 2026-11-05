@@ -13,10 +13,7 @@ import {
     collection,
     doc,
     getDocs,
-    getDoc,
-    updateDoc,
-    addDoc,
-    setDoc,
+    runTransaction,
     serverTimestamp
 } from "firebase/firestore";
 import { db } from "../Firebase.js";
@@ -161,45 +158,48 @@ export default function Equipment({ gym, updateGym }) {
 
             // Target doc using the selected strict document ID instead of the item name string
             const equipmentDocRef = doc(inventoryRef, selectedEquipment);
-            const equipmentSnap = await getDoc(equipmentDocRef);
-            
-            if (!equipmentSnap.exists()) {
-                addToast("error", "Database Error", "Selected equipment item could not be found.");
+            // History shares this ID so handleReturn can find the record later
+            const checkoutDocRef = doc(checkoutRef);
+            let equipmentName;
+
+            const failure = await runTransaction(db, async (tx) => {
+                const equipmentSnap = await tx.get(equipmentDocRef);
+                if (!equipmentSnap.exists()) {
+                    return { title: "Database Error", message: "Selected equipment item could not be found." };
+                }
+
+                const equipmentData = equipmentSnap.data();
+                if (equipmentData.available < quantity) {
+                    return { title: "Equipment Unavailable", message: "Not enough equipment available" };
+                }
+                equipmentName = equipmentData.name;
+
+                tx.update(equipmentDocRef, { available: equipmentData.available - quantity });
+                tx.set(checkoutDocRef, {
+                    studentId: hashedId,
+                    studentName,
+                    equipment: equipmentData.name, // Save human-readable name for logging lists
+                    quantity,
+                    checkoutTime: serverTimestamp(),
+                    returned: false
+                });
+                tx.set(doc(checkoutHistoryRef, checkoutDocRef.id), {
+                    name: studentName,
+                    item: equipmentData.name,
+                    location: gym,
+                    time: serverTimestamp(),
+                    ifReturned: false
+                });
+                return null;
+            });
+
+            if (failure) {
+                addToast("error", failure.title, failure.message);
+                fetchInventory();
                 return;
             }
 
-            const equipmentData = equipmentSnap.data();
-            if (equipmentData.available < quantity) {
-                addToast("error", "Equipment Unavailable", "Not enough equipment available");
-                return;
-            }
-
-            // Decrement availability count
-            await updateDoc(equipmentDocRef, {
-                available: equipmentData.available - quantity
-            });
-
-            // Write into checkouts collection
-            const newCheckoutDocRef = await addDoc(checkoutRef, {
-                studentId: hashedId,
-                studentName,
-                equipment: equipmentData.name, // Save human-readable name for logging lists
-                quantity,
-                checkoutTime: serverTimestamp(),
-                returned: false
-            });
-
-            // Write into checkoutHistory collection, keyed by the same doc ID
-            // so handleReturn can find and update this record later
-            await setDoc(doc(checkoutHistoryRef, newCheckoutDocRef.id), {
-                name: studentName,
-                item: equipmentData.name,
-                location: gym,
-                time: serverTimestamp(),
-                ifReturned: false
-            });
-
-            addToast("success", "Checkout Successful", `${studentName} checked out ${quantity} ${equipmentData.name}(s)`);
+            addToast("success", "Checkout Successful", `${studentName} checked out ${quantity} ${equipmentName}(s)`);
 
             // Clear states and re-fetch UI data arrays
             fetchInventory();
@@ -228,39 +228,45 @@ export default function Equipment({ gym, updateGym }) {
             const inventoryRef = getInventoryCollection();
 
             const checkoutDocRef = doc(checkoutRef, id);
-            const checkoutSnap = await getDoc(checkoutDocRef);
-            const checkoutData = checkoutSnap.data();
 
-            if (checkoutData.returned) return;
+            const failure = await runTransaction(db, async (tx) => {
+                const checkoutSnap = await tx.get(checkoutDocRef);
+                if (!checkoutSnap.exists()) {
+                    return { title: "Not Found", message: "Checkout record not found." };
+                }
 
-            // Find item by mapping the name back or using matching systems
-            // If your checkouts map by name strings, we search through the array to locate the exact Doc ID
-            const exactEquipmentDoc = availableEquipment.find(item => item.name === checkoutData.equipment);
-            
-            if (!exactEquipmentDoc) {
-                console.error("Could not trace back inventory item ID by name.");
-                return;
-            }
+                const checkoutData = checkoutSnap.data();
+                if (checkoutData.returned) {
+                    return { title: "Already Returned", message: "This checkout was already returned." };
+                }
 
-            const equipmentDocRef = doc(inventoryRef, exactEquipmentDoc.id);
-            const equipmentSnap = await getDoc(equipmentDocRef);
-            const equipmentData = equipmentSnap.data();
+                // Checkouts store the item name, so map it back to the inventory doc ID
+                const exactEquipmentDoc = availableEquipment.find(item => item.name === checkoutData.equipment);
+                if (!exactEquipmentDoc) {
+                    return { title: "Not Found", message: `${checkoutData.equipment} is not in this gym's inventory.` };
+                }
 
-            await updateDoc(equipmentDocRef, {
-                available: equipmentData.available + checkoutData.quantity
+                const equipmentDocRef = doc(inventoryRef, exactEquipmentDoc.id);
+                const equipmentSnap = await tx.get(equipmentDocRef);
+                if (!equipmentSnap.exists()) {
+                    return { title: "Not Found", message: "Equipment item could not be found." };
+                }
+
+                tx.update(equipmentDocRef, { available: equipmentSnap.data().available + checkoutData.quantity });
+                tx.update(checkoutDocRef, { returned: true, returnTime: serverTimestamp() });
+                // Clients cannot read checkoutHistory, and older checkouts may have no
+                // history doc, so merge instead of update to avoid aborting the return.
+                tx.set(doc(checkoutHistoryRef, id), { ifReturned: true }, { merge: true });
+                return null;
             });
-            await updateDoc(checkoutDocRef, {
-                returned: true,
-                returnTime: serverTimestamp()
-            });
-            await updateDoc(doc(checkoutHistoryRef, id), {
-                ifReturned: true
-            });
+
+            if (failure) addToast("error", failure.title, failure.message);
 
             await fetchInventory();
             await fetchCheckouts();
         } catch (error) {
             console.error(error);
+            addToast("error", "Return Failed", "An error occurred while returning this item.");
         } finally {
             setReturningId(null);
         }
