@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { requireAuthorized, requireAdmin } from "../auth.js";
 import { validateEmailRequest } from "../Email.js";
+import { rejectOutsideAccount } from "../signInBlock.js";
 
 const fakeDb = (users) => ({
   doc: (path) => ({
@@ -45,6 +46,25 @@ test("accepts listed staff, case-insensitively", async () => {
 test("requireAdmin rejects non-admin staff and accepts admins", async () => {
   await assert.rejects(requireAdmin(req("staff@augustana.edu"), db), code("permission-denied"));
   assert.equal((await requireAdmin(req("boss@augustana.edu"), db)).isAdmin, true);
+});
+
+test("sign-in block lets verified augustana accounts through, case-insensitively", () => {
+  assert.equal(rejectOutsideAccount({ data: { email: "Staff@Augustana.edu", emailVerified: true } }), undefined);
+});
+
+test("sign-in block rejects other domains, lookalikes, unverified and missing emails", () => {
+  const rejected = [
+    { email: "outsider@gmail.com", emailVerified: true },
+    { email: "a@augustana.edu.evil.com", emailVerified: true },
+    { email: "a@notaugustana.edu", emailVerified: true },
+    { email: "staff@augustana.edu", emailVerified: false },
+    { email: "staff@augustana.edu" },
+    { emailVerified: true },
+    undefined,
+  ];
+  for (const data of rejected) {
+    assert.throws(() => rejectOutsideAccount({ data }), code("permission-denied"));
+  }
 });
 
 test("email recipients must be one augustana address", () => {

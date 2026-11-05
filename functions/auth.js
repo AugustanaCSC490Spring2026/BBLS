@@ -3,6 +3,12 @@ import { getFirestore } from "firebase-admin/firestore";
 
 export const ALLOWED_DOMAIN = "augustana.edu";
 
+export function isAllowedAccount(email, emailVerified) {
+  return emailVerified === true
+    && typeof email === "string"
+    && email.toLowerCase().endsWith(`@${ALLOWED_DOMAIN}`);
+}
+
 /**
  * Verifies the caller of a callable function is a signed-in, verified
  * @augustana.edu account listed in authorized_users.
@@ -14,7 +20,7 @@ export async function requireAuthorized(request, db = getFirestore()) {
     throw new HttpsError("unauthenticated", "Must be logged in.");
   }
   const email = token.email.toLowerCase();
-  if (token.email_verified !== true || !email.endsWith(`@${ALLOWED_DOMAIN}`)) {
+  if (!isAllowedAccount(email, token.email_verified)) {
     throw new HttpsError("permission-denied", "Not an authorized user.");
   }
   const snap = await db.doc(`authorized_users/${email}`).get();
