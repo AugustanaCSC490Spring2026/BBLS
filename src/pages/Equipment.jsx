@@ -4,6 +4,7 @@ import Navbar from "./Navigation.jsx";
 import { useState, useEffect, useRef, useCallback } from "react";
 import "../components/Equipment.css";
 import ValidateSwipe from "../components/ValidateSwipe.js";
+import { withTimeout, TIMED_OUT } from "../components/withTimeout.js";
 import ToastContainer from "../components/ToastContainer";
 import NavDropdown from "../components/NavDropdown.jsx";
 
@@ -21,6 +22,7 @@ import { db } from "../Firebase.js";
 const checkoutHistoryRef = collection(db, "checkoutHistory");
 
 const NOTE_MAX_LENGTH = 200;
+const NOTE_SAVE_TIMEOUT_MS = 5000;
 
 // SAFETY: a card scanned while a note field has focus types the raw student ID
 // into it and presses Enter. IDs must never be stored in plaintext.
@@ -160,6 +162,12 @@ export default function Equipment({ gym, updateGym }) {
         try {
             // Validate the swipe card first inside the catch block
             const validation = await ValidateSwipe(studentId);
+            if (validation.unavailable) {
+                addToast("error", "ID Not Checked", validation.reasonDenied);
+                setStudentId("");
+                idInputRef.current?.focus();
+                return;
+            }
             if (!validation.isValid) {
                 addToast("error", "ID Denied", validation.reasonDenied);
                 setStudentId("");
@@ -302,8 +310,13 @@ export default function Equipment({ gym, updateGym }) {
 
         setIsSavingNote(true);
         try {
-            await updateDoc(doc(getCheckoutCollection(), editingNote.id), { note: editingNote.text.trim() });
+            const write = updateDoc(doc(getCheckoutCollection(), editingNote.id), { note: editingNote.text.trim() });
+            const outcome = await withTimeout(write, NOTE_SAVE_TIMEOUT_MS);
             setEditingNote(null);
+            if (outcome === TIMED_OUT) {
+                addToast("error", "Connection Problem", "Note not saved yet. It will save when the connection returns. Keep this page open.");
+                return;
+            }
             await fetchCheckouts();
         } catch (error) {
             console.error(error);

@@ -37,6 +37,10 @@
   background: #d90000;
 }
 
+.away-notChecked {
+  background: #a85400;
+}
+
 .away-logo {
   position: absolute;
   top: 1.5rem;

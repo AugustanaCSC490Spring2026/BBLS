@@ -11,6 +11,7 @@ import "../components/Dashboard.css";
 import GuestPopup from "../components/GuestTab.jsx";
 import ValidateSwipe from "../components/ValidateSwipe.js";
 import { warmHashFunction } from "../components/HashId.js";
+import { withTimeout, TIMED_OUT } from "../components/withTimeout.js";
 import AwayModeOverlay from "../components/AwayModeOverlay.jsx";
 
 
@@ -19,6 +20,12 @@ const westerlinGymRef = collection(db, 'westerlinGym')
 const invalidSwipeInRef = collection(db, 'invalidSwipeIns');
 const guestEntranceRef = collection(db, "guestEntrance");
 const WARM_UP_INTERVAL_MS = 5 * 60 * 1000;
+const SAVE_TIMEOUT_MS = 5000;
+const QUEUED_MESSAGE = "This will save when the connection returns. Keep this page open.";
+
+async function isConfirmedSaved(write) {
+  return (await withTimeout(write, SAVE_TIMEOUT_MS)) !== TIMED_OUT;
+}
 
 
 function Dashboard({ gym, updateGym }) {
@@ -61,12 +68,13 @@ function Dashboard({ gym, updateGym }) {
 
   const handleOverlaySwipe = async (rawId) => {
     try {
-      const { isValid, hashedId, name, reasonDenied } = await ValidateSwipe(rawId);
-      await storeSwipeIn(gym, isValid, hashedId, serverTimestamp(), reasonDenied, name);
-      return { success: isValid, name, reason: reasonDenied };
+      const { isValid, hashedId, name, reasonDenied, unavailable } = await ValidateSwipe(rawId);
+      if (unavailable) return { success: false, unavailable, reason: reasonDenied };
+      const saved = await storeSwipeIn(gym, isValid, hashedId, serverTimestamp(), reasonDenied, name);
+      return { success: isValid, name, reason: reasonDenied, queued: !saved };
     } catch (err) {
       console.error("Error saving swipe:", err);
-      return { success: false, reason: "Swipe not saved. Please swipe again." };
+      return { success: false, unavailable: true, reason: "Swipe not saved. Please swipe again." };
     }
   };
 
@@ -117,10 +125,15 @@ function Dashboard({ gym, updateGym }) {
 
     try {
       // Validating the swipe input
-      const { isValid: swipeValid, hashedId, name: studentName, reasonDenied: reasonSwipeDenied } = await ValidateSwipe(temp_input);
+      const { isValid: swipeValid, hashedId, name: studentName, reasonDenied: reasonSwipeDenied, unavailable } = await ValidateSwipe(temp_input);
 
-      // Save to firebase
-      await storeSwipeIn(gym, swipeValid, hashedId, serverTimestamp(), reasonSwipeDenied, studentName);
+      if (unavailable) {
+        addToast("error", "ID Not Checked", reasonSwipeDenied);
+      } else {
+        // Save to firebase
+        const saved = await storeSwipeIn(gym, swipeValid, hashedId, serverTimestamp(), reasonSwipeDenied, studentName);
+        if (!saved) addToast("error", "Connection Problem", `Swipe not saved yet. ${QUEUED_MESSAGE}`);
+      }
 
       setStudentId("");
 
@@ -139,18 +152,23 @@ function Dashboard({ gym, updateGym }) {
 
   async function processGuestEntry(guestData) {
     try {
-      await addDoc(guestEntranceRef, {
+      const saved = await isConfirmedSaved(addDoc(guestEntranceRef, {
         location: gym,
         timestamp: serverTimestamp(),
         ...guestData
-      });
-      addToast("success", "Guest Signed In", `Welcome, ${guestData.name}!`);
+      }));
+      if (saved) {
+        addToast("success", "Guest Signed In", `Welcome, ${guestData.name}!`);
+      } else {
+        addToast("error", "Connection Problem", `Guest not saved yet. ${QUEUED_MESSAGE}`);
+      }
     } catch (err) {
       console.error("Error saving guest entry:", err);
       addToast("error", "System Error", "Failed to save guest sign-in. Please try again.");
     }
   }
 
+  // Resolves false if the write is still queued, so staff must not re-swipe and double count.
   async function storeSwipeIn(gym, swipeValid, swipeHash, timeStamp, reasonSwipeDenied, studentName) {
     const hashedId = swipeHash ?? "";
 
@@ -158,19 +176,20 @@ function Dashboard({ gym, updateGym }) {
       addToast("success", "ID Accepted", `Welcome, ${studentName}!`);
 
       if (gym === "PepsiCo Center") {
-        await addDoc(pepsicoCenterRef, { ID: hashedId, swipeInTime: timeStamp });
+        return isConfirmedSaved(addDoc(pepsicoCenterRef, { ID: hashedId, swipeInTime: timeStamp }));
       } else if (gym === "Westerlin Gym") {
-        await addDoc(westerlinGymRef, { ID: hashedId, swipeInTime: timeStamp });
+        return isConfirmedSaved(addDoc(westerlinGymRef, { ID: hashedId, swipeInTime: timeStamp }));
       }
 
     } else if (!swipeValid && reasonSwipeDenied.includes("banned")) {
       addToast("banned", "STUDENT BANNED", reasonSwipeDenied);
-      await addDoc(invalidSwipeInRef, { gym: gym, ID: hashedId, swipeInTime: timeStamp });
+      return isConfirmedSaved(addDoc(invalidSwipeInRef, { gym: gym, ID: hashedId, swipeInTime: timeStamp }));
 
     } else if (!swipeValid) {
       addToast("error", "ID Denied", reasonSwipeDenied);
-      await addDoc(invalidSwipeInRef, { gym: gym, ID: hashedId, swipeInTime: timeStamp });
+      return isConfirmedSaved(addDoc(invalidSwipeInRef, { gym: gym, ID: hashedId, swipeInTime: timeStamp }));
     }
+    return true;
   }
 
 
