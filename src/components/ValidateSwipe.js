@@ -1,7 +1,6 @@
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../Firebase.js";
 import { hashId } from "./HashId.js";
-import { getFunctions, httpsCallable } from "firebase/functions";
 
 
 
@@ -46,8 +45,6 @@ async function ValidateSwipe(swipe) {
 
     const studentSnapPromise = getDoc(doc(db, "currentSchoolBody", hashedId));
     const bannedSnapPromise = getDoc(doc(db, "bannedStudents", hashedId));
-    const functions = getFunctions();
-    const sendEmail = httpsCallable(functions, "sendEmail");
 
     const [studentSnap, bannedSnap] = await Promise.all([studentSnapPromise, bannedSnapPromise]);
     // student does exist, update variables
@@ -73,8 +70,6 @@ async function ValidateSwipe(swipe) {
       studentName = bannedSnap.data().FirstName + " " + bannedSnap.data().LastName;
       swipeValid = false;
       reasonSwipeDenied = studentName + " is currently banned from entering Augustana Rec Facilities.";
-
-      const now = new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' });
 
       // sendEmail({
       //   to: "bengeorgia23@augustana.edu",

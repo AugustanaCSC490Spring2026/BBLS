@@ -183,7 +183,7 @@ function exportPieChartPng(segments, filename) {
   }, "image/png");
 }
 
-function Analytics({ gym, updateGym }) {
+function Analytics() {
   // Which facility's data the stat cards (and eventually the charts) reflect.
   const [facility, setFacility] = useState("Both");
   const [timeInterval, setTimeInterval] = useState("Daily");

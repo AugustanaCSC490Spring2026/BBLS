@@ -11,7 +11,7 @@ import Navbar from "./Navigation.jsx";
 import { db } from "../Firebase.js";
 
 // Firestore tools
-import { doc, writeBatch, collection, serverTimestamp, getDoc, deleteDoc, setDoc, getDocs, addDoc, updateDoc, query, where, limit } from "firebase/firestore";
+import { doc, writeBatch, collection, getDoc, deleteDoc, setDoc, getDocs, addDoc, updateDoc, query, where, limit } from "firebase/firestore";
 
 import { getFunctions, httpsCallable } from "firebase/functions";
 
@@ -33,8 +33,6 @@ const bannedStudentsRef = collection(db, "bannedStudents");
 const currentStudentsRef = collection(db, "currentSchoolBody"); // Updated collection name
 const adminListRef = collection(db, "authorized_users");
 
-import { add } from "firebase/firestore/pipelines";
-import { getAdditionalUserInfo } from "firebase/auth";
 
 
 
@@ -47,6 +45,10 @@ const Settings = () => {
   const [editingAdmin, setEditingAdmin] = useState(null);
   const [editEmail, setEditEmail] = useState("");
   const [editRole, setEditRole] = useState(false);
+
+  const removeToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
 
   const addToast = (type, title, message) => {
     const newToast = {
@@ -65,10 +67,6 @@ const Settings = () => {
     }, 4000);
   };
 
-  const removeToast = useCallback((id) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  }, [setToasts]);
-
   const [equipmentGym, setEquipmentGym] = useState("PepsiCo Center");
   const [bannedStudents, setBannedStudents] = useState([]);
   const [isAdminPopupOpen, setIsAdminPopupOpen] = useState(false);
@@ -84,7 +82,6 @@ const Settings = () => {
   const [banUnbanDate, setBanUnbanDate] = useState("");
 
   const functions = getFunctions();
-  const sendEmail = httpsCallable(functions, "sendEmail");
   const importRoster = httpsCallable(functions, "importRoster", { timeout: 300000 });
 
   const pepsicoInventoryRef = collection(db, "pepsicoEquipmentInventory");
@@ -185,10 +182,8 @@ const Settings = () => {
   };
 
   useEffect(() => {
-    updateBannedStudentsList();
-  }, []);
-
-  useEffect(() => {
+    // Sets state only after an await, so it does not render synchronously
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchInventory();
   }, [equipmentGym]);
 
@@ -207,6 +202,12 @@ const Settings = () => {
 
   };
 
+  useEffect(() => {
+    // Sets state only after an await, so it does not render synchronously
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    updateBannedStudentsList();
+  }, []);
+
   const unbanStudentById = async (studentId, studentName) => {
     const ref = doc(db, "bannedStudents", studentId);
     await deleteDoc(ref);
@@ -214,7 +215,7 @@ const Settings = () => {
     updateBannedStudentsList();
   };
 
-  const handleSaveBannedStudentChanges = async ({ studentId, reasonBanned, dateToBeUnbanned, email}) => {
+  const handleSaveBannedStudentChanges = async ({ studentId, reasonBanned, dateToBeUnbanned }) => {
     try {
       const ref = doc(db, "bannedStudents", studentId);
       await updateDoc(ref, { reasonBanned, dateToBeUnbanned });
@@ -359,7 +360,6 @@ const Settings = () => {
         let batch = writeBatch(db);
         let operationCount = 0;
 
-        let successCount = 0;
         let failCount = 0;
 
         // Choose collection
@@ -389,7 +389,6 @@ const Settings = () => {
             batch.set(docRef, equipmentData);
 
             operationCount++;
-            successCount++;
 
             if (operationCount === 500) {
 

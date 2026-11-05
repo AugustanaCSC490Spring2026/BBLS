@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
@@ -26,17 +26,13 @@ function App() {
     localStorage.setItem("selectedGym", newGym);
   };
 
-  const overlaySwipeRef = useRef(null);
   return (
     <>
       <title>Augustana Recreation</title>
       <link rel="icon" type="image/x-icon" href={logo}></link>
       <AuthProvider>
         <BrowserRouter>
-          <Navbar
-            currentGym={selectedGym}
-            onGymChange={handleGymChange}
-          />
+          <Navbar />
 
 
           <Routes>
@@ -67,7 +63,7 @@ function App() {
               path="/analytics"
               element={
                 <ProtectedRoute requireAdmin={true}>
-                  <Analytics gym={selectedGym} updateGym={handleGymChange} />
+                  <Analytics />
                 </ProtectedRoute>
               }
             />

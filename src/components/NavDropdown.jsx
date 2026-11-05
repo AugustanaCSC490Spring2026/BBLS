@@ -9,11 +9,11 @@ export function NavDropdown({ options, defaultOption, onChange }) {
   // Use a ref to detect clicks outside the component
   const dropdownRef = useRef(null);
 
-  useEffect(() => {
-    if (defaultOption && defaultOption !== selectedOption) {
-      setSelectedOption(defaultOption);
-    }
-  }, [defaultOption]);
+  const [prevDefault, setPrevDefault] = useState(defaultOption);
+  if (defaultOption !== prevDefault) {
+    setPrevDefault(defaultOption);
+    if (defaultOption) setSelectedOption(defaultOption);
+  }
 
   // Handle clicking outside to close the menu
   useEffect(() => {
