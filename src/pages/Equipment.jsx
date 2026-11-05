@@ -368,27 +368,29 @@ export default function Equipment({ gym, updateGym }) {
                                     </select>
                                 </div>
 
-                                <div>
-                                    <label style={labelStyle}>Quantity</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        style={inputStyle}
-                                        value={quantity}
-                                        onChange={(e) => setQuantity(Number(e.target.value))}
-                                    />
-                                </div>
+                                <div style={{ display: "flex", gap: "12px" }}>
+                                    <div style={{ flex: "0 0 100px" }}>
+                                        <label style={labelStyle}>Quantity</label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            style={inputStyle}
+                                            value={quantity}
+                                            onChange={(e) => setQuantity(Number(e.target.value))}
+                                        />
+                                    </div>
 
-                                <div>
-                                    <label style={labelStyle}>Note (optional)</label>
-                                    <input
-                                        type="text"
-                                        maxLength={NOTE_MAX_LENGTH}
-                                        placeholder="e.g. Taken with paddles, keeping it all day"
-                                        style={inputStyle}
-                                        value={note}
-                                        onChange={(e) => setNote(e.target.value)}
-                                    />
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <label style={labelStyle}>Note (optional)</label>
+                                        <input
+                                            type="text"
+                                            maxLength={NOTE_MAX_LENGTH}
+                                            placeholder="e.g. Taken with paddles"
+                                            style={inputStyle}
+                                            value={note}
+                                            onChange={(e) => setNote(e.target.value)}
+                                        />
+                                    </div>
                                 </div>
 
                                 <button
@@ -490,28 +492,30 @@ export default function Equipment({ gym, updateGym }) {
                                                         </button>
                                                     </div>
                                                 ) : (
-                                                    <>
-                                                        {item.note && <p className="checkout-note">{item.note}</p>}
-                                                        <button
-                                                            className="checkout-note-button"
-                                                            onClick={() => setEditingNote({ id: item.id, text: item.note || "" })}
-                                                        >
-                                                            {item.note ? "Edit note" : "Add note"}
-                                                        </button>
-                                                    </>
+                                                    item.note && <p className="checkout-note">{item.note}</p>
                                                 )}
                                             </div>
-                                            <button
-                                                onClick={() => handleReturn(item.id)}
-                                                disabled={returningId !== null}
-                                                style={{
-                                                    opacity: returningId !== null ? 0.6 : 1,
-                                                    cursor: returningId !== null ? "not-allowed" : "pointer",
-                                                    minWidth: "100px"
-                                                }}
-                                            >
-                                                {returningId === item.id ? "Returning..." : "Return"}
-                                            </button>
+                                            <div className="checkout-actions">
+                                                <button
+                                                    onClick={() => handleReturn(item.id)}
+                                                    disabled={returningId !== null}
+                                                    style={{
+                                                        opacity: returningId !== null ? 0.6 : 1,
+                                                        cursor: returningId !== null ? "not-allowed" : "pointer",
+                                                        minWidth: "100px"
+                                                    }}
+                                                >
+                                                    {returningId === item.id ? "Returning..." : "Return"}
+                                                </button>
+                                                {editingNote?.id !== item.id && (
+                                                    <button
+                                                        className="checkout-note-button"
+                                                        onClick={() => setEditingNote({ id: item.id, text: item.note || "" })}
+                                                    >
+                                                        {item.note ? "Edit note" : "Add note"}
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
