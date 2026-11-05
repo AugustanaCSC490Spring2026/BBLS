@@ -26,10 +26,11 @@ service cloud.firestore {
     }
 
     // Written only by the importRoster function. The front desk may look up
-    // one person by hashed ID but never list the roster.
+    // one person by hashed ID; admins may query for one person at a time.
+    // Nobody can download the roster from the browser.
     match /currentSchoolBody/{id} {
       allow get: if isAuthorized();
-      allow list: if isAdmin();
+      allow list: if isAdmin() && request.query.limit <= 1;
     }
 
     match /bannedStudents/{id} {
@@ -37,11 +38,10 @@ service cloud.firestore {
       allow list, create, update, delete: if isAdmin();
     }
 
-    // Append-only logs: the front desk records, only admins read.
+    // Append-only logs. Analytics reads them through the analyticsSummary
+    // function, so no client reads them.
     match /{log}/{id} {
       allow create: if isAuthorized()
-        && log in ['pepsicoCenter', 'westerlinGym', 'invalidSwipeIns', 'guestEntrance'];
-      allow read: if isAdmin()
         && log in ['pepsicoCenter', 'westerlinGym', 'invalidSwipeIns', 'guestEntrance'];
     }
 
@@ -61,7 +61,6 @@ service cloud.firestore {
 
     match /checkoutHistory/{id} {
       allow create, update: if isAuthorized();
-      allow read: if isAdmin();
     }
   }
 }
