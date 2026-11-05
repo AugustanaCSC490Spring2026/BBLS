@@ -20,7 +20,10 @@ export const AuthProvider = ({ children }) => {
       }
 
       try {
-        const email = currentUser.email.toLowerCase();
+        const email = (currentUser.email || "").toLowerCase();
+        if (!currentUser.emailVerified || !email.endsWith("@augustana.edu")) {
+          throw new Error("Account is not an augustana.edu account");
+        }
         const userRef = doc(db, "authorized_users", email);
         const snap = await getDoc(userRef);
 
@@ -39,6 +42,7 @@ export const AuthProvider = ({ children }) => {
         console.error("Auth check error:", err);
         setUser(null);
         setIsAdmin(false);
+        await auth.signOut();
       }
 
       setLoading(false);
