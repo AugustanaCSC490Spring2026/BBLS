@@ -1,6 +1,9 @@
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../Firebase.js";
 import { hashId } from "./HashId.js";
+import { withTimeout, TIMED_OUT } from "./withTimeout.js";
+
+const LOOKUP_TIMEOUT_MS = 15000;
 
 
 
@@ -14,7 +17,8 @@ import { hashId } from "./HashId.js";
  * Handles ID validation through the format, existance of a student with that ID, and if that student is banned or not.
  * @param {string} swipe - The raw swipe ID string captured from the scanner.
 
- * @returns {Promise<{isValid: boolean, hashedId: string|null, name: string, reasonDenied: string}>}
+ * @returns {Promise<{isValid: boolean, hashedId: string|null, name: string, reasonDenied: string, unavailable?: boolean}>}
+ * unavailable is true when the ID could not be checked, so the swipe is neither accepted nor denied.
  * An object with multiple data points for different implementations within the project. 
  */
 
@@ -41,12 +45,18 @@ async function ValidateSwipe(swipe) {
   // backend validation now that we know the ID number.
   let hashedId = null;
   try {
-    hashedId = await hashId(swipe);
+    const lookup = await withTimeout((async () => {
+      const hashed = await hashId(swipe);
+      const snaps = await Promise.all([
+        getDoc(doc(db, "currentSchoolBody", hashed)),
+        getDoc(doc(db, "bannedStudents", hashed)),
+      ]);
+      return { hashed, snaps };
+    })(), LOOKUP_TIMEOUT_MS);
+    if (lookup === TIMED_OUT) throw new Error("ID lookup timed out");
 
-    const studentSnapPromise = getDoc(doc(db, "currentSchoolBody", hashedId));
-    const bannedSnapPromise = getDoc(doc(db, "bannedStudents", hashedId));
-
-    const [studentSnap, bannedSnap] = await Promise.all([studentSnapPromise, bannedSnapPromise]);
+    hashedId = lookup.hashed;
+    const [studentSnap, bannedSnap] = lookup.snaps;
     // student does exist, update variables
     // ben Amuller wrote lines 30 and 31
     if (studentSnap.exists()) {
@@ -81,14 +91,23 @@ async function ValidateSwipe(swipe) {
     }
 
   }
-  // if there was any error checking data from firebase, send back invalid so that the student re swipes
   catch (error) {
-    console.log("Error fetching student data:", error);
+    // The server read the ID and rejected its contents, which is a real denial.
+    if (error.code === "functions/invalid-argument") {
+      return {
+        isValid: false,
+        hashedId: null,
+        name: studentName,
+        reasonDenied: "Invalid ID format"
+      };
+    }
+    console.error("Error fetching student data:", error);
     return {
       isValid: false,
+      unavailable: true,
       hashedId,
       name: studentName,
-      reasonDenied: "Error fetching student data"
+      reasonDenied: "ID not checked. Check the connection and swipe again."
     };
   }
 

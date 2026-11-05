@@ -3,6 +3,7 @@ import logo from "../assets/logo.png";
 import "./AwayMode.css";
 
 const RESULT_MS = 1500;
+const NOTICE_RESULT_MS = 4000;
 const BUFFER_IDLE_MS = 3000;
 
 const ICONS = {
@@ -26,9 +27,19 @@ const ICONS = {
       <line x1="5.6" y1="5.6" x2="18.4" y2="18.4" />
     </>
   ),
+  notChecked: (
+    <>
+      <line x1="12" y1="4" x2="12" y2="14" />
+      <line x1="12" y1="19.5" x2="12" y2="20" />
+    </>
+  ),
 };
 
-function toResult({ success, name, reason }) {
+function toResult({ success, name, reason, unavailable, queued }) {
+  if (unavailable) return { kind: "notChecked", heading: "Not Checked", sub: reason, showMs: NOTICE_RESULT_MS };
+  if (success && queued) {
+    return { kind: "success", heading: "ID Accepted", sub: `Welcome, ${name}! Your swipe will save when the connection returns.`, showMs: NOTICE_RESULT_MS };
+  }
   if (success) return { kind: "success", heading: "ID Accepted", sub: `Welcome, ${name}!` };
   if (reason?.toLowerCase().includes("banned")) return { kind: "banned", heading: "BANNED", sub: reason };
   return { kind: "denied", heading: "ID Denied", sub: reason };
@@ -52,13 +63,13 @@ function AwayScreen({ gym, onDismiss, onSwipe }) {
       try {
         next = toResult(await onSwipe(id));
       } catch {
-        next = toResult({ success: false, reason: "Swipe not saved. Please swipe again." });
+        next = toResult({ success: false, unavailable: true, reason: "Swipe not saved. Please swipe again." });
       }
 
       // A newer swipe owns the screen; this one is still saved.
       if (swipe !== latestSwipeRef.current) return;
       setResult(next);
-      resetTimerRef.current = setTimeout(() => setResult(null), RESULT_MS);
+      resetTimerRef.current = setTimeout(() => setResult(null), next.showMs ?? RESULT_MS);
     };
 
     const handleKeyDown = (e) => {
