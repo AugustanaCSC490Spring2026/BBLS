@@ -38,7 +38,6 @@ function Login() {
       const userRef = doc(db, "authorized_users", email);
       const userSnap = await getDoc(userRef);
 
-      console.log("Checking email:", email);
       if (userSnap.exists()) {
         navigate("/Location");
       } else {
