@@ -9,6 +9,7 @@ setGlobalOptions({ maxInstances: 10 });
 export const dailyUnban = dailyUnbanTask;
 export { sendEmail } from "./Email.js";
 export { importRoster } from "./roster.js";
+export { analyticsSummary } from "./analytics.js";
 
 export const hashStudentId = onCall(
   { secrets: [idHmacKey] },
