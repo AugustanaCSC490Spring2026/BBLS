@@ -35,6 +35,10 @@
   border-left: 6px solid #E80000;
 }
 
+.toast-info {
+  border-left: 6px solid #2B6CB0;
+}
+
 .toast-banned {
   border-left: 6px solid #E80000;
   padding-right: 36px;

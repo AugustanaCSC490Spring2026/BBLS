@@ -15,7 +15,7 @@ import { getFunctions, httpsCallable } from "firebase/functions";
  * Handles ID validation through the format, existance of a student with that ID, and if that student is banned or not.
  * @param {string} swipe - The raw swipe ID string captured from the scanner.
 
- * @returns {Promise<{isValid: boolean, studentId: string, name: string, reasonDenied: string}>}
+ * @returns {Promise<{isValid: boolean, hashedId: string|null, name: string, reasonDenied: string}>}
  * An object with multiple data points for different implementations within the project. 
  */
 
@@ -29,28 +29,20 @@ async function ValidateSwipe(swipe) {
   // trimming anything extra from the input
   swipe = swipe.trim();
 
-  // if its not 7 and not 9 and not 16 characters long, its invalid.
+  // The server extracts the 7-digit ID from 7-, 9- and 16-character reads.
   if (swipe.length !== 7 && swipe.length !== 9 && swipe.length !== 16) {
     return {
       isValid: false,
-      studentId: swipe,
+      hashedId: null,
       name: studentName,
       reasonDenied: "Invalid ID format"
     };
   }
-  // if it's 7 we dont need to do anything
-  // if its 16 we need to trim the extra characters off.
-  else if (swipe.length == 16) {
-    swipe = swipe.slice(3, 10);
-  }
-
-  else if (swipe.length == 9) {
-    swipe = swipe.slice(2, 9); // strips off the leading 2 characters, when a staff member reads 000775530 it would become 0775530.
-  }
 
   // backend validation now that we know the ID number.
+  let hashedId = null;
   try {
-    const hashedId = await hashId(swipe);
+    hashedId = await hashId(swipe);
 
     const studentSnapPromise = getDoc(doc(db, "currentSchoolBody", hashedId));
     const bannedSnapPromise = getDoc(doc(db, "bannedStudents", hashedId));
@@ -68,7 +60,7 @@ async function ValidateSwipe(swipe) {
     else {
       return {
         isValid: false,
-        studentId: swipe,
+        hashedId,
         name: studentName,
         reasonDenied: "ID entered does not exist"
       };
@@ -99,7 +91,7 @@ async function ValidateSwipe(swipe) {
     console.log("Error fetching student data:", error);
     return {
       isValid: false,
-      studentId: swipe,
+      hashedId,
       name: studentName,
       reasonDenied: "Error fetching student data"
     };
@@ -108,7 +100,7 @@ async function ValidateSwipe(swipe) {
   // returning the accumulated data in an object  
   return {
     isValid: swipeValid,
-    studentId: swipe,
+    hashedId,
     name: studentName,
     reasonDenied: reasonSwipeDenied
   };

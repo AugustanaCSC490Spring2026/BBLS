@@ -12,8 +12,6 @@ import GuestPopup from "../components/GuestTab.jsx";
 import ValidateSwipe from "../components/ValidateSwipe.js";
 import AwayModeOverlay from "../components/AwayModeOverlay.jsx";
 
-// IMPORT HASH UTILITY: Reusing the hashing function from your settings configuration
-import { hashId } from "../components/HashId.js";
 
 const pepsicoCenterRef = collection(db, 'pepsicoCenter')
 const westerlinGymRef = collection(db, 'westerlinGym')
@@ -61,11 +59,11 @@ function Dashboard({ gym, updateGym }) {
 
   const handleOverlaySwipe = async (rawId) => {
     const validationResult = await ValidateSwipe(rawId);
-    const { isValid, studentId: verified_data, name, reasonDenied } = validationResult;
+    const { isValid, hashedId, name, reasonDenied } = validationResult;
 
     try {
       // MODIFIED: Awaiting storeSwipeIn since it is now asynchronous
-      await storeSwipeIn(gym, isValid, verified_data, serverTimestamp(), reasonDenied, name);
+      await storeSwipeIn(gym, isValid, hashedId, serverTimestamp(), reasonDenied, name);
     } catch (err) {
       console.error("Error saving swipe:", err);
     }
@@ -121,10 +119,10 @@ function Dashboard({ gym, updateGym }) {
 
     try {
       // Validating the swipe input
-      const { isValid: swipeValid, studentId: verified_data, name: studentName, reasonDenied: reasonSwipeDenied } = await ValidateSwipe(temp_input);
+      const { isValid: swipeValid, hashedId, name: studentName, reasonDenied: reasonSwipeDenied } = await ValidateSwipe(temp_input);
 
       // Save to firebase
-      await storeSwipeIn(gym, swipeValid, verified_data, serverTimestamp(), reasonSwipeDenied, studentName);
+      await storeSwipeIn(gym, swipeValid, hashedId, serverTimestamp(), reasonSwipeDenied, studentName);
 
       setStudentId("");
 
@@ -155,19 +153,15 @@ function Dashboard({ gym, updateGym }) {
     }
   }
 
-  // MODIFIED: Turned into an async function to allow hashing execution
-  async function storeSwipeIn(gym, swipeValid, verified_data, timeStamp, reasonSwipeDenied, studentName) {
-    // Generate the hashed ID if verified_data exists
-    const hashedId = verified_data ? await hashId(String(verified_data).trim()) : "";
+  async function storeSwipeIn(gym, swipeValid, swipeHash, timeStamp, reasonSwipeDenied, studentName) {
+    const hashedId = swipeHash ?? "";
 
     if (swipeValid && gym !== "None Selected") {
       addToast("success", "ID Accepted", `Welcome, ${studentName}!`);
 
       if (gym === "PepsiCo Center") {
-        // MODIFIED: Replaced verified_data with hashedId
         await addDoc(pepsicoCenterRef, { ID: hashedId, swipeInTime: timeStamp });
       } else if (gym === "Westerlin Gym") {
-        // MODIFIED: Replaced verified_data with hashedId
         await addDoc(westerlinGymRef, { ID: hashedId, swipeInTime: timeStamp });
       }
 
@@ -177,7 +171,6 @@ function Dashboard({ gym, updateGym }) {
 
     } else if (!swipeValid) {
       addToast("error", "ID Denied", reasonSwipeDenied);
-      // MODIFIED: Replaced verified_data with hashedId for invalid swipe logging
       await addDoc(invalidSwipeInRef, { gym: gym, ID: hashedId, swipeInTime: timeStamp });
     }
   }
