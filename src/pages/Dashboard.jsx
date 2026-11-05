@@ -10,6 +10,7 @@ import "../components/Dashboard.css";
 
 import GuestPopup from "../components/GuestTab.jsx";
 import ValidateSwipe from "../components/ValidateSwipe.js";
+import { warmHashFunction } from "../components/HashId.js";
 import AwayModeOverlay from "../components/AwayModeOverlay.jsx";
 
 
@@ -17,6 +18,7 @@ const pepsicoCenterRef = collection(db, 'pepsicoCenter')
 const westerlinGymRef = collection(db, 'westerlinGym')
 const invalidSwipeInRef = collection(db, 'invalidSwipeIns');
 const guestEntranceRef = collection(db, "guestEntrance");
+const WARM_UP_INTERVAL_MS = 5 * 60 * 1000;
 
 
 function Dashboard({ gym, updateGym }) {
@@ -32,6 +34,13 @@ function Dashboard({ gym, updateGym }) {
   useEffect(() => {
     awayModeRef.current = awayMode;
   }, [awayMode]);
+
+  // Keeps the first swipe from waiting on a Cloud Function cold start
+  useEffect(() => {
+    warmHashFunction();
+    const warmUpInterval = setInterval(warmHashFunction, WARM_UP_INTERVAL_MS);
+    return () => clearInterval(warmUpInterval);
+  }, []);
 
   // Focuses the input on load and on return from the guest popup or away mode,
   // then keeps it focused every 5 seconds

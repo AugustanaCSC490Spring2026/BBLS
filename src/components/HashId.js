@@ -8,3 +8,7 @@ export async function hashId(rawId) {
   const result = await hashStudentIdFn({ rawId });
   return result.data.hashed;
 }
+
+export function warmHashFunction() {
+  hashStudentIdFn({ warmup: true }).catch(() => {});
+}
