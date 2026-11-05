@@ -11,7 +11,7 @@ import Navbar from "./Navigation.jsx";
 import { db } from "../Firebase.js";
 
 // Firestore tools
-import { doc, writeBatch, collection, serverTimestamp, getDoc, deleteDoc, setDoc, getDocs, addDoc, updateDoc } from "firebase/firestore";
+import { doc, writeBatch, collection, serverTimestamp, getDoc, deleteDoc, setDoc, getDocs, addDoc, updateDoc, query, where, limit } from "firebase/firestore";
 
 import { getFunctions, httpsCallable } from "firebase/functions";
 
@@ -71,7 +71,6 @@ const Settings = () => {
 
   const [equipmentGym, setEquipmentGym] = useState("PepsiCo Center");
   const [bannedStudents, setBannedStudents] = useState([]);
-  const [possibleStudents, updatePossibleStudents] = useState([]);
   const [isAdminPopupOpen, setIsAdminPopupOpen] = useState(false);
   const [isBanPopupOpen, setIsBanPopupOpen] = useState(false);
   const [banPopupStudent, setBanPopupStudent] = useState(null);
@@ -184,7 +183,6 @@ const Settings = () => {
 
   useEffect(() => {
     updateBannedStudentsList();
-    createListOfPossibleStudents();
   }, []);
 
   useEffect(() => {
@@ -206,15 +204,6 @@ const Settings = () => {
 
   };
 
-  const createListOfPossibleStudents = async (input) => {
-    const docSnap = await getDocs(currentStudentsRef);
-    let listOfPossibleStudents = [];
-    const studentList = docSnap.docs.map(
-      (doc) => doc.data().Email
-    );
-    updatePossibleStudents(studentList);
-  }
-    ;
   const unbanStudentById = async (studentId, studentName) => {
     const ref = doc(db, "bannedStudents", studentId);
     await deleteDoc(ref);
@@ -452,13 +441,11 @@ const Settings = () => {
 
     let isbanned;
     verified_data = studentEmail;
-    const studentList = await getDocs(currentStudentsRef);
-    //loops through all the current students to find one that matches
-    studentList.forEach((student) => {
-      if (student.data().Email == studentEmail) {
-        studentEntered = student;
-      }
-    })
+    const username = String(studentEmail ?? "").trim().toLowerCase().replace(/@augustana.edu$/, "");
+    const matches = username
+      ? await getDocs(query(currentStudentsRef, where("Email", "==", username), limit(1)))
+      : null;
+    studentEntered = matches?.docs[0] ?? null;
     //displays error if student is not found
     if (studentEntered == null) {
       addToast("error", "ID Not Found", "No student has the entered id or username.");
@@ -689,7 +676,6 @@ const Settings = () => {
                   id="studentInputForm"
                   className="studentInputForm"
                   type="text"
-                  list="studentList"
                   ref={null}
                   value={studentEmail}
                   placeholder="Enter Student username"
@@ -698,12 +684,6 @@ const Settings = () => {
                 />
                 <button className="selectStudentButton">Search username</button>
               </form>
-              <datalist id="studentList">
-                {possibleStudents.map((name, i) => (
-                  <option key={i} value={name}></option>
-                ))
-                }
-              </datalist>
             </div>
 
             <div className="settings-section">

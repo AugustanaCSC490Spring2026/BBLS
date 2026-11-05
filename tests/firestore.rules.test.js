@@ -1,7 +1,7 @@
 import { test, before, after, beforeEach } from "node:test";
 import { readFileSync } from "node:fs";
 import { initializeTestEnvironment, assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
-import { doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, collection } from "firebase/firestore";
+import { doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc, collection, query, where, limit } from "firebase/firestore";
 
 const ADMIN = "admin@augustana.edu";
 const DESK = "desk@augustana.edu";
@@ -25,7 +25,7 @@ beforeEach(async () => {
     await setDoc(doc(db, "authorized_users", ADMIN), { isAdmin: true });
     await setDoc(doc(db, "authorized_users", DESK), { isAdmin: false });
     await setDoc(doc(db, "authorized_users", "outsider@gmail.com"), { isAdmin: true });
-    await setDoc(doc(db, "currentSchoolBody", "h1"), { FirstName: "A" });
+    await setDoc(doc(db, "currentSchoolBody", "h1"), { FirstName: "A", Email: "a" });
     await setDoc(doc(db, "bannedStudents", "h1"), { reasonBanned: "x" });
     await setDoc(doc(db, "pepsicoCenter", "s1"), { ID: "h1" });
     await setDoc(doc(db, "pepsicoEquipmentInventory", "ball"), { available: 3 });
@@ -83,14 +83,24 @@ test("front desk checks equipment in and out", async () => {
   await assertFails(deleteDoc(doc(db, "pepsicoEquipmentInventory", "ball")));
 });
 
-test("admins manage the allowlist, bans, and read analytics data", async () => {
+test("admins manage the allowlist and bans, and find one student at a time", async () => {
   const db = as(ADMIN);
+  const roster = collection(db, "currentSchoolBody");
   await assertSucceeds(getDocs(collection(db, "authorized_users")));
   await assertSucceeds(setDoc(doc(db, "authorized_users", "new@augustana.edu"), { isAdmin: false }));
-  await assertSucceeds(getDocs(collection(db, "currentSchoolBody")));
   await assertSucceeds(setDoc(doc(db, "bannedStudents", "h2"), { reasonBanned: "x" }));
-  await assertSucceeds(getDocs(collection(db, "pepsicoCenter")));
-  await assertSucceeds(getDocs(collection(db, "checkoutHistory")));
+  await assertSucceeds(getDocs(query(roster, where("Email", "==", "a"), limit(1))));
+  await assertFails(getDocs(roster));
+  await assertFails(getDocs(query(roster, limit(2))));
+  await assertFails(getDocs(query(roster, where("Email", "==", "a"))));
+});
+
+test("swipe logs and checkout history are never read from the client", async () => {
+  for (const db of [as(ADMIN), as(DESK)]) {
+    await assertFails(getDocs(collection(db, "pepsicoCenter")));
+    await assertFails(getDoc(doc(db, "pepsicoCenter", "s1")));
+    await assertFails(getDocs(collection(db, "checkoutHistory")));
+  }
 });
 
 test("nobody writes the roster or reads server-only collections from the client", async () => {

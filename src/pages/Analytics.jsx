@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import Papa from "papaparse";
 import {
   ResponsiveContainer,
@@ -16,145 +16,22 @@ import {
   Tooltip,
   LabelList,
 } from "recharts";
-import { db } from "../Firebase";
+import { app } from "../Firebase";
 import "../components/Analytics.css";
 import NavDropdown from "../components/NavDropdownAnalytics.jsx";
 import TimeRangeFilter from "../components/TimeRangeFilter.jsx";
 import ChartExportMenu from "../components/ChartExportMenu.jsx";
 
-const FACILITY_COLLECTIONS = {
-  Both: ["pepsicoCenter", "westerlinGym"],
-  PepsiCo: ["pepsicoCenter"],
-  Westerlin: ["westerlinGym"],
-};
-
-const FACILITY_LOCATIONS = {
-  Both: null,
-  PepsiCo: "PepsiCo Center",
-  Westerlin: "Westerlin Gym",
-};
-
-const FACILITY_COLLECTION_LABELS = {
-  pepsicoCenter: "PepsiCo Center",
-  westerlinGym: "Westerlin Gym",
-};
-
-const HOUR_LABELS = [
-  "12 AM", "1 AM", "2 AM", "3 AM", "4 AM", "5 AM", "6 AM", "7 AM",
-  "8 AM", "9 AM", "10 AM", "11 AM", "12 PM", "1 PM", "2 PM", "3 PM",
-  "4 PM", "5 PM", "6 PM", "7 PM", "8 PM", "9 PM", "10 PM", "11 PM",
-];
-
-const DAY_LABELS = [
-  "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
-];
-
-// Augustana brand navy/gold — every multi-bar/segment chart on this page
+// Augustana brand navy/gold. Every multi-bar/segment chart on this page
 // alternates strictly between these two instead of a categorical hue ramp.
 const BRAND_CHART_COLORS = ["#002F6C", "#FFC72C"];
 
-// Keeps the top 5 most common values in a counts map as their own segment
-// and folds everything past that into a single "Other" segment. Used for
-// any part-to-whole category mix (person type, gender, etc).
-function buildCategoryMix(counts) {
-  const sorted = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
-  const top = sorted.slice(0, 5);
-  const rest = sorted.slice(5);
-  const otherTotal = rest.reduce((sum, [, count]) => sum + count, 0);
+const DEMOGRAPHIC_DIMENSIONS = ["Class", "Transfer Status", "Residence Hall", "International"];
 
-  const segments = top.map(([label, value], i) => ({
-    label,
-    value,
-    color: BRAND_CHART_COLORS[i % BRAND_CHART_COLORS.length],
-  }));
-  if (otherTotal > 0) {
-    segments.push({
-      label: "Other",
-      value: otherTotal,
-      color: BRAND_CHART_COLORS[top.length % BRAND_CHART_COLORS.length],
-    });
-  }
-  return segments;
-}
+const analyticsSummary = httpsCallable(getFunctions(app, "us-central1"), "analyticsSummary");
 
-// The dropdown options for the Demographics chart, each pointing at the
-// currentStudents roster field it reads and how to turn a raw value into a
-// display label.
-const DEMOGRAPHIC_DIMENSIONS = {
-  "Class": { field: "Class" },
-  "Transfer Status": {
-    field: "Transfer",
-    mapValue: (raw) => (raw.trim() === "Yes" ? "Transfer" : "Not a Transfer"),
-  },
-  "Residence Hall": { field: "Residence" },
-  "International": {
-    field: "International",
-    mapValue: (raw) => (raw.trim() ? "International" : "Domestic"),
-  },
-};
-
-function getRangeStartDate(range) {
-  const now = new Date();
-  switch (range) {
-    case "Last 7 Days":
-      return new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
-    case "Last 30 Days":
-      return new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
-    case "Last 90 Days":
-      return new Date(now.getFullYear(), now.getMonth(), now.getDate() - 90);
-    case "This Year":
-      return new Date(now.getFullYear(), 0, 1);
-    case "All Time":
-    default:
-      return null;
-  }
-}
-
-function pad2(n) {
-  return String(n).padStart(2, "0");
-}
-
-function startOfWeek(date) {
-  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  d.setDate(d.getDate() - d.getDay());
-  return d;
-}
-
-// Sortable key + display label for the bucket a visit's timestamp falls into,
-// based on the selected time interval granularity.
-function getBucket(date, interval) {
-  const y = date.getFullYear();
-  const m = date.getMonth();
-  const day = date.getDate();
-
-  switch (interval) {
-    case "Hourly": {
-      const h = date.getHours();
-      return {
-        key: `${y}-${pad2(m + 1)}-${pad2(day)}-${pad2(h)}`,
-        label: date.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric" }),
-      };
-    }
-    case "Weekly": {
-      const weekStart = startOfWeek(date);
-      return {
-        key: `${weekStart.getFullYear()}-${pad2(weekStart.getMonth() + 1)}-${pad2(weekStart.getDate())}`,
-        label: weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-      };
-    }
-    case "Monthly":
-      return {
-        key: `${y}-${pad2(m + 1)}`,
-        label: date.toLocaleDateString("en-US", { month: "short", year: "numeric" }),
-      };
-    case "Daily":
-    default:
-      return {
-        key: `${y}-${pad2(m + 1)}-${pad2(day)}`,
-        label: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-      };
-  }
-}
+const withColors = (segments) =>
+  segments.map((seg, i) => ({ ...seg, color: BRAND_CHART_COLORS[i % BRAND_CHART_COLORS.length] }));
 
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -331,137 +208,23 @@ function Analytics({ gym, updateGym }) {
   const chartBodyRefs = useRef({});
 
   useEffect(() => {
-    async function fetchStatCardData() {
-      let totalVisits = 0;
-      const uniqueIds = new Set();
-      const hourCounts = new Array(24).fill(0);
-      const dayCounts = new Array(7).fill(0);
-      const rangeStart = getRangeStartDate(timeRange);
-      const visitBuckets = new Map();
-      const visitsByFacilityData = [];
-      const personTypeCounts = new Map();
-      const demographicCounts = {};
-      Object.keys(DEMOGRAPHIC_DIMENSIONS).forEach((dim) => {
-        demographicCounts[dim] = new Map();
-      });
-
-      try {
-        const studentsSnap = await getDocs(collection(db, "currentSchoolBody"));
-        const personTypeById = new Map();
-        const demographicById = {};
-        Object.keys(DEMOGRAPHIC_DIMENSIONS).forEach((dim) => {
-          demographicById[dim] = new Map();
-        });
-        studentsSnap.forEach((doc) => {
-          const data = doc.data();
-          const type = (data.PersonType || "").trim();
-          personTypeById.set(doc.id, type || "Unknown");
-
-          Object.entries(DEMOGRAPHIC_DIMENSIONS).forEach(([dim, config]) => {
-            const raw = (data[config.field] || "").toString();
-            const value = config.mapValue ? config.mapValue(raw) : raw.trim() || "Unknown";
-            demographicById[dim].set(doc.id, value);
-          });
-        });
-
-        for (const name of FACILITY_COLLECTIONS[facility]) {
-          const snap = await getDocs(collection(db, name));
-          let facilityVisitCount = 0;
-          snap.forEach((doc) => {
-            const d = doc.data();
-            if (!d.swipeInTime || !d.swipeInTime.toDate) return;
-            const visitDate = d.swipeInTime.toDate();
-            if (rangeStart && visitDate < rangeStart) return;
-            totalVisits++;
-            facilityVisitCount++;
-            if (d.ID) uniqueIds.add(d.ID);
-            hourCounts[visitDate.getHours()]++;
-            dayCounts[visitDate.getDay()]++;
-
-            const bucket = getBucket(visitDate, timeInterval);
-            const existing = visitBuckets.get(bucket.key);
-            if (existing) {
-              existing.visits++;
-            } else {
-              visitBuckets.set(bucket.key, { label: bucket.label, visits: 1 });
-            }
-
-            const personType = personTypeById.get(d.ID) || "Unknown";
-            personTypeCounts.set(personType, (personTypeCounts.get(personType) || 0) + 1);
-
-            Object.keys(DEMOGRAPHIC_DIMENSIONS).forEach((dim) => {
-              const value = demographicById[dim].get(d.ID) || "Unknown";
-              const counts = demographicCounts[dim];
-              counts.set(value, (counts.get(value) || 0) + 1);
-            });
-          });
-          visitsByFacilityData.push({ facility: FACILITY_COLLECTION_LABELS[name], visits: facilityVisitCount });
-        }
-      } catch (err) {
-        console.error("Stat card fetch error:", err);
-      }
-
-      const visitsOverTimeData = Array.from(visitBuckets.entries())
-        .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
-        .map(([, bucket]) => bucket);
-
-      const personTypeMixData = buildCategoryMix(personTypeCounts);
-      const demographicsMixData = {};
-      Object.keys(DEMOGRAPHIC_DIMENSIONS).forEach((dim) => {
-        demographicsMixData[dim] = buildCategoryMix(demographicCounts[dim]);
-      });
-
-      const itemCounts = {};
-      try {
-        const locationFilter = FACILITY_LOCATIONS[facility];
-        const snap = await getDocs(collection(db, "checkoutHistory"));
-        snap.forEach((doc) => {
-          const d = doc.data();
-          if (!d.item) return;
-          if (locationFilter && d.location !== locationFilter) return;
-          if (rangeStart) {
-            const historyDate = d.time && d.time.toDate ? d.time.toDate() : null;
-            if (!historyDate || historyDate < rangeStart) return;
-          }
-          itemCounts[d.item] = (itemCounts[d.item] || 0) + 1;
-        });
-      } catch (err) {
-        console.error("Equipment checkout fetch error:", err);
-      }
-
-      const topEquipmentData = Object.entries(itemCounts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([item, count]) => ({ item, count }));
-
-      const peakHourIndex = hourCounts.some((c) => c > 0)
-        ? hourCounts.indexOf(Math.max(...hourCounts))
-        : null;
-
-      const busiestDayIndex = dayCounts.some((c) => c > 0)
-        ? dayCounts.indexOf(Math.max(...dayCounts))
-        : null;
-
-      const itemEntries = Object.entries(itemCounts);
-      const mostCheckedOutItem = itemEntries.length
-        ? itemEntries.reduce((max, entry) => (entry[1] > max[1] ? entry : max))[0]
-        : null;
-
-      setStatData({
-        totalVisits,
-        uniqueVisitors: uniqueIds.size,
-        mostCheckedOutItem,
-        peakHour: peakHourIndex === null ? null : HOUR_LABELS[peakHourIndex],
-        busiestDay: busiestDayIndex === null ? null : DAY_LABELS[busiestDayIndex],
-      });
-      setVisitsOverTime(visitsOverTimeData);
-      setVisitsByFacility(visitsByFacilityData);
-      setPersonTypeMix(personTypeMixData);
-      setDemographicsData(demographicsMixData);
-      setTopEquipment(topEquipmentData);
-    }
-
-    fetchStatCardData();
+    let cancelled = false;
+    analyticsSummary({ facility, timeRange, timeInterval })
+      .then(({ data }) => {
+        if (cancelled) return;
+        setStatData(data.stats);
+        setVisitsOverTime(data.visitsOverTime);
+        setVisitsByFacility(data.visitsByFacility);
+        setPersonTypeMix(withColors(data.personTypeMix));
+        setDemographicsData(
+          Object.fromEntries(Object.entries(data.demographics).map(([dim, segs]) => [dim, withColors(segs)]))
+        );
+        setTopEquipment(data.topEquipment);
+      })
+      .catch((err) => console.error("Analytics fetch error:", err.code || err.message));
+    return () => {
+      cancelled = true;
+    };
   }, [facility, timeRange, timeInterval]);
 
   const CHART_TITLES = [
@@ -752,7 +515,7 @@ function Analytics({ gym, updateGym }) {
                         value={demographicDimension}
                         onChange={(e) => setDemographicDimension(e.target.value)}
                       >
-                        {Object.keys(DEMOGRAPHIC_DIMENSIONS).map((dim) => (
+                        {DEMOGRAPHIC_DIMENSIONS.map((dim) => (
                           <option key={dim} value={dim}>{dim}</option>
                         ))}
                       </select>
