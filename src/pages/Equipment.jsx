@@ -8,7 +8,6 @@ import ToastContainer from "../components/ToastContainer";
 import NavDropdown from "../components/NavDropdown.jsx";
 
 // IMPORT HASH UTILITY: Reusing the hashing function from your settings configuration
-import { hashId } from "../components/HashId.js";
 
 import {
     collection,
@@ -156,12 +155,10 @@ export default function Equipment({ gym, updateGym }) {
             }
 
             const studentName = validation.name;
-            const verifiedData = validation.studentId; 
             const inventoryRef = getInventoryCollection();
             const checkoutRef = getCheckoutCollection();
 
-            // Generate the hashed ID safely
-            const hashedId = verifiedData ? await hashId(String(verifiedData).trim()) : "";
+            const hashedId = validation.hashedId;
 
             // Target doc using the selected strict document ID instead of the item name string
             const equipmentDocRef = doc(inventoryRef, selectedEquipment);
