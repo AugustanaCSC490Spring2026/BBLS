@@ -89,9 +89,20 @@ export function parseRoster(csvText) {
 }
 
 /**
+ * SAFETY: BulkWriter.close() resolves even when writes fail. Only the promise
+ * from each operation reports failure, so every one must be checked.
+ */
+async function commitAll(writer, operations) {
+  const results = Promise.allSettled(operations);
+  await writer.close();
+  const failed = (await results).filter((r) => r.status === "rejected").length;
+  if (failed) throw new Error(`${failed} of ${operations.length} roster writes failed`);
+}
+
+/**
  * Upserts every person, then deletes roster docs not in this import.
- * The roster is never empty mid-import; a failure leaves old and new records,
- * both of which are valid people.
+ * The roster is never empty mid-import, and nobody is removed unless every
+ * write succeeded; a failure leaves old and new records, both valid people.
  */
 export async function writeRoster(db, people, key, meta) {
   const logRef = db.collection(IMPORT_LOG_COLLECTION).doc();
@@ -106,25 +117,19 @@ export async function writeRoster(db, people, key, meta) {
   try {
     const keep = new Set();
     const writer = db.bulkWriter();
-    for (const { id, record } of people) {
+    const writes = people.map(({ id, record }) => {
       const hashed = hashNormalizedId(id, key);
       keep.add(hashed);
-      writer.set(db.collection(ROSTER_COLLECTION).doc(hashed), { ...record, ID: hashed, importId });
-    }
-    await writer.close();
+      return writer.set(db.collection(ROSTER_COLLECTION).doc(hashed), { ...record, ID: hashed, importId });
+    });
+    await commitAll(writer, writes);
 
     const existing = await db.collection(ROSTER_COLLECTION).select().get();
     const remover = db.bulkWriter();
-    let removed = 0;
-    for (const doc of existing.docs) {
-      if (!keep.has(doc.id)) {
-        remover.delete(doc.ref);
-        removed++;
-      }
-    }
-    await remover.close();
+    const removals = existing.docs.filter((doc) => !keep.has(doc.id)).map((doc) => remover.delete(doc.ref));
+    await commitAll(remover, removals);
 
-    const summary = { written: people.length, removed };
+    const summary = { written: people.length, removed: removals.length };
     await logRef.update({ status: "done", finishedAt: FieldValue.serverTimestamp(), ...summary });
     return { importId, ...summary };
   } catch (err) {
@@ -154,7 +159,7 @@ export const importRoster = onCall(
       const result = await writeRoster(getFirestore(), people, idHmacKey.value(), { importedBy: caller.email });
       return { ok: true, ...result };
     } catch (err) {
-      console.error("importRoster failed:", err.code || err.name);
+      console.error("importRoster failed:", err.code || err.message);
       throw new HttpsError("internal", "Import failed partway. The previous roster is still in place; re-run the import.");
     }
   }
