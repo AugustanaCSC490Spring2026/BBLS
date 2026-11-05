@@ -1,0 +1,67 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Mirrors functions/auth.js: a verified @augustana.edu Google account
+    // that is listed in authorized_users.
+    function verifiedAugustana() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower().matches('.*@augustana[.]edu$');
+    }
+    function userDoc() {
+      return /databases/$(database)/documents/authorized_users/$(request.auth.token.email.lower());
+    }
+    function isAuthorized() {
+      return verifiedAugustana() && exists(userDoc());
+    }
+    function isAdmin() {
+      return isAuthorized() && get(userDoc()).data.isAdmin == true;
+    }
+
+    match /authorized_users/{email} {
+      allow get: if (request.auth != null && request.auth.token.email.lower() == email) || isAdmin();
+      allow list, create, update, delete: if isAdmin();
+    }
+
+    // Written only by the importRoster function. The front desk may look up
+    // one person by hashed ID but never list the roster.
+    match /currentSchoolBody/{id} {
+      allow get: if isAuthorized();
+      allow list: if isAdmin();
+    }
+
+    match /bannedStudents/{id} {
+      allow get: if isAuthorized();
+      allow list, create, update, delete: if isAdmin();
+    }
+
+    // Append-only logs: the front desk records, only admins read.
+    match /{log}/{id} {
+      allow create: if isAuthorized()
+        && log in ['pepsicoCenter', 'westerlinGym', 'invalidSwipeIns', 'guestEntrance'];
+      allow read: if isAdmin()
+        && log in ['pepsicoCenter', 'westerlinGym', 'invalidSwipeIns', 'guestEntrance'];
+    }
+
+    match /{inventory}/{item} {
+      allow read, update: if isAuthorized()
+        && inventory in ['pepsicoEquipmentInventory', 'westerlinEquipmentInventory'];
+      allow create, delete: if isAdmin()
+        && inventory in ['pepsicoEquipmentInventory', 'westerlinEquipmentInventory'];
+    }
+
+    match /{checkouts}/{id} {
+      allow read, create, update: if isAuthorized()
+        && checkouts in ['pepsicoCheckouts', 'westerlinCheckouts'];
+      allow delete: if isAdmin()
+        && checkouts in ['pepsicoCheckouts', 'westerlinCheckouts'];
+    }
+
+    match /checkoutHistory/{id} {
+      allow create, update: if isAuthorized();
+      allow read: if isAdmin();
+    }
+  }
+}
