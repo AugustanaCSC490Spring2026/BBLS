@@ -120,13 +120,18 @@ input:focus, select:focus {
 
 .checkout .checkout-note {
     color: #2d3748;
-    margin: 6px 0;
+    margin: 4px 0 0;
     overflow-wrap: anywhere;
+}
+
+.checkout-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .checkout .checkout-note-button {
     color: #002F6C;
-    margin-top: 6px;
     padding: 4px 10px;
     font-size: 0.8rem;
 }
