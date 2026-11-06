@@ -31,3 +31,13 @@ gcloud firestore databases restore --project=rec-center-swipe-ins --source-backu
 Copy data back with `gcloud firestore export` from the temporary database and `gcloud firestore import` into `(default)`. Import overwrites documents with the same ID and leaves others in place, so documents created after the snapshot stay. Export needs a Cloud Storage bucket: treat it as confidential and delete it afterward, along with the temporary database.
 
 A clone of production was tested on 2026-11-05 and took about 10 minutes for 1,981 documents. All 12 collections and their documents matched. Restoring from a backup and importing back into `(default)` have not been tried.
+
+## Browser API key
+
+The live bundle uses the API key limited to the two hosting domains. PR preview hosts are not on that list, because allowing them would take a wildcard over all of `web.app`. So previews can load but cannot sign in, and sign-in gets checked on the live site or against the emulators.
+
+## Rotating ID_HMAC_KEY
+
+Roster documents are keyed by the hash of each ID, so a new key means nobody matches until the roster is imported again. Add the new secret version, deploy `hashStudentId` and `importRoster`, import the roster, then disable the old version.
+
+Past swipes keep their old hashes and cannot be linked to the new roster, so they show as Unknown in analytics.
